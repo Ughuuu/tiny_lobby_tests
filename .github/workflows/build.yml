@@ -1,0 +1,67 @@
+name: Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [linux-latest, windows-latest, macos-latest]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        submodules: recursive
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential
+        chmod +x install.sh
+        ./install.sh
+
+
+    # Install dependencies (Linux build)
+    - name: Install dependencies for Linux
+      if: matrix.platform == 'linux-x86_64'
+      run: |
+        sudo apt-get install -y libboost-all-dev
+
+    # Install dependencies (Windows build)
+    - name: Install dependencies for Windows
+      if: matrix.platform == 'windows-x86_64'
+      run: |
+        sudo apt-get install -y mingw-w64
+
+    # Build for Linux
+    - name: Build for Linux
+      if: matrix.platform == 'linux-x86_64'
+      run: |
+        scons -j$(nproc) target_platform=linux
+
+    # Build for Windows
+    - name: Build for Windows
+      if: matrix.platform == 'windows-x86_64'
+      run: |
+        scons -j$(nproc) target_platform=windows
+        mv build/GameServer build/GameServer.exe
+
+    # Archive build outputs
+    - name: Archive build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ matrix.platform }}-build
+        path: |
+          build/**/*
+          angelscripts/**/*
+          !build/**/*.o
