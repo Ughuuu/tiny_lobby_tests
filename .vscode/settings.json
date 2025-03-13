@@ -64,6 +64,19 @@
         "unordered_map": "cpp",
         "unordered_set": "cpp",
         "vector": "cpp",
-        "algorithm": "cpp"
+        "algorithm": "cpp",
+        "shared_mutex": "cpp",
+        "source_location": "cpp",
+        "typeindex": "cpp",
+        "*.ipp": "cpp",
+        "barrier": "cpp",
+        "cinttypes": "cpp",
+        "codecvt": "cpp",
+        "latch": "cpp",
+        "numbers": "cpp",
+        "regex": "cpp",
+        "semaphore": "cpp",
+        "syncstream": "cpp",
+        "valarray": "cpp"
     }
 }

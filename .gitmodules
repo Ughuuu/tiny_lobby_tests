@@ -4,3 +4,9 @@
 [submodule "external/uuid_v4"]
 	path = external/uuid_v4
 	url = https://github.com/crashoz/uuid_v4
+[submodule "external/vcpkg"]
+	path = external/vcpkg
+	url = https://github.com/microsoft/vcpkg.git
+[submodule "external/readerwriterqueue"]
+	path = external/readerwriterqueue
+	url = https://github.com/cameron314/readerwriterqueue

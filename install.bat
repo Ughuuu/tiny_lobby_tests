@@ -9,8 +9,7 @@ sudo cmake --install .
 cd external/vcpkg
 ./bootstrap-vcpkg.sh
 cd ../..
-./external/vcpkg/vcpkg install uwebsockets
 ./external/vcpkg/vcpkg install boost-uuid
 ./external/vcpkg/vcpkg install simdjson
-./external/vcpkg/vcpkg install readerwriterqueue
 ./external/vcpkg/vcpkg integrate install
+.\vcpkg.exe install simdjson:x64-windows
