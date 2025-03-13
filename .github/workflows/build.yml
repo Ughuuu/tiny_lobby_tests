@@ -29,7 +29,6 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y build-essential
-        sudo apt install libboost-uuid-dev libboost-system-dev
         ./install.sh
 
     - name: Install dependencies for macOS
