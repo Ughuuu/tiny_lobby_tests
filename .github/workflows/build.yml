@@ -37,7 +37,7 @@ jobs:
         ./install.sh
 
     - name: Build for Linux
-      if: matrix.platform == 'ubuntu-latest' or matrix.platform == 'macos-latest'
+      if: matrix.platform == 'ubuntu-latest' || matrix.platform == 'macos-latest'
       run: |
         ./build.sh
 
