@@ -1,4 +1,6 @@
 #include "App.h"
+#include "uuid_v4/uuid_v4.h"
+#include "uuid_v4/endianness.h"
 #include <thread>
 #include <algorithm>
 

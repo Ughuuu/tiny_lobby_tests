@@ -32,19 +32,20 @@ jobs:
         ./install.sh
 
     - name: Install dependencies for macOS
-      if: matrix.platform == 'macos-latest'
+      if: matrix.os == 'macos-latest'
       run: |
         brew install zlib-devel
         ./install.sh
 
     - name: Build for Linux
-      if: matrix.platform == 'ubuntu-latest' || matrix.platform == 'macos-latest'
+      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
       run: |
         ./build.sh
 
     - name: Archive build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ matrix.platform }}-build
+        name: ${{ matrix.os }}-build
         path: |
           build/lobby_server
+        if-no-files-found: error

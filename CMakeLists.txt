@@ -14,9 +14,9 @@ target_include_directories(uWebSockets INTERFACE external/uWebSockets/src/)
 target_link_libraries(uWebSockets INTERFACE uSockets ${ZLIB_LIBRARIES})
 target_compile_options(uWebSockets INTERFACE -Wno-deprecated-declarations)
 
-find_package(uuid_v4)
 
 # Server exec
 add_executable(lobby_server main.cpp)
+find_package(uuid_v4)
 target_link_libraries(lobby_server uuid_v4::uuid_v4)
 target_link_libraries(lobby_server uWebSockets)
