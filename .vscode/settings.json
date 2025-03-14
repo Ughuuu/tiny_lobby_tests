@@ -77,6 +77,8 @@
         "regex": "cpp",
         "semaphore": "cpp",
         "syncstream": "cpp",
-        "valarray": "cpp"
+        "valarray": "cpp",
+        "strstream": "cpp",
+        "atomic": "cpp"
     }
 }

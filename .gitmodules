@@ -7,6 +7,9 @@
 [submodule "external/vcpkg"]
 	path = external/vcpkg
 	url = https://github.com/microsoft/vcpkg.git
-[submodule "external/readerwriterqueue"]
-	path = external/readerwriterqueue
-	url = https://github.com/cameron314/readerwriterqueue
+[submodule "external/LuaJIT"]
+	path = external/LuaJIT
+	url = https://github.com/LuaJIT/LuaJIT.git
+[submodule "external/angelscript"]
+	path = external/angelscript
+	url = https://github.com/codecat/angelscript-mirror

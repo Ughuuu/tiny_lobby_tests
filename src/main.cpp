@@ -29,7 +29,9 @@ int main(int argc, char* argv[]) {
             .idleTimeout = 180,
             .maxBackpressure = 1 * 1024 * 1024,
             /* Handlers */
-            .upgrade = nullptr,
+            .upgrade = [&](auto *res, auto *req, auto *context) {
+                webserver.on_upgrade(res, req, context);
+            },
             .open = [&](auto *ws) {
                 webserver.on_open(ws);
             },

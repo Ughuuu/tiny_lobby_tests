@@ -1,14 +1,49 @@
 #include "websocket_server.h"
 
+void WebSocketServer::on_upgrade(uWS::HttpResponse<USES_SSL> *res, uWS::HttpRequest *req, struct us_socket_context_t *context) {
+    std::string protocol(req->getHeader("sec-websocket-protocol"));
+    logger.debug_log("[WebSocketServer] on_upgrade: ", protocol);
+    std::stringstream ss(protocol);
+    std::vector<std::string> protocols_split;
+
+    while( ss.good() )
+    {
+        std::string substr;
+        getline( ss, substr, ',' );
+        protocols_split.push_back( substr );
+    }
+
+    if (protocols_split.size() < 2 || protocols_split[0] != "blazium") {
+        logger.debug_log("[WebSocketServer] error: ", protocol);
+        res->writeStatus("400 Bad Request")->write("Failed to open WebSocket connection.");
+        res->end();
+        return;
+    }
+    PerSocketData user_data {
+        .id = to_string(gen()),
+        .game_id = protocols_split[1]
+    };
+    if (protocols_split.size() > 2) {
+        user_data.reconnection_id = protocols_split[2];
+    }
+    res->upgrade<PerSocketData>(std::move(user_data),
+        req->getHeader("sec-websocket-key"),
+        "blazium",
+        req->getHeader("sec-websocket-extensions"),
+        context);
+}
+
 void WebSocketServer::on_open(uWS::WebSocket<USES_SSL, true, PerSocketData> *ws) {
     PerSocketData* data = ws->getUserData();
-    data->id = gen();
+    // write to sockets map
     sockets[data->id] = ws;
     logger.debug_log("[WebSocketServer] on_open: ", data->id);
     message_queue.enqueue(WebSocketMessage {
         .id = data->id,
         .message = std::string(),
         .event = WebSocketEvent::OPEN,
+        .game_id = data->game_id,
+        .reconnection_id = data->reconnection_id
     });
 }
 void WebSocketServer::on_message(uWS::WebSocket<USES_SSL, true, PerSocketData> *ws, const std::string_view &message, uWS::OpCode opCode) {
@@ -31,7 +66,7 @@ void WebSocketServer::on_close(uWS::WebSocket<USES_SSL, true, PerSocketData> *ws
     });
 }
 
-void WebSocketServer::send(boost::uuids::uuid id, const std::string &message, uWS::OpCode opCode) {
+void WebSocketServer::send(std::string id, const std::string &message, uWS::OpCode opCode) {
     auto it = sockets.find(id);
     if (it != sockets.end()) {
         it->second->send(message, opCode);

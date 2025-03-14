@@ -20,5 +20,7 @@ public:
             (std::cout << ... << args) << std::endl;
         }
     }
-    ServerLogger(bool verbose);
+    ServerLogger(bool verbose) {
+        this->verbose = verbose;
+    }
 };

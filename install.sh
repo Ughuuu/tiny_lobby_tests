@@ -1,16 +1,17 @@
+# Build uWebSockets
 cd external/uWebSockets
 make
 sudo make install
 cd ../..
-cd external/uuid_v4
-mkdir build && cd build
-cmake -DCMAKE_INSTALL_PREFIX="/usr/local" ..
-sudo cmake --install .
+# Install packages
 cd external/vcpkg
 ./bootstrap-vcpkg.sh
+./vcpkg install boost-uuid
+./vcpkg install simdjson
+./vcpkg install readerwriterqueue
+./vcpkg integrate install
 cd ../..
-./external/vcpkg/vcpkg install uwebsockets
-./external/vcpkg/vcpkg install boost-uuid
-./external/vcpkg/vcpkg install simdjson
-./external/vcpkg/vcpkg install readerwriterqueue
-./external/vcpkg/vcpkg integrate install
+# Install luajit
+cd external/luajit
+make MACOSX_DEPLOYMENT_TARGET=10.15
+sudo make install

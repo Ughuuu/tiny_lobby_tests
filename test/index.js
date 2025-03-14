@@ -4,7 +4,7 @@ const path = require('path');
 
 // Configuration
 const serverUrl = 'ws://localhost:9001/connect'; // Your WebSocket server URL
-const numClients = 3000;  // Number of WebSocket clients to simulate
+const numClients = 5000;  // Number of WebSocket clients to simulate
 const messagesPerClient = 0; // Number of messages each client will send. Set to 0 for infinite
 const messageInterval = 1;  // Interval in milliseconds between messages
 const max_time = 10000; // 10 s
@@ -21,7 +21,7 @@ fs.writeFileSync(csvFilePath, 'timestamp,client_count,client_errors,messages_sen
 
 // Function to start a WebSocket client
 function startClient(clientId) {
-    const ws = new WebSocket(serverUrl);
+    const ws = new WebSocket(serverUrl, ['blazium', 'echo']);
 
     ws.on('open', () => {
         clientCount++;
@@ -30,7 +30,10 @@ function startClient(clientId) {
         const messageIntervalId = setInterval(() => {
             // Send a message to the server
             const message = `Client ${clientId} - Message ${messageCount + 1}`;
-            ws.send(message);
+            ws.send(JSON.stringify({
+                "command": "create_lobby",
+                "data": messageCount
+            }));
 
             messagesSent++;
 
@@ -53,6 +56,7 @@ function startClient(clientId) {
     });
 
     ws.on('error', (error) => {
+        console.log(error)
         clientErrors++;
     });
 }
@@ -86,4 +90,4 @@ const logInterval = setInterval(() => {
         console.log('Stress test completed. Results saved to stress_test_results.csv');
         process.exit();
     }
-}, 10);
+}, 1000);
