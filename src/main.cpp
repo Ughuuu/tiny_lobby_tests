@@ -1,11 +1,16 @@
 #include "App.h"
 #include <thread>
 #include "websocket_server.h"
-#include "game_server.h"
+#include "game_thread.h"
 #include <boost/lockfree/queue.hpp>
 #include <readerwriterqueue.h>
+#include "INIReader.h"
 
 int main(int argc, char* argv[]) {
+    INIReader config_reader("config.ini");
+    if (config_reader.ParseError() < 0) {
+        std::cout << "Cannot open config.ini" << std::endl;
+    }
     std::vector<std::string> args(argv + 1, argv + argc);
     bool verbose = false;
 
@@ -15,51 +20,105 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    int port = 9001;
+    int port = config_reader.GetUnsigned("server", "port", 9001);
     std::cout<< "Starting webserver on " << port << std::endl;
     moodycamel::BlockingReaderWriterQueue<WebSocketMessage> message_queue(100);
-    WebSocketServer webserver(verbose, message_queue);
-    uWS::App app = uWS::App()
-        .ws<PerSocketData>("/connect", {
-            /* Settings */
-            .compression = uWS::SHARED_COMPRESSOR,
-            .maxPayloadLength = 16 * 1024,
-            .resetIdleTimeoutOnSend = true,
-            // 3 minutes
-            .idleTimeout = 180,
-            .maxBackpressure = 1 * 1024 * 1024,
-            /* Handlers */
-            .upgrade = [&](auto *res, auto *req, auto *context) {
-                webserver.on_upgrade(res, req, context);
-            },
-            .open = [&](auto *ws) {
-                webserver.on_open(ws);
-            },
-            .message = [&](auto *ws, std::string_view message, uWS::OpCode opCode) {
-                webserver.on_message(ws, message, opCode);
-            },
-            .drain = [](auto */*ws*/) {
-            },
-            .ping = [](auto */*ws*/, std::string_view) {
-            },
-            .pong = [](auto */*ws*/, std::string_view) {
-            },
-            .close = [&](auto *ws, int code, std::string_view message) {
-                webserver.on_close(ws, message, code);
-            }
-        })
-        .listen(port, [&](auto *listen_socket) {
-            if (listen_socket) {
-                std::cout << "Listening on port " << port << std::endl;
-            } else {
-                std::cout << "Failed to listen on port" << port << std::endl;
-            }
+    if (config_reader.GetBoolean("server", "ssl", false)) {
+        WebSocketServer<false> webserver(verbose, message_queue);
+        uWS::App app = uWS::App()
+            .ws<PerSocketData>("/connect", {
+                /* Settings */
+                .compression = static_cast<uWS::CompressOptions>(config_reader.GetUnsigned("server", "compression", uWS::DISABLED)),
+                // max 2 kb
+                .maxPayloadLength = static_cast<unsigned int>(config_reader.GetUnsigned("server", "max_payload_length", 2 * 1024)),
+                .resetIdleTimeoutOnSend = config_reader.GetBoolean("server", "reset_idle_timeout_on_send", true),
+                .closeOnBackpressureLimit = true,
+                // 3 minutes
+                .idleTimeout = static_cast<unsigned short>(config_reader.GetUnsigned("server", "idle_timeout", 180)),
+                // 64 kb
+                .maxBackpressure = static_cast<unsigned int>(config_reader.GetUnsigned("server", "max_backpressure", 64 * 1024)),
+                /* Handlers */
+                .upgrade = [&](auto *res, auto *req, auto *context) {
+                    webserver.on_upgrade(res, req, context);
+                },
+                .open = [&](auto *ws) {
+                    webserver.on_open(ws);
+                },
+                .message = [&](auto *ws, std::string_view message, uWS::OpCode opCode) {
+                    webserver.on_message(ws, message, opCode);
+                },
+                .drain = [](auto */*ws*/) {
+                },
+                .ping = [](auto */*ws*/, std::string_view) {
+                },
+                .pong = [](auto */*ws*/, std::string_view) {
+                },
+                .close = [&](auto *ws, int code, std::string_view message) {
+                    webserver.on_close(ws, message, code);
+                }
+            })
+            .listen(port, [&](auto *listen_socket) {
+                if (listen_socket) {
+                    std::cout << "Listening on port " << port << std::endl;
+                } else {
+                    std::cout << "Failed to listen on port" << port << std::endl;
+                }
+            });
+        std::thread GameThread_thread = std::thread([&]() {
+            GameThread GameThread(verbose, message_queue, app.getLoop(), nullptr, &webserver);
+            GameThread.run();
         });
-    uWS::App *shared_app = &app;
-    std::thread gameserver_thread = std::thread([&]() {
-        GameServer gameserver(verbose, message_queue, shared_app->getLoop(), &webserver);
-        gameserver.run();
-    });
-    app.run();
-    gameserver_thread.join();
+        app.run();
+        GameThread_thread.join();
+    } else {
+        WebSocketServer<true> webserver(verbose, message_queue);
+        uWS::SSLApp app = uWS::SSLApp(uWS::SocketContextOptions {
+                .key_file_name = config_reader.Get("server", "key_filename", "").c_str(),
+                .cert_file_name = config_reader.Get("server", "cert_filename", "").c_str(),
+                .passphrase = config_reader.Get("server", "passphrase", "").c_str()
+            }).ws<PerSocketData>("/connect", {
+                /* Settings */
+                .compression = static_cast<uWS::CompressOptions>(config_reader.GetUnsigned("server", "compression", uWS::DISABLED)),
+                // max 2 kb
+                .maxPayloadLength = static_cast<unsigned int>(config_reader.GetUnsigned("server", "max_payload_length", 2 * 1024)),
+                .resetIdleTimeoutOnSend = config_reader.GetBoolean("server", "reset_idle_timeout_on_send", true),
+                .closeOnBackpressureLimit = true,
+                // 3 minutes
+                .idleTimeout = static_cast<unsigned short>(config_reader.GetUnsigned("server", "idle_timeout", 180)),
+                // 64 kb
+                .maxBackpressure = static_cast<unsigned int>(config_reader.GetUnsigned("server", "max_backpressure", 64 * 1024)),
+                /* Handlers */
+                .upgrade = [&](auto *res, auto *req, auto *context) {
+                    webserver.on_upgrade(res, req, context);
+                },
+                .open = [&](auto *ws) {
+                    webserver.on_open(ws);
+                },
+                .message = [&](auto *ws, std::string_view message, uWS::OpCode opCode) {
+                    webserver.on_message(ws, message, opCode);
+                },
+                .drain = [](auto */*ws*/) {
+                },
+                .ping = [](auto */*ws*/, std::string_view) {
+                },
+                .pong = [](auto */*ws*/, std::string_view) {
+                },
+                .close = [&](auto *ws, int code, std::string_view message) {
+                    webserver.on_close(ws, message, code);
+                }
+            })
+            .listen(port, [&](auto *listen_socket) {
+                if (listen_socket) {
+                    std::cout << "Listening on port " << port << std::endl;
+                } else {
+                    std::cout << "Failed to listen on port" << port << std::endl;
+                }
+            });
+        std::thread GameThread_thread = std::thread([&]() {
+            GameThread GameThread(verbose, message_queue, app.getLoop(), &webserver, nullptr);
+            GameThread.run();
+        });
+        app.run();
+        GameThread_thread.join();
+    }
 }

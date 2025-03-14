@@ -6,8 +6,6 @@
 #include "App.h"
 #include "server_logger.h"
 
-#define USES_SSL false
-
 struct PerSocketData {
     std::string id;
     std::string game_id;
@@ -28,17 +26,20 @@ struct WebSocketMessage {
     std::string reconnection_id;
 };
 
+template <bool SSL>
 class WebSocketServer {
     boost::uuids::random_generator gen;
     moodycamel::BlockingReaderWriterQueue<WebSocketMessage> &message_queue;
     ServerLogger logger;
-    std::unordered_map<std::string, uWS::WebSocket<USES_SSL, true, PerSocketData>*> sockets;
+    std::unordered_map<std::string, uWS::WebSocket<SSL, true, PerSocketData>*> sockets;
 public:
-    void on_upgrade(uWS::HttpResponse<USES_SSL> *res, uWS::HttpRequest *req, struct us_socket_context_t *context);
-    void on_open(uWS::WebSocket<USES_SSL, true, PerSocketData> *ws);
-    void on_message(uWS::WebSocket<USES_SSL, true, PerSocketData> *ws, const std::string_view &message, uWS::OpCode opCode);
-    void on_close(uWS::WebSocket<USES_SSL, true, PerSocketData> *ws, const std::string_view &message, int opCode);
+    void on_upgrade(uWS::HttpResponse<SSL> *res, uWS::HttpRequest *req, struct us_socket_context_t *context);
+    void on_open(uWS::WebSocket<SSL, true, PerSocketData> *ws);
+    void on_message(uWS::WebSocket<SSL, true, PerSocketData> *ws, const std::string_view &message, uWS::OpCode opCode);
+    void on_close(uWS::WebSocket<SSL, true, PerSocketData> *ws, const std::string_view &message, int opCode);
     void send(std::string id, const std::string &message, uWS::OpCode opCode = uWS::OpCode::TEXT);
 
     WebSocketServer(bool verbose, moodycamel::BlockingReaderWriterQueue<WebSocketMessage>& message_queue);
 };
+
+#include "websocket_server.tpp"

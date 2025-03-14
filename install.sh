@@ -6,10 +6,11 @@ cd ../..
 # Install packages
 cd external/vcpkg
 ./bootstrap-vcpkg.sh
+./vcpkg integrate install
 ./vcpkg install boost-uuid
 ./vcpkg install simdjson
 ./vcpkg install readerwriterqueue
-./vcpkg integrate install
+./vcpkg install inih
 cd ../..
 # Install luajit
 cd external/luajit

@@ -18,7 +18,6 @@ target_compile_options(uWebSockets INTERFACE -Wno-deprecated-declarations)
 
 find_package(boost_uuid REQUIRED CONFIG)
 find_package(boost_lockfree REQUIRED COMPONENTS lockfree)
-find_package(PkgConfig REQUIRED)
 file(GLOB SOURCES "src/*.cpp")
 
 FetchContent_Declare(
@@ -30,6 +29,8 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(readerwriterqueue)
 
 find_package(Simdjson CONFIG REQUIRED)
+
+find_package(unofficial-inih CONFIG REQUIRED)
 
 # LuaJIT
 
@@ -46,5 +47,5 @@ include_directories(${LUAJIT_INCLUDE_DIR})
 add_subdirectory ("external/angelscript/sdk/angelscript/projects/cmake")
 
 add_executable(lobby_server ${SOURCES})
-target_link_libraries(lobby_server PRIVATE Boost::uuid Boost::lockfree uWebSockets simdjson::simdjson angelscript readerwriterqueue ${LUAJIT_LIBRARIES})
+target_link_libraries(lobby_server PRIVATE Boost::uuid Boost::lockfree uWebSockets simdjson::simdjson angelscript readerwriterqueue unofficial::inih::inireader ${LUAJIT_LIBRARIES})
 target_include_directories(lobby_server PUBLIC "external/angelscript/sdk/angelscript/include")

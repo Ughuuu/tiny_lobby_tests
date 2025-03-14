@@ -79,6 +79,7 @@
         "syncstream": "cpp",
         "valarray": "cpp",
         "strstream": "cpp",
-        "atomic": "cpp"
+        "atomic": "cpp",
+        "*.tpp": "cpp"
     }
 }
