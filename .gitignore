@@ -2,3 +2,6 @@ build/*
 test/node_modules/*
 test/stress_test_results.csv
 test/stress_test_results.csv
+external/.DS_Store
+game_thread_log.txt
+websocket_log.txt

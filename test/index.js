@@ -32,7 +32,7 @@ function startClient(clientId) {
             const message = `Client ${clientId} - Message ${messageCount + 1}`;
             ws.send(JSON.stringify({
                 "command": "create_lobby",
-                "data": messageCount
+                "data": { "count": messageCount }
             }));
 
             messagesSent++;

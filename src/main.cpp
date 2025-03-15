@@ -23,7 +23,7 @@ int main(int argc, char* argv[]) {
     int port = config_reader.GetUnsigned("server", "port", 9001);
     std::cout<< "Starting webserver on " << port << std::endl;
     moodycamel::BlockingReaderWriterQueue<WebSocketMessage> message_queue(100);
-    if (config_reader.GetBoolean("server", "ssl", false)) {
+    if (config_reader.GetBoolean("ssl", "enabled", false)) {
         WebSocketServer<false> webserver(verbose, message_queue);
         uWS::App app = uWS::App()
             .ws<PerSocketData>("/connect", {
@@ -65,7 +65,7 @@ int main(int argc, char* argv[]) {
                 }
             });
         std::thread GameThread_thread = std::thread([&]() {
-            GameThread GameThread(verbose, message_queue, app.getLoop(), nullptr, &webserver);
+            GameThread GameThread(verbose, config_reader.Get("game", "scripts_folder", ""), message_queue, app.getLoop(), nullptr, &webserver);
             GameThread.run();
         });
         app.run();
@@ -73,9 +73,9 @@ int main(int argc, char* argv[]) {
     } else {
         WebSocketServer<true> webserver(verbose, message_queue);
         uWS::SSLApp app = uWS::SSLApp(uWS::SocketContextOptions {
-                .key_file_name = config_reader.Get("server", "key_filename", "").c_str(),
-                .cert_file_name = config_reader.Get("server", "cert_filename", "").c_str(),
-                .passphrase = config_reader.Get("server", "passphrase", "").c_str()
+                .key_file_name = config_reader.Get("ssl", "key_filename", "").c_str(),
+                .cert_file_name = config_reader.Get("ssl", "cert_filename", "").c_str(),
+                .passphrase = config_reader.Get("ssl", "passphrase", "").c_str()
             }).ws<PerSocketData>("/connect", {
                 /* Settings */
                 .compression = static_cast<uWS::CompressOptions>(config_reader.GetUnsigned("server", "compression", uWS::DISABLED)),
@@ -115,7 +115,7 @@ int main(int argc, char* argv[]) {
                 }
             });
         std::thread GameThread_thread = std::thread([&]() {
-            GameThread GameThread(verbose, message_queue, app.getLoop(), &webserver, nullptr);
+            GameThread GameThread(verbose, config_reader.Get("game", "scripts_folder", ""), message_queue, app.getLoop(), &webserver, nullptr);
             GameThread.run();
         });
         app.run();

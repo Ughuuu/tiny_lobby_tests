@@ -20,8 +20,10 @@ void WebSocketServer<SSL>::on_upgrade(uWS::HttpResponse<SSL> *res, uWS::HttpRequ
         res->end();
         return;
     }
+    auto uuid = to_string(gen());
+    auto small_uuid = uuid.substr(0, 8);
     PerSocketData user_data {
-        .id = to_string(gen()),
+        .id = small_uuid,
         .game_id = protocols_split[1]
     };
     if (protocols_split.size() > 2) {
@@ -79,6 +81,6 @@ void WebSocketServer<SSL>::send(std::string id, const std::string &message, uWS:
 }
 
 template <bool SSL>
-WebSocketServer<SSL>::WebSocketServer(bool verbose, moodycamel::BlockingReaderWriterQueue<WebSocketMessage>& message_queue) : logger(verbose), message_queue(message_queue) {
+WebSocketServer<SSL>::WebSocketServer(bool verbose, moodycamel::BlockingReaderWriterQueue<WebSocketMessage>& message_queue) : logger(verbose, "websocket_log.txt"), message_queue(message_queue) {
     logger.debug_log("[WebSocketServer] on_start");
 }

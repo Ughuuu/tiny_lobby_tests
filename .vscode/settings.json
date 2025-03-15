@@ -80,6 +80,7 @@
         "valarray": "cpp",
         "strstream": "cpp",
         "atomic": "cpp",
-        "*.tpp": "cpp"
+        "*.tpp": "cpp",
+        "iterator": "cpp"
     }
 }

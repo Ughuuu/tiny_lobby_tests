@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include "peer_data.h"
+#include "any_type.h"
 
 struct LobbyData {
     std::string id;
@@ -14,8 +15,8 @@ struct LobbyData {
     std::time_t createTime;
     std::string game_id;
     bool sealed = false;
-    std::unordered_map<std::string, AnyType> public_data;
-    std::unordered_map<std::string, AnyType> private_data;
+    std::unordered_map<std::string, AnyElement> public_data;
+    std::unordered_map<std::string, AnyElement> private_data;
     std::unordered_map<std::string, std::string> timer_data;
-    std::atomic<int> order_id_counter = 0;
+    int order_id_counter = 0;
 };
