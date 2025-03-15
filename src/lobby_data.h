@@ -17,6 +17,7 @@ struct LobbyData {
     bool sealed = false;
     std::unordered_map<std::string, AnyElement> public_data;
     std::unordered_map<std::string, AnyElement> private_data;
+    std::unordered_map<std::string, AnyElement> tags;
     std::unordered_map<std::string, std::string> timer_data;
     int order_id_counter = 0;
 };

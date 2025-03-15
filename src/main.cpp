@@ -20,7 +20,7 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    int port = config_reader.GetUnsigned("server", "port", 9001);
+    int port = config_reader.GetUnsigned("webserverserver", "port", 9001);
     std::cout<< "Starting webserver on " << port << std::endl;
     moodycamel::BlockingReaderWriterQueue<WebSocketMessage> message_queue(100);
     if (config_reader.GetBoolean("ssl", "enabled", false)) {
@@ -28,15 +28,15 @@ int main(int argc, char* argv[]) {
         uWS::App app = uWS::App()
             .ws<PerSocketData>("/connect", {
                 /* Settings */
-                .compression = static_cast<uWS::CompressOptions>(config_reader.GetUnsigned("server", "compression", uWS::DISABLED)),
+                .compression = static_cast<uWS::CompressOptions>(config_reader.GetUnsigned("webserverserver", "compression", uWS::DISABLED)),
                 // max 2 kb
-                .maxPayloadLength = static_cast<unsigned int>(config_reader.GetUnsigned("server", "max_payload_length", 2 * 1024)),
-                .resetIdleTimeoutOnSend = config_reader.GetBoolean("server", "reset_idle_timeout_on_send", true),
+                .maxPayloadLength = static_cast<unsigned int>(config_reader.GetUnsigned("webserverserver", "max_payload_length", 2 * 1024)),
+                .resetIdleTimeoutOnSend = config_reader.GetBoolean("webserverserver", "reset_idle_timeout_on_send", true),
                 .closeOnBackpressureLimit = true,
                 // 3 minutes
-                .idleTimeout = static_cast<unsigned short>(config_reader.GetUnsigned("server", "idle_timeout", 180)),
+                .idleTimeout = static_cast<unsigned short>(config_reader.GetUnsigned("webserverserver", "idle_timeout", 180)),
                 // 64 kb
-                .maxBackpressure = static_cast<unsigned int>(config_reader.GetUnsigned("server", "max_backpressure", 64 * 1024)),
+                .maxBackpressure = static_cast<unsigned int>(config_reader.GetUnsigned("webserverserver", "max_backpressure", 64 * 1024)),
                 /* Handlers */
                 .upgrade = [&](auto *res, auto *req, auto *context) {
                     webserver.on_upgrade(res, req, context);
@@ -78,15 +78,15 @@ int main(int argc, char* argv[]) {
                 .passphrase = config_reader.Get("ssl", "passphrase", "").c_str()
             }).ws<PerSocketData>("/connect", {
                 /* Settings */
-                .compression = static_cast<uWS::CompressOptions>(config_reader.GetUnsigned("server", "compression", uWS::DISABLED)),
+                .compression = static_cast<uWS::CompressOptions>(config_reader.GetUnsigned("webserverserver", "compression", uWS::DISABLED)),
                 // max 2 kb
-                .maxPayloadLength = static_cast<unsigned int>(config_reader.GetUnsigned("server", "max_payload_length", 2 * 1024)),
-                .resetIdleTimeoutOnSend = config_reader.GetBoolean("server", "reset_idle_timeout_on_send", true),
+                .maxPayloadLength = static_cast<unsigned int>(config_reader.GetUnsigned("webserverserver", "max_payload_length", 2 * 1024)),
+                .resetIdleTimeoutOnSend = config_reader.GetBoolean("webserverserver", "reset_idle_timeout_on_send", true),
                 .closeOnBackpressureLimit = true,
                 // 3 minutes
-                .idleTimeout = static_cast<unsigned short>(config_reader.GetUnsigned("server", "idle_timeout", 180)),
+                .idleTimeout = static_cast<unsigned short>(config_reader.GetUnsigned("webserverserver", "idle_timeout", 180)),
                 // 64 kb
-                .maxBackpressure = static_cast<unsigned int>(config_reader.GetUnsigned("server", "max_backpressure", 64 * 1024)),
+                .maxBackpressure = static_cast<unsigned int>(config_reader.GetUnsigned("webserverserver", "max_backpressure", 64 * 1024)),
                 /* Handlers */
                 .upgrade = [&](auto *res, auto *req, auto *context) {
                     webserver.on_upgrade(res, req, context);

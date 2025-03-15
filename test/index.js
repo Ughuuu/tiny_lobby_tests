@@ -26,12 +26,16 @@ function startClient(clientId) {
     ws.on('open', () => {
         clientCount++;
 
+        ws.send(JSON.stringify({
+            "command": "quick_join"
+        }));
+
         let messageCount = 0;
         const messageIntervalId = setInterval(() => {
             // Send a message to the server
             const message = `Client ${clientId} - Message ${messageCount + 1}`;
             ws.send(JSON.stringify({
-                "command": "create_lobby",
+                "command": "lobby_call",
                 "data": { "count": messageCount }
             }));
 

@@ -48,23 +48,6 @@ class ServerLogger {
         }
     }
 
-    // Check log file size and overwrite if it exceeds the max size
-    void check_log_size_and_overwrite() {
-        static size_t last_checked_size = 0;
-        if (std::filesystem::exists(file_name)) {
-            size_t current_size = std::filesystem::file_size(file_name);
-            // Only check size once every 10 log entries
-            if (current_size >= MAX_LOG_SIZE && current_size != last_checked_size) {
-                last_checked_size = current_size;
-                log_file.close(); // Close the old log file
-                log_file.open(file_name, std::ios::trunc | std::ios::out); // Open in truncation mode (overwrite)
-                if (!log_file.is_open()) {
-                    std::cerr << "Failed to reopen log file in overwrite mode: " << file_name << std::endl;
-                }
-            }
-        }
-    }
-
     // Attempt to reopen log file if it's closed
     bool reopen_file() {
         if (retries >= MAX_RETRIES) {
@@ -84,8 +67,6 @@ class ServerLogger {
     // Internal file logging with retries, size check, and buffer flushing
     template<typename... Args>
     void log_to_file(const Args&... args) {
-        check_log_size_and_overwrite(); // Check and overwrite log file if needed
-
         if (!log_file.is_open() && !reopen_file()) {
             return; // Give up if cannot reopen
         }

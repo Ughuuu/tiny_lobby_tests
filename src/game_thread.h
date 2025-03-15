@@ -25,7 +25,7 @@ public:
     void load_games();
     void unload_games();
     void run();
-    void on_connect(GameData &game, std::string &peer_id, std::string &game_id, std::string &reconnection_id);
+    void on_connect(GameData &game, std::string &peer_id, std::string &game_id);
     void on_close(GameData &game, std::string &peer_id);
     void on_error(std::string command_id, std::string &peer_id, std::string message, bool close = false);
 

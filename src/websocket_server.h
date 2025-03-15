@@ -12,6 +12,14 @@ struct PerSocketData {
     std::string reconnection_id;
 };
 
+template <bool SSL>
+struct PeerConnectionData {
+    std::string id;
+    std::string game_id;
+    std::string reconnection_id;
+    uWS::WebSocket<SSL, true, PerSocketData>* ws;
+};
+
 enum WebSocketEvent {
     OPEN,
     MESSAGE,
@@ -31,7 +39,8 @@ class WebSocketServer {
     boost::uuids::random_generator gen;
     moodycamel::BlockingReaderWriterQueue<WebSocketMessage> &message_queue;
     ServerLogger logger;
-    std::unordered_map<std::string, uWS::WebSocket<SSL, true, PerSocketData>*> sockets;
+    std::unordered_map<std::string, PeerConnectionData<SSL>> connection_data;
+    std::unordered_map<std::string, std::string> reconnections;
 public:
     void on_upgrade(uWS::HttpResponse<SSL> *res, uWS::HttpRequest *req, struct us_socket_context_t *context);
     void on_open(uWS::WebSocket<SSL, true, PerSocketData> *ws);

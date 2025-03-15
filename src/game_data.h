@@ -20,7 +20,6 @@ struct GameData {
     std::string entrypoint;
     long tick_rate = 0;
     std::unordered_map<std::string, PeerData> peers;
-    std::unordered_map<std::string, std::string> reconnection_to_peer_ids;
     std::unordered_map<std::string, LobbyData> lobbies;
     LuaGameData lua;
     AngelScriptGameData angelscript;
