@@ -81,6 +81,7 @@
         "strstream": "cpp",
         "atomic": "cpp",
         "*.tpp": "cpp",
-        "iterator": "cpp"
+        "iterator": "cpp",
+        "__config": "cpp"
     }
 }

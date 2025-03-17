@@ -3,6 +3,6 @@ mkdir build
 cd build
 cmake -S .. -B . \
 -DCMAKE_TOOLCHAIN_FILE=external/vcpkg/scripts/buildsystems/vcpkg.cmake \
--DCMAKE_BUILD_TYPE=Release \
--DCMAKE_CXX_FLAGS_RELEASE="-O3 -march=native -flto -DNDEBUG"
-cmake --build . --config Release
+-DCMAKE_BUILD_TYPE=RelWithDebInfo \
+-DCMAKE_CXX_FLAGS_RELWITHDEBINFO="-O3 -march=native -flto -DNDEBUG"
+cmake --build . --config RelWithDebInfo

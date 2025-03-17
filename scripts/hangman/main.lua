@@ -1,7 +1,16 @@
+-- Load Modules
 local lobby = require("lobby")
-function echo(peerID, message)
-    return message
-end
+local api = require("api")
+
+-- Callable Function
+start_game = api.start_game
+set_word = api.set_word
+guess_letter = api.guess_letter
+skip = api.skip
+
+-- Private Function
+_on_timer_restart_game = api.on_timer_restart_game
+_on_timer_word_timeout = api.on_timer_word_timeout
 
 -- Callback functions
 local callbacks = require("callbacks")

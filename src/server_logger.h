@@ -15,7 +15,7 @@ class ServerLogger {
     const int MAX_RETRIES = 3;
 
     const size_t MAX_LOG_SIZE = 10 * 1024 * 1024; // 10MB size limit (adjustable)
-    const size_t BUFFER_LIMIT = 4096; // 4KB buffer limit before flushing
+    const size_t BUFFER_LIMIT = 0; // 4KB buffer limit before flushing
 
     std::ostringstream buffer;
 

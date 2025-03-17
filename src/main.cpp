@@ -22,9 +22,10 @@ int main(int argc, char* argv[]) {
 
     int port = config_reader.GetUnsigned("webserverserver", "port", 9001);
     std::cout<< "Starting webserver on " << port << std::endl;
+    
     moodycamel::BlockingReaderWriterQueue<WebSocketMessage> message_queue(100);
     if (config_reader.GetBoolean("ssl", "enabled", false)) {
-        WebSocketServer<false> webserver(verbose, message_queue);
+        WebSocketServer<false> webserver(verbose, config_reader.GetString("webserverserver", "log_folder", "logs"), message_queue);
         uWS::App app = uWS::App()
             .ws<PerSocketData>("/connect", {
                 /* Settings */
@@ -65,13 +66,13 @@ int main(int argc, char* argv[]) {
                 }
             });
         std::thread GameThread_thread = std::thread([&]() {
-            GameThread GameThread(verbose, config_reader.Get("game", "scripts_folder", ""), message_queue, app.getLoop(), nullptr, &webserver);
+            GameThread GameThread(verbose, config_reader.GetString("game", "log_folder", "logs"), config_reader.Get("game", "scripts_folder", ""), message_queue, app.getLoop(), nullptr, &webserver);
             GameThread.run();
         });
         app.run();
         GameThread_thread.join();
     } else {
-        WebSocketServer<true> webserver(verbose, message_queue);
+        WebSocketServer<true> webserver(verbose, config_reader.GetString("webserverserver", "log_folder", "logs"), message_queue);
         uWS::SSLApp app = uWS::SSLApp(uWS::SocketContextOptions {
                 .key_file_name = config_reader.Get("ssl", "key_filename", "").c_str(),
                 .cert_file_name = config_reader.Get("ssl", "cert_filename", "").c_str(),
@@ -115,7 +116,7 @@ int main(int argc, char* argv[]) {
                 }
             });
         std::thread GameThread_thread = std::thread([&]() {
-            GameThread GameThread(verbose, config_reader.Get("game", "scripts_folder", ""), message_queue, app.getLoop(), &webserver, nullptr);
+            GameThread GameThread(verbose, config_reader.GetString("game", "log_folder", "logs"), config_reader.Get("game", "scripts_folder", ""), message_queue, app.getLoop(), &webserver, nullptr);
             GameThread.run();
         });
         app.run();

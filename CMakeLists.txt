@@ -28,7 +28,13 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(readerwriterqueue)
 
-find_package(Simdjson CONFIG REQUIRED)
+FetchContent_Declare(
+  yyjson
+  GIT_REPOSITORY https://github.com/ibireme/yyjson.git
+  GIT_TAG master  # or specific commit/tag
+  GIT_SHALLOW TRUE
+)
+FetchContent_MakeAvailable(yyjson)
 
 find_package(unofficial-inih CONFIG REQUIRED)
 
@@ -44,8 +50,20 @@ include_directories(${LUAJIT_INCLUDE_DIR})
 
 # Angelscript
 
-add_subdirectory ("external/angelscript/sdk/angelscript/projects/cmake")
+add_subdirectory(external/angelscript/sdk/angelscript/projects/cmake)
+file(GLOB SCRIPTSTDSTRING_SOURCES external/angelscript/sdk/add_on/scriptstdstring/*.cpp)
+file(GLOB SCRIPTARRAY_SOURCES external/angelscript/sdk/add_on/scriptarray/*.cpp)
+file(GLOB SCRIPTDICTIONARY_SOURCES external/angelscript/sdk/add_on/scriptdictionary/*.cpp)
 
 add_executable(lobby_server ${SOURCES})
-target_link_libraries(lobby_server PRIVATE Boost::uuid Boost::lockfree uWebSockets simdjson::simdjson angelscript readerwriterqueue unofficial::inih::inireader ${LUAJIT_LIBRARIES})
-target_include_directories(lobby_server PUBLIC "external/angelscript/sdk/angelscript/include")
+target_link_libraries(lobby_server PRIVATE Boost::uuid Boost::lockfree uWebSockets angelscript readerwriterqueue unofficial::inih::inireader yyjson ${LUAJIT_LIBRARIES})
+target_include_directories(lobby_server PRIVATE
+  "external/angelscript/sdk/angelscript/include"
+  "external/angelscript/sdk/add_on"
+  )
+
+target_sources(lobby_server PRIVATE 
+    ${SCRIPTSTDSTRING_SOURCES}
+    ${SCRIPTARRAY_SOURCES}
+    ${SCRIPTDICTIONARY_SOURCES}
+)

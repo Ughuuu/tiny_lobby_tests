@@ -3,11 +3,11 @@ const fs = require('fs');
 const path = require('path');
 
 // Configuration
-const serverUrl = 'ws://localhost:9001/connect'; // Your WebSocket server URL
-const numClients = 5000;  // Number of WebSocket clients to simulate
-const messagesPerClient = 0; // Number of messages each client will send. Set to 0 for infinite
-const messageInterval = 1;  // Interval in milliseconds between messages
-const max_time = 10000; // 10 s
+const serverUrl = 'ws://localhost:8080/connect'; // Your WebSocket server URL
+const numClients = 1;  // Number of WebSocket clients to simulate
+const messagesPerClient = 200; // Number of messages each client will send. Set to 0 for infinite
+const messageInterval = 50;  // Interval in milliseconds between messages
+const max_time = 15000; // 15 s
 let clientCount = 0;
 let clientErrors = 0;
 let messagesSent = 0;
@@ -21,13 +21,13 @@ fs.writeFileSync(csvFilePath, 'timestamp,client_count,client_errors,messages_sen
 
 // Function to start a WebSocket client
 function startClient(clientId) {
-    const ws = new WebSocket(serverUrl, ['blazium', 'echo']);
-
+    const ws = new WebSocket(serverUrl, ['blazium', 'tictactoe']);
     ws.on('open', () => {
         clientCount++;
 
         ws.send(JSON.stringify({
-            "command": "quick_join"
+            "command": "create_lobby",
+            "data": { "max_players": 2 }
         }));
 
         let messageCount = 0;
@@ -36,7 +36,7 @@ function startClient(clientId) {
             const message = `Client ${clientId} - Message ${messageCount + 1}`;
             ws.send(JSON.stringify({
                 "command": "lobby_call",
-                "data": { "count": messageCount }
+                "data": { "function": "start_game", "inputs": ["abc"], "id": "123" }
             }));
 
             messagesSent++;
@@ -46,16 +46,18 @@ function startClient(clientId) {
             // Stop sending after the specified number of messages
             if (messageCount >= messagesPerClient && messagesPerClient !== 0) {
                 clearInterval(messageIntervalId);
-                ws.close();
+                //ws.close();
             }
         }, messageInterval);
     });
 
     ws.on('message', (message) => {
         messagesReceived++;
+        console.log(JSON.parse(message.toString()))
     });
 
-    ws.on('close', () => {
+    ws.on('close', (code, reason) => {
+        console.log(code, " ", reason)
         clientCount--;
     });
 

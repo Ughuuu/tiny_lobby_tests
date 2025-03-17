@@ -8,7 +8,6 @@ cd external/vcpkg
 ./bootstrap-vcpkg.sh
 ./vcpkg integrate install
 ./vcpkg install boost-uuid
-./vcpkg install simdjson
 ./vcpkg install readerwriterqueue
 ./vcpkg install inih
 cd ../..

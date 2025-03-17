@@ -1,0 +1,1321 @@
+2025-03-17 20:07:09: [GameThread] on_error  04e37fe0 Unkown command list_lobby
+2025-03-17 20:07:09: [GameThread] on_error  720ffb7e Unkown command list_lobby
+: [GameThread] on_start
+: [GameThread] on_load_games
+: [GameThread] on_load_game echo
+: [GameThread] on_load_game hangman
+: [GameThread] on_load_game tictactoe
+: [GameThread] on_start_thread
+2025-03-17 20:10:26: [GameThread] on_connect f1d65429 echo
+2025-03-17 20:10:26: [GameThread] on_create_lobby  f1d65429
+2025-03-17 20:10:26: [GameThread] on_create_lobby  f1d65429
+2025-03-17 20:10:26: [GameThread] on_close f1d65429
+2025-03-17 20:11:00: [GameThread] on_connect ab36bb88 echo
+2025-03-17 20:11:00: [GameThread] on_create_lobby  ab36bb88
+2025-03-17 20:11:00: [GameThread] on_connect 6422fd67 echo
+2025-03-17 20:11:00: [GameThread] on_join_lobby  6422fd67
+2025-03-17 20:11:00: [GameThread] on_close 6422fd67
+2025-03-17 20:11:00: [GameThread] on_close ab36bb88
+2025-03-17 20:11:23: [GameThread] on_connect c39625c8 echo
+2025-03-17 20:11:23: [GameThread] on_create_lobby  c39625c8
+2025-03-17 20:11:23: [GameThread] on_close c39625c8
+2025-03-17 20:11:23: [GameThread] on_connect c77f9dc0 echo
+2025-03-17 20:11:23: [GameThread] on_create_lobby  c77f9dc0
+2025-03-17 20:11:23: [GameThread] on_create_lobby  c77f9dc0
+2025-03-17 20:11:23: [GameThread] on_close c77f9dc0
+2025-03-17 20:11:23: [GameThread] on_connect 2c200cbe echo
+2025-03-17 20:11:23: [GameThread] on_create_lobby  2c200cbe
+2025-03-17 20:11:23: [GameThread] on_connect 1c2e5c5c echo
+2025-03-17 20:11:23: [GameThread] on_join_lobby  1c2e5c5c
+2025-03-17 20:11:23: [GameThread] on_close 1c2e5c5c
+2025-03-17 20:11:23: [GameThread] on_close 2c200cbe
+2025-03-17 20:11:25: [GameThread] on_connect c82aa068 echo
+2025-03-17 20:11:25: [GameThread] on_create_lobby  c82aa068
+2025-03-17 20:11:25: [GameThread] on_close c82aa068
+2025-03-17 20:11:25: [GameThread] on_connect 66b0f638 echo
+2025-03-17 20:11:25: [GameThread] on_create_lobby  66b0f638
+2025-03-17 20:11:25: [GameThread] on_create_lobby  66b0f638
+2025-03-17 20:11:25: [GameThread] on_close 66b0f638
+2025-03-17 20:11:25: [GameThread] on_connect 85119cf3 echo
+2025-03-17 20:11:25: [GameThread] on_create_lobby  85119cf3
+2025-03-17 20:11:25: [GameThread] on_connect 98eb978d echo
+2025-03-17 20:11:25: [GameThread] on_join_lobby  98eb978d
+2025-03-17 20:11:25: [GameThread] on_close 98eb978d
+2025-03-17 20:11:25: [GameThread] on_close 85119cf3
+2025-03-17 20:11:26: [GameThread] on_connect e32fbc44 echo
+2025-03-17 20:11:26: [GameThread] on_create_lobby  e32fbc44
+2025-03-17 20:11:26: [GameThread] on_close e32fbc44
+2025-03-17 20:11:26: [GameThread] on_connect 189b6c3a echo
+2025-03-17 20:11:26: [GameThread] on_create_lobby  189b6c3a
+2025-03-17 20:11:26: [GameThread] on_create_lobby  189b6c3a
+2025-03-17 20:11:26: [GameThread] on_close 189b6c3a
+2025-03-17 20:11:26: [GameThread] on_connect 08c898ce echo
+2025-03-17 20:11:26: [GameThread] on_create_lobby  08c898ce
+2025-03-17 20:11:26: [GameThread] on_connect f7d6de8b echo
+2025-03-17 20:11:26: [GameThread] on_join_lobby  f7d6de8b
+2025-03-17 20:11:26: [GameThread] on_close f7d6de8b
+2025-03-17 20:11:26: [GameThread] on_close 08c898ce
+2025-03-17 20:11:27: [GameThread] on_connect b03450ae echo
+2025-03-17 20:11:27: [GameThread] on_create_lobby  b03450ae
+2025-03-17 20:11:27: [GameThread] on_close b03450ae
+2025-03-17 20:11:27: [GameThread] on_connect e742f130 echo
+2025-03-17 20:11:27: [GameThread] on_create_lobby  e742f130
+2025-03-17 20:11:27: [GameThread] on_create_lobby  e742f130
+2025-03-17 20:11:27: [GameThread] on_close e742f130
+2025-03-17 20:11:27: [GameThread] on_connect 3234f115 echo
+2025-03-17 20:11:27: [GameThread] on_create_lobby  3234f115
+2025-03-17 20:11:27: [GameThread] on_connect f0803baa echo
+2025-03-17 20:11:27: [GameThread] on_join_lobby  f0803baa
+2025-03-17 20:11:27: [GameThread] on_close f0803baa
+2025-03-17 20:11:27: [GameThread] on_close 3234f115
+2025-03-17 20:11:27: [GameThread] on_connect 84500140 echo
+2025-03-17 20:11:27: [GameThread] on_create_lobby  84500140
+2025-03-17 20:11:27: [GameThread] on_close 84500140
+2025-03-17 20:11:27: [GameThread] on_connect 8a281383 echo
+2025-03-17 20:11:27: [GameThread] on_create_lobby  8a281383
+2025-03-17 20:11:27: [GameThread] on_create_lobby  8a281383
+2025-03-17 20:11:27: [GameThread] on_close 8a281383
+2025-03-17 20:11:27: [GameThread] on_connect 4872ae3b echo
+2025-03-17 20:11:27: [GameThread] on_create_lobby  4872ae3b
+2025-03-17 20:11:27: [GameThread] on_connect 1e4e06bf echo
+2025-03-17 20:11:27: [GameThread] on_join_lobby  1e4e06bf
+2025-03-17 20:11:27: [GameThread] on_close 1e4e06bf
+2025-03-17 20:11:27: [GameThread] on_close 4872ae3b
+2025-03-17 20:11:27: [GameThread] on_connect bc577463 echo
+2025-03-17 20:11:27: [GameThread] on_create_lobby  bc577463
+2025-03-17 20:11:27: [GameThread] on_close bc577463
+2025-03-17 20:11:27: [GameThread] on_connect 9fe5bb1f echo
+2025-03-17 20:11:27: [GameThread] on_create_lobby  9fe5bb1f
+2025-03-17 20:11:27: [GameThread] on_create_lobby  9fe5bb1f
+2025-03-17 20:11:27: [GameThread] on_close 9fe5bb1f
+2025-03-17 20:11:27: [GameThread] on_connect 5005d15b echo
+2025-03-17 20:11:27: [GameThread] on_create_lobby  5005d15b
+2025-03-17 20:11:27: [GameThread] on_connect 738c1b51 echo
+2025-03-17 20:11:27: [GameThread] on_join_lobby  738c1b51
+2025-03-17 20:11:27: [GameThread] on_close 738c1b51
+2025-03-17 20:11:27: [GameThread] on_close 5005d15b
+2025-03-17 20:11:28: [GameThread] on_connect b687d63f echo
+2025-03-17 20:11:28: [GameThread] on_create_lobby  b687d63f
+2025-03-17 20:11:28: [GameThread] on_close b687d63f
+2025-03-17 20:11:28: [GameThread] on_connect 57cde7ef echo
+2025-03-17 20:11:28: [GameThread] on_create_lobby  57cde7ef
+2025-03-17 20:11:28: [GameThread] on_create_lobby  57cde7ef
+2025-03-17 20:11:28: [GameThread] on_close 57cde7ef
+2025-03-17 20:11:28: [GameThread] on_connect 657788d5 echo
+2025-03-17 20:11:28: [GameThread] on_create_lobby  657788d5
+2025-03-17 20:11:28: [GameThread] on_connect 0cbce592 echo
+2025-03-17 20:11:28: [GameThread] on_join_lobby  0cbce592
+2025-03-17 20:11:28: [GameThread] on_close 0cbce592
+2025-03-17 20:11:28: [GameThread] on_close 657788d5
+2025-03-17 20:11:28: [GameThread] on_connect a2253ea0 echo
+2025-03-17 20:11:28: [GameThread] on_create_lobby  a2253ea0
+2025-03-17 20:11:28: [GameThread] on_close a2253ea0
+2025-03-17 20:11:28: [GameThread] on_connect 95d0cbdb echo
+2025-03-17 20:11:28: [GameThread] on_create_lobby  95d0cbdb
+2025-03-17 20:11:28: [GameThread] on_create_lobby  95d0cbdb
+2025-03-17 20:11:28: [GameThread] on_close 95d0cbdb
+2025-03-17 20:11:28: [GameThread] on_connect e6d2affa echo
+2025-03-17 20:11:28: [GameThread] on_create_lobby  e6d2affa
+2025-03-17 20:11:28: [GameThread] on_connect 14dace09 echo
+2025-03-17 20:11:28: [GameThread] on_join_lobby  14dace09
+2025-03-17 20:11:28: [GameThread] on_close 14dace09
+2025-03-17 20:11:28: [GameThread] on_close e6d2affa
+2025-03-17 20:11:28: [GameThread] on_connect accca534 echo
+2025-03-17 20:11:28: [GameThread] on_create_lobby  accca534
+2025-03-17 20:11:28: [GameThread] on_close accca534
+2025-03-17 20:11:28: [GameThread] on_connect ca5447cb echo
+2025-03-17 20:11:28: [GameThread] on_create_lobby  ca5447cb
+2025-03-17 20:11:28: [GameThread] on_create_lobby  ca5447cb
+2025-03-17 20:11:28: [GameThread] on_close ca5447cb
+2025-03-17 20:11:28: [GameThread] on_connect 2be6b985 echo
+2025-03-17 20:11:28: [GameThread] on_create_lobby  2be6b985
+2025-03-17 20:11:28: [GameThread] on_connect 7b39df3b echo
+2025-03-17 20:11:28: [GameThread] on_join_lobby  7b39df3b
+2025-03-17 20:11:28: [GameThread] on_close 7b39df3b
+2025-03-17 20:11:28: [GameThread] on_close 2be6b985
+2025-03-17 20:11:28: [GameThread] on_connect 2994f972 echo
+2025-03-17 20:11:28: [GameThread] on_create_lobby  2994f972
+2025-03-17 20:11:28: [GameThread] on_close 2994f972
+2025-03-17 20:11:28: [GameThread] on_connect e4513dbd echo
+2025-03-17 20:11:28: [GameThread] on_create_lobby  e4513dbd
+2025-03-17 20:11:28: [GameThread] on_create_lobby  e4513dbd
+2025-03-17 20:11:28: [GameThread] on_close e4513dbd
+2025-03-17 20:11:28: [GameThread] on_connect b6d5b92d echo
+2025-03-17 20:11:28: [GameThread] on_create_lobby  b6d5b92d
+2025-03-17 20:11:28: [GameThread] on_connect 20f50067 echo
+2025-03-17 20:11:28: [GameThread] on_join_lobby  20f50067
+2025-03-17 20:11:28: [GameThread] on_close 20f50067
+2025-03-17 20:11:28: [GameThread] on_close b6d5b92d
+2025-03-17 20:11:28: [GameThread] on_connect 5f8eface echo
+2025-03-17 20:11:28: [GameThread] on_create_lobby  5f8eface
+2025-03-17 20:11:28: [GameThread] on_close 5f8eface
+2025-03-17 20:11:28: [GameThread] on_connect 2fc729e4 echo
+2025-03-17 20:11:28: [GameThread] on_create_lobby  2fc729e4
+2025-03-17 20:11:28: [GameThread] on_create_lobby  2fc729e4
+2025-03-17 20:11:28: [GameThread] on_close 2fc729e4
+2025-03-17 20:11:29: [GameThread] on_connect b9ccc2be echo
+2025-03-17 20:11:29: [GameThread] on_create_lobby  b9ccc2be
+2025-03-17 20:11:29: [GameThread] on_connect 2a81c460 echo
+2025-03-17 20:11:29: [GameThread] on_join_lobby  2a81c460
+2025-03-17 20:11:29: [GameThread] on_close 2a81c460
+2025-03-17 20:11:29: [GameThread] on_close b9ccc2be
+2025-03-17 20:11:33: [GameThread] on_connect 1da1e303 echo
+2025-03-17 20:11:33: [GameThread] on_create_lobby  1da1e303
+2025-03-17 20:11:33: [GameThread] on_connect cfafd10a echo
+2025-03-17 20:11:33: [GameThread] on_join_lobby  cfafd10a
+2025-03-17 20:11:33: [GameThread] on_close cfafd10a
+2025-03-17 20:11:33: [GameThread] on_close 1da1e303
+2025-03-17 20:12:04: [GameThread] on_connect d12edd9e echo
+2025-03-17 20:12:04: [GameThread] on_create_lobby  d12edd9e
+2025-03-17 20:12:04: [GameThread] on_connect afc74104 echo
+2025-03-17 20:12:04: [GameThread] on_join_lobby  afc74104
+2025-03-17 20:12:04: [GameThread] on_close afc74104
+2025-03-17 20:12:04: [GameThread] on_close d12edd9e
+2025-03-17 20:13:19: [GameThread] on_connect 7084cf0a echo
+2025-03-17 20:13:19: [GameThread] on_create_lobby  7084cf0a
+2025-03-17 20:13:19: [GameThread] on_connect fa7edd7e echo
+2025-03-17 20:13:19: [GameThread] on_join_lobby  fa7edd7e
+2025-03-17 20:13:19: [GameThread] on_close fa7edd7e
+2025-03-17 20:13:19: [GameThread] on_close 7084cf0a
+2025-03-17 20:13:26: [GameThread] on_connect 08ff63b8 echo
+2025-03-17 20:13:26: [GameThread] on_create_lobby  08ff63b8
+2025-03-17 20:13:26: [GameThread] on_connect 7888b7b6 echo
+2025-03-17 20:13:28: [GameThread] on_join_lobby  7888b7b6
+: [GameThread] on_start
+: [GameThread] on_load_games
+: [GameThread] on_load_game echo
+: [GameThread] on_load_game hangman
+: [GameThread] on_load_game tictactoe
+: [GameThread] on_start_thread
+2025-03-17 20:14:46: [GameThread] on_connect f0a965a6 echo
+2025-03-17 20:14:46: [GameThread] on_create_lobby  f0a965a6
+2025-03-17 20:14:46: [GameThread] on_connect 36a850e1 echo
+2025-03-17 20:14:46: [GameThread] on_join_lobby  36a850e1
+2025-03-17 20:15:06: [GameThread] on_connect ffdcaf24 echo
+2025-03-17 20:15:06: [GameThread] on_create_lobby  ffdcaf24
+2025-03-17 20:15:06: [GameThread] on_connect 8843b8cf echo
+2025-03-17 20:15:06: [GameThread] on_join_lobby  8843b8cf
+2025-03-17 20:15:06: [GameThread] on_close 8843b8cf
+2025-03-17 20:15:06: [GameThread] on_close ffdcaf24
+2025-03-17 20:15:11: [GameThread] on_connect 10bba5df echo
+2025-03-17 20:15:11: [GameThread] on_create_lobby  10bba5df
+2025-03-17 20:15:11: [GameThread] on_connect 00f92fe1 echo
+2025-03-17 20:15:11: [GameThread] on_join_lobby  00f92fe1
+2025-03-17 20:15:11: [GameThread] on_close 00f92fe1
+2025-03-17 20:15:11: [GameThread] on_close 10bba5df
+2025-03-17 20:15:16: [GameThread] on_close 36a850e1
+2025-03-17 20:15:16: [GameThread] on_close f0a965a6
+2025-03-17 20:15:23: [GameThread] on_connect 44b737e6 echo
+2025-03-17 20:15:45: [GameThread] on_create_lobby  44b737e6
+2025-03-17 20:15:51: [GameThread] on_connect d6034057 echo
+2025-03-17 20:15:57: [GameThread] on_join_lobby  d6034057
+2025-03-17 20:16:44: [GameThread] on_close d6034057
+2025-03-17 20:16:44: [GameThread] on_close 44b737e6
+2025-03-17 20:17:30: [GameThread] on_connect a240952e echo
+2025-03-17 20:17:30: [GameThread] on_create_lobby  a240952e
+2025-03-17 20:17:30: [GameThread] on_connect 04b4e37e echo
+2025-03-17 20:17:30: [GameThread] on_join_lobby  04b4e37e
+: [GameThread] on_start
+: [GameThread] on_load_games
+: [GameThread] on_load_game echo
+: [GameThread] on_load_game hangman
+: [GameThread] on_load_game tictactoe
+: [GameThread] on_start_thread
+2025-03-17 20:19:22: [GameThread] on_connect fa2a1662 echo
+2025-03-17 20:19:22: [GameThread] on_create_lobby  fa2a1662
+2025-03-17 20:19:22: [GameThread] on_connect 005fc2c2 echo
+2025-03-17 20:19:22: [GameThread] on_join_lobby  005fc2c2
+2025-03-17 20:19:36: [GameThread] on_connect 6026a32f echo
+2025-03-17 20:19:36: [GameThread] on_create_lobby  6026a32f
+2025-03-17 20:19:36: [GameThread] on_connect ca0092bd echo
+2025-03-17 20:19:41: [GameThread] on_join_lobby  ca0092bd
+2025-03-17 20:19:52: [GameThread] on_close 005fc2c2
+2025-03-17 20:19:52: [GameThread] on_close fa2a1662
+2025-03-17 20:20:04: [GameThread] on_close ca0092bd
+2025-03-17 20:20:04: [GameThread] on_close 6026a32f
+2025-03-17 20:20:10: [GameThread] on_connect 45caf9b2 echo
+2025-03-17 20:20:10: [GameThread] on_create_lobby  45caf9b2
+2025-03-17 20:20:10: [GameThread] on_connect e36060f8 echo
+2025-03-17 20:20:15: [GameThread] on_join_lobby  e36060f8
+2025-03-17 20:20:33: [GameThread] on_close e36060f8
+2025-03-17 20:20:33: [GameThread] on_close 45caf9b2
+: [GameThread] on_start
+: [GameThread] on_load_games
+: [GameThread] on_load_game echo
+: [GameThread] on_load_game hangman
+: [GameThread] on_load_game tictactoe
+: [GameThread] on_start_thread
+2025-03-17 20:23:52: [GameThread] on_connect b7219213 echo
+2025-03-17 20:23:52: [GameThread] on_create_lobby  b7219213
+2025-03-17 20:23:52: [GameThread] on_close b7219213
+2025-03-17 20:23:59: [GameThread] on_connect d834daaf echo
+2025-03-17 20:23:59: [GameThread] on_create_lobby  d834daaf
+2025-03-17 20:23:59: [GameThread] on_close d834daaf
+: [GameThread] on_start
+: [GameThread] on_load_games
+: [GameThread] on_load_game echo
+: [GameThread] on_load_game hangman
+: [GameThread] on_load_game tictactoe
+: [GameThread] on_start_thread
+: [GameThread] on_start
+: [GameThread] on_load_games
+: [GameThread] on_load_game echo
+: [GameThread] on_load_game hangman
+: [GameThread] on_load_game tictactoe
+: [GameThread] on_start_thread
+: [GameThread] on_start
+: [GameThread] on_load_games
+: [GameThread] on_load_game echo
+: [GameThread] on_load_game hangman
+: [GameThread] on_load_game tictactoe
+: [GameThread] on_start_thread
+2025-03-17 20:25:47: [GameThread] on_connect 3606fbe6 echo
+2025-03-17 20:25:47: [GameThread] on_create_lobby  3606fbe6
+2025-03-17 20:25:47: [GameThread] on_connect 5c02edca echo
+2025-03-17 20:25:47: [GameThread] on_join_lobby  5c02edca
+2025-03-17 20:25:57: [GameThread] on_connect 010c585d echo
+2025-03-17 20:25:57: [GameThread] on_create_lobby  010c585d
+2025-03-17 20:25:57: [GameThread] on_connect 0ad3cda6 echo
+2025-03-17 20:26:09: [GameThread] on_close 0ad3cda6
+2025-03-17 20:26:09: [GameThread] on_close 010c585d
+2025-03-17 20:26:14: [GameThread] on_connect f5aa8cca echo
+2025-03-17 20:26:14: [GameThread] on_create_lobby  f5aa8cca
+2025-03-17 20:26:14: [GameThread] on_connect e7cdf8a9 echo
+2025-03-17 20:26:17: [GameThread] on_close 5c02edca
+2025-03-17 20:26:17: [GameThread] on_close 3606fbe6
+2025-03-17 20:26:18: [GameThread] on_join_lobby  e7cdf8a9
+2025-03-17 20:26:53: [GameThread] on_close e7cdf8a9
+2025-03-17 20:26:53: [GameThread] on_close f5aa8cca
+: [GameThread] on_start
+: [GameThread] on_load_games
+: [GameThread] on_load_game echo
+: [GameThread] on_load_game hangman
+: [GameThread] on_load_game tictactoe
+: [GameThread] on_start_thread
+2025-03-17 20:28:26: [GameThread] on_connect 935d5b3b echo
+2025-03-17 20:28:26: [GameThread] on_create_lobby  935d5b3b
+2025-03-17 20:28:31: [GameThread] on_connect 552ec294 echo
+2025-03-17 20:28:31: [GameThread] on_join_lobby  552ec294
+2025-03-17 20:29:01: [GameThread] on_close 552ec294
+2025-03-17 20:29:01: [GameThread] on_close 935d5b3b
+2025-03-17 20:29:17: [GameThread] on_connect bced6d66 echo
+2025-03-17 20:29:17: [GameThread] on_create_lobby  bced6d66
+2025-03-17 20:30:20: [GameThread] on_close bced6d66
+2025-03-17 20:30:27: [GameThread] on_connect e1228c21 echo
+2025-03-17 20:30:27: [GameThread] on_create_lobby  e1228c21
+2025-03-17 20:30:39: [GameThread] on_connect 2374a163 echo
+2025-03-17 20:30:39: [GameThread] on_join_lobby  2374a163
+: [GameThread] on_start
+: [GameThread] on_load_games
+: [GameThread] on_load_game echo
+: [GameThread] on_load_game hangman
+: [GameThread] on_load_game tictactoe
+: [GameThread] on_start_thread
+2025-03-17 20:31:44: [GameThread] on_connect 98d74b22 echo
+2025-03-17 20:31:44: [GameThread] on_create_lobby  98d74b22
+2025-03-17 20:31:52: [GameThread] on_connect 41574c85 echo
+2025-03-17 20:31:52: [GameThread] on_join_lobby  41574c85
+2025-03-17 20:31:52: [GameThread] on_close 41574c85
+2025-03-17 20:31:52: [GameThread] on_close 98d74b22
+2025-03-17 20:32:01: [GameThread] on_connect b39591c7 echo
+2025-03-17 20:32:01: [GameThread] on_create_lobby  b39591c7
+2025-03-17 20:32:02: [GameThread] on_connect 3266db26 echo
+2025-03-17 20:32:02: [GameThread] on_join_lobby  3266db26
+2025-03-17 20:32:02: [GameThread] on_close 3266db26
+2025-03-17 20:32:02: [GameThread] on_close b39591c7
+2025-03-17 20:32:10: [GameThread] on_connect e796704c echo
+2025-03-17 20:32:10: [GameThread] on_create_lobby  e796704c
+2025-03-17 20:32:10: [GameThread] on_connect 808ce1ea echo
+2025-03-17 20:32:10: [GameThread] on_join_lobby  808ce1ea
+2025-03-17 20:32:10: [GameThread] on_close 808ce1ea
+2025-03-17 20:32:10: [GameThread] on_close e796704c
+2025-03-17 20:32:17: [GameThread] on_connect c1630a35 echo
+2025-03-17 20:32:17: [GameThread] on_create_lobby  c1630a35
+2025-03-17 20:32:17: [GameThread] on_connect d501d6cb echo
+2025-03-17 20:32:22: [GameThread] on_join_lobby  d501d6cb
+2025-03-17 20:32:27: [GameThread] on_close d501d6cb
+2025-03-17 20:32:27: [GameThread] on_close c1630a35
+2025-03-17 20:32:56: [GameThread] on_connect fb965ad8 echo
+2025-03-17 20:32:56: [GameThread] on_create_lobby  fb965ad8
+2025-03-17 20:32:56: [GameThread] on_connect 3fb6bebf echo
+2025-03-17 20:32:59: [GameThread] on_join_lobby  3fb6bebf
+2025-03-17 20:33:15: [GameThread] on_close 3fb6bebf
+2025-03-17 20:33:15: [GameThread] on_close fb965ad8
+: [GameThread] on_start
+: [GameThread] on_load_games
+: [GameThread] on_load_game echo
+: [GameThread] on_load_game hangman
+: [GameThread] on_load_game tictactoe
+: [GameThread] on_start_thread
+2025-03-17 20:33:32: [GameThread] on_connect 75de6fcd echo
+2025-03-17 20:33:32: [GameThread] on_create_lobby  75de6fcd
+2025-03-17 20:33:32: [GameThread] on_connect 7dd6569f echo
+2025-03-17 20:33:32: [GameThread] on_join_lobby  7dd6569f
+2025-03-17 20:33:32: [GameThread] on_close 7dd6569f
+2025-03-17 20:33:32: [GameThread] on_close 75de6fcd
+2025-03-17 20:33:34: [GameThread] on_connect 4e24e6c7 echo
+2025-03-17 20:33:34: [GameThread] on_create_lobby  4e24e6c7
+2025-03-17 20:33:34: [GameThread] on_connect 65aa9616 echo
+2025-03-17 20:33:34: [GameThread] on_close 4e24e6c7
+2025-03-17 20:33:34: [GameThread] on_close 65aa9616
+2025-03-17 20:33:41: [GameThread] on_connect 6902c77d echo
+2025-03-17 20:33:41: [GameThread] on_create_lobby  6902c77d
+2025-03-17 20:33:41: [GameThread] on_connect 66b6cf90 echo
+2025-03-17 20:33:41: [GameThread] on_close 6902c77d
+2025-03-17 20:33:41: [GameThread] on_close 66b6cf90
+2025-03-17 20:33:47: [GameThread] on_connect 3dc2020c echo
+2025-03-17 20:33:47: [GameThread] on_create_lobby  3dc2020c
+2025-03-17 20:33:47: [GameThread] on_connect 47b37ddd echo
+2025-03-17 20:33:47: [GameThread] on_close 3dc2020c
+2025-03-17 20:33:49: [GameThread] on_close 47b37ddd
+2025-03-17 20:33:58: [GameThread] on_connect 8be7fc9c echo
+2025-03-17 20:34:00: [GameThread] on_create_lobby  8be7fc9c
+2025-03-17 20:34:01: [GameThread] on_connect 97e7acc3 echo
+2025-03-17 20:34:10: [GameThread] on_close 97e7acc3
+2025-03-17 20:34:10: [GameThread] on_close 8be7fc9c
+2025-03-17 20:34:19: [GameThread] on_connect 4b54f672 echo
+2025-03-17 20:34:23: [GameThread] on_create_lobby  4b54f672
+2025-03-17 20:34:34: [GameThread] on_connect d316169f echo
+2025-03-17 20:34:34: [GameThread] on_close 4b54f672
+2025-03-17 20:34:36: [GameThread] on_close d316169f
+2025-03-17 20:34:46: [GameThread] on_connect e762b8df echo
+2025-03-17 20:34:51: [GameThread] on_create_lobby  e762b8df
+2025-03-17 20:34:54: [GameThread] on_connect 905f6db4 echo
+2025-03-17 20:35:23: [GameThread] on_close 905f6db4
+2025-03-17 20:35:23: [GameThread] on_close e762b8df
+: [GameThread] on_start
+: [GameThread] on_load_games
+: [GameThread] on_load_game echo
+: [GameThread] on_load_game hangman
+: [GameThread] on_load_game tictactoe
+: [GameThread] on_start_thread
+2025-03-17 20:35:58: [GameThread] on_connect 50399f57 echo
+2025-03-17 20:35:58: [GameThread] on_create_lobby  50399f57
+2025-03-17 20:35:58: [GameThread] on_connect 4b5a5024 echo
+2025-03-17 20:35:58: [GameThread] on_join_lobby  4b5a5024
+2025-03-17 20:35:58: [GameThread] on_close 4b5a5024
+2025-03-17 20:36:16: [GameThread] on_connect b5a9fe1d echo
+2025-03-17 20:36:16: [GameThread] on_create_lobby  b5a9fe1d
+2025-03-17 20:36:21: [GameThread] on_connect d0b294f6 echo
+2025-03-17 20:36:28: [GameThread] on_close 50399f57
+2025-03-17 20:36:34: [GameThread] on_join_lobby  d0b294f6
+2025-03-17 20:37:02: [GameThread] on_close d0b294f6
+2025-03-17 20:37:09: [GameThread] on_close b5a9fe1d
+: [GameThread] on_start
+: [GameThread] on_load_games
+: [GameThread] on_load_game echo
+: [GameThread] on_load_game hangman
+: [GameThread] on_load_game tictactoe
+: [GameThread] on_start_thread
+2025-03-17 20:39:55: [GameThread] on_connect 0eb3615f echo
+2025-03-17 20:39:55: [GameThread] on_create_lobby  0eb3615f
+2025-03-17 20:39:55: [GameThread] on_connect 03a05a57 echo
+2025-03-17 20:39:55: [GameThread] on_join_lobby  03a05a57
+2025-03-17 20:39:55: [GameThread] on_close 03a05a57
+2025-03-17 20:39:55: [GameThread] on_connect  echo
+2025-03-17 20:39:55: [GameThread] on_join_lobby  
+2025-03-17 20:39:55: [GameThread] on_close 
+2025-03-17 20:39:55: [GameThread] on_close 0eb3615f
+2025-03-17 20:40:01: [GameThread] on_connect b1504c3a echo
+2025-03-17 20:40:01: [GameThread] on_create_lobby  b1504c3a
+2025-03-17 20:40:06: [GameThread] on_connect 16cedd97 echo
+2025-03-17 20:40:08: [GameThread] on_join_lobby  16cedd97
+2025-03-17 20:40:10: [GameThread] on_close 16cedd97
+2025-03-17 20:40:29: [GameThread] on_close 0bc43a06
+2025-03-17 20:40:29: [GameThread] on_close b1504c3a
+2025-03-17 20:40:34: [GameThread] on_connect 363e1141 echo
+2025-03-17 20:40:34: [GameThread] on_create_lobby  363e1141
+2025-03-17 20:40:34: [GameThread] on_connect da34f185 echo
+2025-03-17 20:40:34: [GameThread] on_connect 0bb5cb92 echo
+2025-03-17 20:40:34: [GameThread] on_create_lobby  0bb5cb92
+2025-03-17 20:40:34: [GameThread] on_connect 3ac905a2 echo
+2025-03-17 20:40:43: [GameThread] on_join_lobby  da34f185
+2025-03-17 20:40:43: [GameThread] on_close da34f185
+2025-03-17 20:40:47: [GameThread] on_connect c3d7b357 echo
+2025-03-17 20:40:47: [GameThread] on_create_lobby  c3d7b357
+2025-03-17 20:40:47: [GameThread] on_connect cf8dcfa6 echo
+2025-03-17 20:41:14: [GameThread] on_join_lobby  cf8dcfa6
+2025-03-17 20:41:16: [GameThread] on_close cf8dcfa6
+2025-03-17 20:41:35: [GameThread] on_join_lobby  3ac905a2
+2025-03-17 20:41:35: [GameThread] on_close 3ac905a2
+2025-03-17 20:41:38: [GameThread] on_close 5cca4244
+2025-03-17 20:41:38: [GameThread] on_close 0bb5cb92
+2025-03-17 20:41:39: [GameThread] on_close db1aa24d
+2025-03-17 20:41:39: [GameThread] on_close 363e1141
+2025-03-17 20:41:40: [GameThread] on_close 9d964c13
+2025-03-17 20:41:40: [GameThread] on_close c3d7b357
+2025-03-17 20:41:45: [GameThread] on_connect 5aac3b2e echo
+2025-03-17 20:41:45: [GameThread] on_create_lobby  5aac3b2e
+2025-03-17 20:41:45: [GameThread] on_connect a481ad08 echo
+2025-03-17 20:41:47: [GameThread] on_join_lobby  a481ad08
+2025-03-17 20:41:47: [GameThread] on_close a481ad08
+2025-03-17 20:41:53: [GameThread] on_close 58b73317
+2025-03-17 20:41:53: [GameThread] on_close 5aac3b2e
+2025-03-17 20:41:57: [GameThread] on_connect d62be841 echo
+2025-03-17 20:41:57: [GameThread] on_create_lobby  d62be841
+2025-03-17 20:41:57: [GameThread] on_connect ab731ddc echo
+2025-03-17 20:42:00: [GameThread] on_join_lobby  ab731ddc
+2025-03-17 20:42:00: [GameThread] on_close ab731ddc
+2025-03-17 20:42:05: [GameThread] on_close b3c82ee7
+2025-03-17 20:42:05: [GameThread] on_close d62be841
+2025-03-17 20:42:29: [GameThread] on_connect 3f450a5b echo
+2025-03-17 20:42:29: [GameThread] on_create_lobby  3f450a5b
+2025-03-17 20:42:57: [GameThread] on_connect a6343977 echo
+2025-03-17 20:43:37: [GameThread] on_join_lobby  a6343977
+2025-03-17 20:43:37: [GameThread] on_close a6343977
+2025-03-17 20:43:59: [GameThread] on_close 9fd18c9d
+2025-03-17 20:43:59: [GameThread] on_close 3f450a5b
+2025-03-17 20:44:10: [GameThread] on_connect bd392050 echo
+2025-03-17 20:44:10: [GameThread] on_create_lobby  bd392050
+2025-03-17 20:44:17: [GameThread] on_connect 6f48f808 echo
+2025-03-17 20:44:17: [GameThread] on_join_lobby  6f48f808
+2025-03-17 20:44:17: [GameThread] on_close 6f48f808
+: [GameThread] on_start
+: [GameThread] on_load_games
+: [GameThread] on_load_game echo
+: [GameThread] on_load_game hangman
+: [GameThread] on_load_game tictactoe
+: [GameThread] on_start_thread
+2025-03-17 20:45:44: [GameThread] on_connect c1ee83ce echo
+2025-03-17 20:45:44: [GameThread] on_create_lobby  c1ee83ce
+2025-03-17 20:45:52: [GameThread] on_connect ba222fd7 echo
+2025-03-17 20:45:52: [GameThread] on_join_lobby  ba222fd7
+2025-03-17 20:45:52: [GameThread] on_close ba222fd7
+: [GameThread] on_start
+: [GameThread] on_load_games
+: [GameThread] on_load_game echo
+: [GameThread] on_load_game hangman
+: [GameThread] on_load_game tictactoe
+: [GameThread] on_start_thread
+2025-03-17 21:17:59: [GameThread] on_connect 572af5cb echo
+2025-03-17 21:17:59: [GameThread] on_create_lobby  572af5cb
+2025-03-17 21:17:59: [GameThread] on_connect 3e17b4a7 echo
+2025-03-17 21:17:59: [GameThread] on_join_lobby  3e17b4a7
+2025-03-17 21:17:59: [GameThread] on_close 3e17b4a7
+: [GameThread] on_start
+: [GameThread] on_load_games
+: [GameThread] on_load_game echo
+: [GameThread] on_load_game hangman
+: [GameThread] on_load_game tictactoe
+: [GameThread] on_start_thread
+2025-03-17 21:20:06: [GameThread] on_connect b04838e8 echo
+2025-03-17 21:20:06: [GameThread] on_create_lobby  b04838e8
+2025-03-17 21:20:06: [GameThread] on_connect 47c5044a echo
+2025-03-17 21:20:06: [GameThread] on_join_lobby  47c5044a
+2025-03-17 21:20:06: [GameThread] on_close 47c5044a
+2025-03-17 21:21:10: [GameThread] on_connect  echo
+2025-03-17 21:21:10: [GameThread] on_close 
+2025-03-17 21:21:10: [GameThread] on_close b04838e8
+2025-03-17 21:21:17: [GameThread] on_connect d07b883d echo
+2025-03-17 21:21:17: [GameThread] on_create_lobby  d07b883d
+2025-03-17 21:21:17: [GameThread] on_connect 659206b5 echo
+2025-03-17 21:21:17: [GameThread] on_join_lobby  659206b5
+2025-03-17 21:21:17: [GameThread] on_close 659206b5
+: [GameThread] on_start
+: [GameThread] on_load_games
+: [GameThread] on_load_game echo
+: [GameThread] on_load_game hangman
+: [GameThread] on_load_game tictactoe
+: [GameThread] on_start_thread
+2025-03-17 21:22:37: [GameThread] on_connect 734f5bf1 echo
+2025-03-17 21:22:40: [GameThread] on_create_lobby  734f5bf1
+2025-03-17 21:22:43: [GameThread] on_connect 53f2a261 echo
+2025-03-17 21:22:43: [GameThread] on_join_lobby  53f2a261
+2025-03-17 21:22:52: [GameThread] on_close 53f2a261
+: [GameThread] on_start
+: [GameThread] on_load_games
+: [GameThread] on_load_game echo
+: [GameThread] on_load_game hangman
+: [GameThread] on_load_game tictactoe
+: [GameThread] on_start_thread
+2025-03-17 21:32:39: [GameThread] on_connect 792335b2 echo
+2025-03-17 21:32:39: [GameThread] on_create_lobby  792335b2
+2025-03-17 21:32:43: [GameThread] on_connect 32e52412 echo
+2025-03-17 21:32:43: [GameThread] on_join_lobby  32e52412
+2025-03-17 21:32:45: [GameThread] on_close 32e52412
+: [GameThread] on_start
+: [GameThread] on_load_games
+: [GameThread] on_load_game echo
+: [GameThread] on_load_game hangman
+: [GameThread] on_load_game tictactoe
+: [GameThread] on_start_thread
+2025-03-17 21:33:46: [GameThread] on_connect 2e6616af echo
+2025-03-17 21:33:46: [GameThread] on_create_lobby  2e6616af
+2025-03-17 21:33:46: [GameThread] on_connect 71027de0 echo
+2025-03-17 21:33:46: [GameThread] on_join_lobby  71027de0
+2025-03-17 21:33:46: [GameThread] on_close 71027de0
+2025-03-17 21:36:15: [GameThread] on_connect 71027de0 echo
+2025-03-17 21:36:15: [GameThread] on_close 71027de0
+2025-03-17 21:36:15: [GameThread] on_close 2e6616af
+2025-03-17 21:36:18: [GameThread] on_connect 2d099e91 echo
+2025-03-17 21:36:18: [GameThread] on_create_lobby  2d099e91
+2025-03-17 21:36:18: [GameThread] on_connect 9f2e4f1e echo
+2025-03-17 21:36:18: [GameThread] on_join_lobby  9f2e4f1e
+2025-03-17 21:36:18: [GameThread] on_close 9f2e4f1e
+2025-03-17 21:36:20: [GameThread] on_connect 9f2e4f1e echo
+2025-03-17 21:36:20: [GameThread] on_join_lobby  9f2e4f1e
+2025-03-17 21:36:29: [GameThread] on_connect bf33f34c echo
+2025-03-17 21:36:29: [GameThread] on_create_lobby  bf33f34c
+2025-03-17 21:36:29: [GameThread] on_connect 9d016416 echo
+2025-03-17 21:36:29: [GameThread] on_join_lobby  9d016416
+2025-03-17 21:36:29: [GameThread] on_close 9d016416
+2025-03-17 21:37:05: [GameThread] on_connect 9d016416 echo
+2025-03-17 21:37:05: [GameThread] on_close 9d016416
+2025-03-17 21:37:05: [GameThread] on_close 9f2e4f1e
+2025-03-17 21:37:05: [GameThread] on_close 2d099e91
+2025-03-17 21:37:05: [GameThread] on_close bf33f34c
+2025-03-17 21:37:17: [GameThread] on_connect 45e98460 echo
+2025-03-17 21:37:19: [GameThread] on_create_lobby  45e98460
+2025-03-17 21:37:19: [GameThread] on_connect 5418936d echo
+2025-03-17 21:37:27: [GameThread] on_join_lobby  5418936d
+2025-03-17 21:37:30: [GameThread] on_close 5418936d
+2025-03-17 21:37:35: [GameThread] on_connect 5418936d echo
+2025-03-17 21:37:58: [GameThread] on_close 5418936d
+2025-03-17 21:37:58: [GameThread] on_close 45e98460
+2025-03-17 21:38:59: [GameThread] on_connect ccacd27b echo
+2025-03-17 21:38:59: [GameThread] on_create_lobby  ccacd27b
+2025-03-17 21:38:59: [GameThread] on_leave_lobby  ccacd27b
+: [GameThread] on_start
+: [GameThread] on_load_games
+: [GameThread] on_load_game echo
+: [GameThread] on_load_game hangman
+: [GameThread] on_load_game tictactoe
+: [GameThread] on_start_thread
+2025-03-17 21:51:56: [GameThread] on_connect c9b87bd7 echo
+2025-03-17 21:51:56: [GameThread] on_create_lobby  c9b87bd7
+2025-03-17 21:51:56: [GameThread] on_connect f4b8ad2c echo
+2025-03-17 21:51:56: [GameThread] on_join_lobby  f4b8ad2c
+2025-03-17 21:51:56: [GameThread] on_close f4b8ad2c
+2025-03-17 21:51:56: [GameThread] on_connect f4b8ad2c echo
+2025-03-17 21:51:56: [GameThread] on_join_lobby  f4b8ad2c
+2025-03-17 21:52:10: [GameThread] on_connect d0d9b4cf echo
+2025-03-17 21:52:10: [GameThread] on_create_lobby  d0d9b4cf
+2025-03-17 21:52:10: [GameThread] on_connect 6b438c1f echo
+2025-03-17 21:52:10: [GameThread] on_join_lobby  6b438c1f
+2025-03-17 21:52:10: [GameThread] on_close 6b438c1f
+2025-03-17 21:52:10: [GameThread] on_connect 6b438c1f echo
+2025-03-17 21:52:10: [GameThread] on_join_lobby  6b438c1f
+2025-03-17 21:52:15: [GameThread] on_connect 3a46581e echo
+2025-03-17 21:52:15: [GameThread] on_create_lobby  3a46581e
+2025-03-17 21:52:15: [GameThread] on_connect c0b446d1 echo
+2025-03-17 21:52:15: [GameThread] on_join_lobby  c0b446d1
+2025-03-17 21:52:15: [GameThread] on_close c0b446d1
+2025-03-17 21:52:15: [GameThread] on_connect c0b446d1 echo
+2025-03-17 21:52:15: [GameThread] on_join_lobby  c0b446d1
+2025-03-17 21:52:15: [GameThread] on_connect ee5666bd echo
+2025-03-17 21:52:15: [GameThread] on_create_lobby  ee5666bd
+2025-03-17 21:52:15: [GameThread] on_connect ba2c6d2d echo
+2025-03-17 21:52:15: [GameThread] on_join_lobby  ba2c6d2d
+2025-03-17 21:52:15: [GameThread] on_close ba2c6d2d
+2025-03-17 21:52:15: [GameThread] on_connect ba2c6d2d echo
+2025-03-17 21:52:15: [GameThread] on_join_lobby  ba2c6d2d
+2025-03-17 21:52:17: [GameThread] on_connect 61142471 echo
+2025-03-17 21:52:17: [GameThread] on_create_lobby  61142471
+2025-03-17 21:52:17: [GameThread] on_close 61142471
+2025-03-17 21:52:17: [GameThread] on_connect c3916ecf echo
+2025-03-17 21:52:17: [GameThread] on_create_lobby  c3916ecf
+2025-03-17 21:52:17: [GameThread] on_create_lobby  c3916ecf
+2025-03-17 21:52:17: [GameThread] on_close c3916ecf
+2025-03-17 21:52:18: [GameThread] on_connect ed8f94f1 echo
+2025-03-17 21:52:18: [GameThread] on_create_lobby  ed8f94f1
+2025-03-17 21:52:18: [GameThread] on_connect 16c0bfff echo
+2025-03-17 21:52:18: [GameThread] on_join_lobby  16c0bfff
+2025-03-17 21:52:18: [GameThread] on_close 16c0bfff
+2025-03-17 21:52:18: [GameThread] on_close ed8f94f1
+2025-03-17 21:52:21: [GameThread] on_connect e9eac076 echo
+2025-03-17 21:52:21: [GameThread] on_create_lobby  e9eac076
+2025-03-17 21:52:21: [GameThread] on_join_lobby  e9eac076
+2025-03-17 21:52:21: [GameThread] on_close e9eac076
+2025-03-17 21:52:21: [GameThread] on_connect fa12cfa5 echo
+2025-03-17 21:52:21: [GameThread] on_join_lobby  fa12cfa5
+2025-03-17 21:52:21: [GameThread] on_close fa12cfa5
+2025-03-17 21:52:23: [GameThread] on_connect 0fcfe50c echo
+2025-03-17 21:52:23: [GameThread] on_create_lobby  0fcfe50c
+2025-03-17 21:52:23: [GameThread] on_leave_lobby  0fcfe50c
+2025-03-17 21:52:23: [GameThread] on_close 0fcfe50c
+2025-03-17 21:52:25: [GameThread] on_connect ce609b87 echo
+2025-03-17 21:52:25: [GameThread] on_leave_lobby  ce609b87
+2025-03-17 21:52:25: [GameThread] on_close ce609b87
+2025-03-17 21:52:26: [GameThread] on_close f4b8ad2c
+2025-03-17 21:52:26: [GameThread] on_close c9b87bd7
+2025-03-17 21:52:26: [GameThread] on_connect b163630a echo
+2025-03-17 21:52:26: [GameThread] on_create_lobby  b163630a
+2025-03-17 21:52:26: [GameThread] on_connect 22fe0d76 echo
+2025-03-17 21:52:26: [GameThread] on_join_lobby  22fe0d76
+2025-03-17 21:52:26: [GameThread] on_leave_lobby  b163630a
+2025-03-17 21:52:26: [GameThread] on_close 22fe0d76
+2025-03-17 21:52:26: [GameThread] on_close b163630a
+2025-03-17 21:52:28: [GameThread] on_connect fc320c51 echo
+2025-03-17 21:52:28: [GameThread] on_create_lobby  fc320c51
+2025-03-17 21:52:28: [GameThread] on_connect e42f33e9 echo
+2025-03-17 21:52:28: [GameThread] on_join_lobby  e42f33e9
+2025-03-17 21:52:28: [GameThread] on_leave_lobby  e42f33e9
+2025-03-17 21:52:28: [GameThread] on_close e42f33e9
+2025-03-17 21:52:28: [GameThread] on_close fc320c51
+2025-03-17 21:52:35: [GameThread] on_connect f11032ac echo
+2025-03-17 21:52:35: [GameThread] on_create_lobby  f11032ac
+2025-03-17 21:52:35: [GameThread] on_connect f5ad00d5 echo
+2025-03-17 21:52:35: [GameThread] on_join_lobby  f5ad00d5
+2025-03-17 21:52:35: [GameThread] on_close f5ad00d5
+2025-03-17 21:52:35: [GameThread] on_connect f5ad00d5 echo
+2025-03-17 21:52:35: [GameThread] on_join_lobby  f5ad00d5
+2025-03-17 21:52:40: [GameThread] on_close 6b438c1f
+2025-03-17 21:52:40: [GameThread] on_close d0d9b4cf
+2025-03-17 21:52:45: [GameThread] on_close c0b446d1
+2025-03-17 21:52:45: [GameThread] on_close 3a46581e
+2025-03-17 21:52:45: [GameThread] on_close ba2c6d2d
+2025-03-17 21:52:45: [GameThread] on_close ee5666bd
+2025-03-17 21:52:50: [GameThread] on_connect 32541651 echo
+2025-03-17 21:52:50: [GameThread] on_create_lobby  32541651
+2025-03-17 21:52:50: [GameThread] on_connect 81e67d3c echo
+2025-03-17 21:52:50: [GameThread] on_join_lobby  81e67d3c
+2025-03-17 21:52:50: [GameThread] on_close 81e67d3c
+2025-03-17 21:52:50: [GameThread] on_connect 81e67d3c echo
+2025-03-17 21:52:52: [GameThread] on_join_lobby  81e67d3c
+2025-03-17 21:53:05: [GameThread] on_close f5ad00d5
+2025-03-17 21:53:05: [GameThread] on_close f11032ac
+2025-03-17 21:54:00: [GameThread] on_close 81e67d3c
+2025-03-17 21:54:00: [GameThread] on_close 32541651
+: [GameThread] on_start
+: [GameThread] on_load_games
+: [GameThread] on_load_game echo
+: [GameThread] on_load_game hangman
+: [GameThread] on_load_game tictactoe
+: [GameThread] on_start_thread
+2025-03-17 21:54:24: [GameThread] on_connect b8b3afe1 echo
+2025-03-17 21:54:24: [GameThread] on_create_lobby  b8b3afe1
+2025-03-17 21:54:24: [GameThread] on_connect 85ce6be9 echo
+2025-03-17 21:54:24: [GameThread] on_join_lobby  85ce6be9
+2025-03-17 21:54:24: [GameThread] on_close 85ce6be9
+2025-03-17 21:54:24: [GameThread] on_connect 85ce6be9 echo
+2025-03-17 21:54:24: [GameThread] on_join_lobby  85ce6be9
+2025-03-17 21:54:37: [GameThread] on_connect abc06a0a echo
+2025-03-17 21:54:37: [GameThread] on_create_lobby  abc06a0a
+2025-03-17 21:54:37: [GameThread] on_connect 0071bda8 echo
+2025-03-17 21:54:37: [GameThread] on_join_lobby  0071bda8
+2025-03-17 21:54:37: [GameThread] on_close 0071bda8
+2025-03-17 21:54:37: [GameThread] on_connect 0071bda8 echo
+2025-03-17 21:54:39: [GameThread] on_join_lobby  0071bda8
+2025-03-17 21:54:54: [GameThread] on_close 85ce6be9
+2025-03-17 21:54:54: [GameThread] on_close b8b3afe1
+: [GameThread] on_start
+: [GameThread] on_load_games
+: [GameThread] on_load_game echo
+: [GameThread] on_load_game hangman
+: [GameThread] on_load_game tictactoe
+: [GameThread] on_start_thread
+2025-03-17 21:55:24: [GameThread] on_connect 77d0adf5 echo
+2025-03-17 21:55:24: [GameThread] on_create_lobby  77d0adf5
+2025-03-17 21:55:24: [GameThread] on_connect 1f7f55ba echo
+2025-03-17 21:55:24: [GameThread] on_join_lobby  1f7f55ba
+2025-03-17 21:55:24: [GameThread] on_close 1f7f55ba
+2025-03-17 21:55:24: [GameThread] on_connect 1f7f55ba echo
+2025-03-17 21:55:24: [GameThread] on_join_lobby  1f7f55ba
+2025-03-17 21:55:24: [GameThread] on_close 1f7f55ba
+2025-03-17 21:55:24: [GameThread] on_close 77d0adf5
+2025-03-17 21:55:25: [GameThread] on_connect b092863c echo
+2025-03-17 21:55:25: [GameThread] on_create_lobby  b092863c
+2025-03-17 21:55:25: [GameThread] on_connect 8370cea3 echo
+2025-03-17 21:55:25: [GameThread] on_join_lobby  8370cea3
+2025-03-17 21:55:25: [GameThread] on_close 8370cea3
+2025-03-17 21:55:25: [GameThread] on_connect 8370cea3 echo
+2025-03-17 21:55:25: [GameThread] on_join_lobby  8370cea3
+2025-03-17 21:55:25: [GameThread] on_close 8370cea3
+2025-03-17 21:55:25: [GameThread] on_close b092863c
+2025-03-17 21:55:31: [GameThread] on_connect 581c979f echo
+2025-03-17 21:55:31: [GameThread] on_create_lobby  581c979f
+2025-03-17 21:55:31: [GameThread] on_connect 06ba55b9 echo
+2025-03-17 21:55:31: [GameThread] on_join_lobby  06ba55b9
+2025-03-17 21:55:31: [GameThread] on_close 06ba55b9
+2025-03-17 21:55:31: [GameThread] on_connect 06ba55b9 echo
+2025-03-17 21:55:33: [GameThread] on_join_lobby  06ba55b9
+2025-03-17 21:55:38: [GameThread] on_close 06ba55b9
+2025-03-17 21:55:38: [GameThread] on_close 581c979f
+2025-03-17 21:55:42: [GameThread] on_connect 70dbf58a echo
+2025-03-17 21:55:42: [GameThread] on_create_lobby  70dbf58a
+2025-03-17 21:55:42: [GameThread] on_connect 4dda6f2c echo
+2025-03-17 21:55:42: [GameThread] on_join_lobby  4dda6f2c
+2025-03-17 21:55:42: [GameThread] on_close 4dda6f2c
+2025-03-17 21:55:42: [GameThread] on_connect 4dda6f2c echo
+2025-03-17 21:55:53: [GameThread] on_join_lobby  4dda6f2c
+2025-03-17 21:56:14: [GameThread] on_close 4dda6f2c
+2025-03-17 21:56:14: [GameThread] on_close 70dbf58a
+: [GameThread] on_start
+: [GameThread] on_load_games
+: [GameThread] on_load_game echo
+: [GameThread] on_load_game hangman
+: [GameThread] on_load_game tictactoe
+: [GameThread] on_start_thread
+2025-03-17 21:58:28: [GameThread] on_connect a64e6810 echo
+2025-03-17 21:58:28: [GameThread] on_create_lobby  a64e6810
+2025-03-17 21:58:28: [GameThread] on_connect ffa9db4a echo
+2025-03-17 21:58:28: [GameThread] on_join_lobby  ffa9db4a
+2025-03-17 21:58:28: [GameThread] on_close ffa9db4a
+2025-03-17 21:58:28: [GameThread] on_connect ffa9db4a echo
+2025-03-17 21:58:28: [GameThread] on_join_lobby  ffa9db4a
+2025-03-17 21:58:28: [GameThread] on_close ffa9db4a
+2025-03-17 21:58:28: [GameThread] on_close a64e6810
+2025-03-17 21:58:36: [GameThread] on_connect 8421e1ab echo
+2025-03-17 21:58:36: [GameThread] on_create_lobby  8421e1ab
+2025-03-17 21:58:36: [GameThread] on_connect 3db149a2 echo
+2025-03-17 21:58:36: [GameThread] on_join_lobby  3db149a2
+2025-03-17 21:58:36: [GameThread] on_close 3db149a2
+2025-03-17 21:58:36: [GameThread] on_connect 3db149a2 echo
+2025-03-17 21:58:36: [GameThread] on_join_lobby  3db149a2
+2025-03-17 21:58:36: [GameThread] on_close 3db149a2
+2025-03-17 21:58:36: [GameThread] on_close 8421e1ab
+2025-03-17 21:59:17: [GameThread] on_connect 477f323a echo
+2025-03-17 21:59:17: [GameThread] on_create_lobby  477f323a
+2025-03-17 21:59:17: [GameThread] on_connect 9ddb1003 echo
+2025-03-17 21:59:19: [GameThread] on_join_lobby  9ddb1003
+2025-03-17 21:59:31: [GameThread] on_close 9ddb1003
+2025-03-17 21:59:31: [GameThread] on_connect 9ddb1003 echo
+2025-03-17 21:59:36: [GameThread] on_join_lobby  9ddb1003
+2025-03-17 21:59:42: [GameThread] on_close 9ddb1003
+2025-03-17 21:59:42: [GameThread] on_close 477f323a
+: [GameThread] on_start
+: [GameThread] on_load_games
+: [GameThread] on_load_game echo
+: [GameThread] on_load_game hangman
+: [GameThread] on_load_game tictactoe
+: [GameThread] on_start_thread
+2025-03-17 22:00:16: [GameThread] on_connect a84c3d74 echo
+2025-03-17 22:00:16: [GameThread] on_create_lobby  a84c3d74
+2025-03-17 22:00:16: [GameThread] on_connect 53eba469 echo
+2025-03-17 22:00:16: [GameThread] on_join_lobby  53eba469
+2025-03-17 22:00:16: [GameThread] on_close 53eba469
+2025-03-17 22:00:16: [GameThread] on_connect 53eba469 echo
+2025-03-17 22:00:16: [GameThread] on_join_lobby  53eba469
+2025-03-17 22:00:16: [GameThread] on_close 53eba469
+2025-03-17 22:00:16: [GameThread] on_close a84c3d74
+2025-03-17 22:00:17: [GameThread] on_connect d5d092b7 echo
+2025-03-17 22:00:17: [GameThread] on_create_lobby  d5d092b7
+2025-03-17 22:00:17: [GameThread] on_connect 05aae52c echo
+2025-03-17 22:00:17: [GameThread] on_join_lobby  05aae52c
+2025-03-17 22:00:17: [GameThread] on_close 05aae52c
+2025-03-17 22:00:17: [GameThread] on_connect 05aae52c echo
+2025-03-17 22:00:17: [GameThread] on_join_lobby  05aae52c
+2025-03-17 22:00:17: [GameThread] on_close 05aae52c
+2025-03-17 22:00:17: [GameThread] on_close d5d092b7
+2025-03-17 22:00:28: [GameThread] on_connect 1cebbab0 echo
+2025-03-17 22:00:28: [GameThread] on_create_lobby  1cebbab0
+2025-03-17 22:00:28: [GameThread] on_connect a8076d54 echo
+2025-03-17 22:00:28: [GameThread] on_join_lobby  a8076d54
+2025-03-17 22:00:33: [GameThread] on_close a8076d54
+2025-03-17 22:00:33: [GameThread] on_connect a8076d54 echo
+2025-03-17 22:00:37: [GameThread] on_join_lobby  a8076d54
+2025-03-17 22:00:52: [GameThread] on_close a8076d54
+2025-03-17 22:00:52: [GameThread] on_close 1cebbab0
+: [GameThread] on_start
+: [GameThread] on_load_games
+: [GameThread] on_load_game echo
+: [GameThread] on_load_game hangman
+: [GameThread] on_load_game tictactoe
+: [GameThread] on_start_thread
+2025-03-17 22:01:39: [GameThread] on_connect 9a1f3bbb echo
+2025-03-17 22:01:39: [GameThread] on_create_lobby  9a1f3bbb
+2025-03-17 22:01:39: [GameThread] on_connect 8119a59b echo
+2025-03-17 22:01:39: [GameThread] on_join_lobby  8119a59b
+2025-03-17 22:01:39: [GameThread] on_close 8119a59b
+2025-03-17 22:01:39: [GameThread] on_connect 8119a59b echo
+2025-03-17 22:01:39: [GameThread] on_join_lobby  8119a59b
+2025-03-17 22:01:39: [GameThread] on_close 8119a59b
+2025-03-17 22:01:39: [GameThread] on_close 9a1f3bbb
+2025-03-17 22:01:41: [GameThread] on_connect f4cb1092 echo
+2025-03-17 22:01:41: [GameThread] on_create_lobby  f4cb1092
+2025-03-17 22:01:41: [GameThread] on_close f4cb1092
+2025-03-17 22:01:41: [GameThread] on_connect 4c183722 echo
+2025-03-17 22:01:41: [GameThread] on_create_lobby  4c183722
+2025-03-17 22:01:41: [GameThread] on_create_lobby  4c183722
+2025-03-17 22:01:41: [GameThread] on_close 4c183722
+2025-03-17 22:01:41: [GameThread] on_connect 2ff45b33 echo
+2025-03-17 22:01:41: [GameThread] on_create_lobby  2ff45b33
+2025-03-17 22:01:41: [GameThread] on_connect d4ed0073 echo
+2025-03-17 22:01:41: [GameThread] on_join_lobby  d4ed0073
+2025-03-17 22:01:41: [GameThread] on_close d4ed0073
+2025-03-17 22:01:41: [GameThread] on_close 2ff45b33
+2025-03-17 22:01:41: [GameThread] on_connect e15b9937 echo
+2025-03-17 22:01:41: [GameThread] on_create_lobby  e15b9937
+2025-03-17 22:01:41: [GameThread] on_connect 6b667135 echo
+2025-03-17 22:01:41: [GameThread] on_join_lobby  6b667135
+2025-03-17 22:01:41: [GameThread] on_close 6b667135
+2025-03-17 22:01:41: [GameThread] on_connect 6b667135 echo
+2025-03-17 22:01:41: [GameThread] on_join_lobby  6b667135
+2025-03-17 22:01:41: [GameThread] on_close 6b667135
+2025-03-17 22:01:41: [GameThread] on_close e15b9937
+2025-03-17 22:01:41: [GameThread] on_connect 06803ae6 echo
+2025-03-17 22:01:41: [GameThread] on_create_lobby  06803ae6
+2025-03-17 22:01:41: [GameThread] on_join_lobby  06803ae6
+2025-03-17 22:01:41: [GameThread] on_close 06803ae6
+2025-03-17 22:01:41: [GameThread] on_connect 965ea51a echo
+2025-03-17 22:01:41: [GameThread] on_join_lobby  965ea51a
+2025-03-17 22:01:41: [GameThread] on_close 965ea51a
+2025-03-17 22:01:41: [GameThread] on_connect 98865d7f echo
+2025-03-17 22:01:41: [GameThread] on_create_lobby  98865d7f
+2025-03-17 22:01:41: [GameThread] on_leave_lobby  98865d7f
+2025-03-17 22:01:41: [GameThread] on_close 98865d7f
+2025-03-17 22:01:41: [GameThread] on_connect dc489bd0 echo
+2025-03-17 22:01:41: [GameThread] on_leave_lobby  dc489bd0
+2025-03-17 22:01:41: [GameThread] on_close dc489bd0
+2025-03-17 22:01:41: [GameThread] on_connect 6984cf41 echo
+2025-03-17 22:01:41: [GameThread] on_create_lobby  6984cf41
+2025-03-17 22:01:41: [GameThread] on_connect af57ff95 echo
+2025-03-17 22:01:41: [GameThread] on_join_lobby  af57ff95
+2025-03-17 22:01:41: [GameThread] on_leave_lobby  6984cf41
+2025-03-17 22:01:41: [GameThread] on_close af57ff95
+2025-03-17 22:01:41: [GameThread] on_close 6984cf41
+2025-03-17 22:01:41: [GameThread] on_connect 04774147 echo
+2025-03-17 22:01:41: [GameThread] on_create_lobby  04774147
+2025-03-17 22:01:41: [GameThread] on_connect e66dc7f8 echo
+2025-03-17 22:01:41: [GameThread] on_join_lobby  e66dc7f8
+2025-03-17 22:01:41: [GameThread] on_leave_lobby  e66dc7f8
+2025-03-17 22:01:41: [GameThread] on_close e66dc7f8
+2025-03-17 22:01:41: [GameThread] on_close 04774147
+2025-03-17 22:01:41: [GameThread] on_connect a227c119 echo
+2025-03-17 22:01:41: [GameThread] on_error  a227c119 Unkown command list_lobby
+2025-03-17 22:01:41: [GameThread] on_close a227c119
+2025-03-17 22:01:47: [GameThread] on_connect 49c6fbcf echo
+2025-03-17 22:01:47: [GameThread] on_kick_peer  49c6fbcf
+2025-03-17 22:01:47: [GameThread] on_close 49c6fbcf
+2025-03-17 22:01:49: [GameThread] on_connect 0b333f8d echo
+2025-03-17 22:01:49: [GameThread] on_create_lobby  0b333f8d
+2025-03-17 22:01:49: [GameThread] on_connect 9c277675 echo
+2025-03-17 22:01:49: [GameThread] on_join_lobby  9c277675
+2025-03-17 22:01:49: [GameThread] on_kick_peer  9c277675
+2025-03-17 22:01:49: [GameThread] on_close 9c277675
+2025-03-17 22:01:49: [GameThread] on_close 0b333f8d
+2025-03-17 22:01:51: [GameThread] on_connect ad896211 echo
+2025-03-17 22:01:51: [GameThread] on_kick_peer  ad896211
+2025-03-17 22:01:51: [GameThread] on_close ad896211
+2025-03-17 22:01:52: [GameThread] on_connect fa9fe835 echo
+2025-03-17 22:01:52: [GameThread] on_create_lobby  fa9fe835
+2025-03-17 22:01:52: [GameThread] on_connect 524f08f5 echo
+2025-03-17 22:01:52: [GameThread] on_join_lobby  524f08f5
+2025-03-17 22:01:52: [GameThread] on_kick_peer  fa9fe835
+2025-03-17 22:02:06: [GameThread] on_connect 53cb7698 echo
+2025-03-17 22:02:06: [GameThread] on_create_lobby  53cb7698
+2025-03-17 22:02:06: [GameThread] on_connect 21928984 echo
+2025-03-17 22:02:06: [GameThread] on_join_lobby  21928984
+2025-03-17 22:02:06: [GameThread] on_kick_peer  53cb7698
+2025-03-17 22:02:13: [GameThread] on_connect bbc62895 echo
+2025-03-17 22:02:13: [GameThread] on_create_lobby  bbc62895
+2025-03-17 22:02:13: [GameThread] on_connect 8b8f5d26 echo
+2025-03-17 22:02:13: [GameThread] on_join_lobby  8b8f5d26
+2025-03-17 22:02:13: [GameThread] on_kick_peer  bbc62895
+2025-03-17 22:02:20: [GameThread] on_connect 812c256f echo
+2025-03-17 22:02:20: [GameThread] on_create_lobby  812c256f
+2025-03-17 22:02:20: [GameThread] on_connect ee2a8c48 echo
+2025-03-17 22:02:20: [GameThread] on_join_lobby  ee2a8c48
+2025-03-17 22:02:20: [GameThread] on_kick_peer  812c256f
+2025-03-17 22:02:22: [GameThread] on_close 524f08f5
+2025-03-17 22:02:22: [GameThread] on_close fa9fe835
+2025-03-17 22:02:37: [GameThread] on_close ee2a8c48
+2025-03-17 22:02:37: [GameThread] on_close 812c256f
+2025-03-17 22:02:43: [GameThread] on_connect 124c0ce5 echo
+2025-03-17 22:02:43: [GameThread] on_create_lobby  124c0ce5
+2025-03-17 22:02:43: [GameThread] on_lobby_ready  124c0ce5
+2025-03-17 22:02:43: [GameThread] on_close 124c0ce5
+2025-03-17 22:02:43: [GameThread] on_close 8b8f5d26
+2025-03-17 22:02:43: [GameThread] on_close bbc62895
+2025-03-17 22:02:45: [GameThread] on_connect 57223497 echo
+2025-03-17 22:02:45: [GameThread] on_lobby_ready  57223497
+2025-03-17 22:02:45: [GameThread] on_close 57223497
+2025-03-17 22:02:47: [GameThread] on_connect 73c1d313 echo
+2025-03-17 22:02:47: [GameThread] on_create_lobby  73c1d313
+2025-03-17 22:02:47: [GameThread] on_seal_lobby  73c1d313
+: [GameThread] on_start
+: [GameThread] on_load_games
+: [GameThread] on_load_game echo
+: [GameThread] on_load_game hangman
+: [GameThread] on_load_game tictactoe
+: [GameThread] on_start_thread
+2025-03-17 22:03:02: [GameThread] on_connect 57daa88d echo
+2025-03-17 22:03:02: [GameThread] on_create_lobby  57daa88d
+2025-03-17 22:03:02: [GameThread] on_seal_lobby  57daa88d
+: [GameThread] on_start
+: [GameThread] on_load_games
+: [GameThread] on_load_game echo
+: [GameThread] on_load_game hangman
+: [GameThread] on_load_game tictactoe
+: [GameThread] on_start_thread
+2025-03-17 22:03:40: [GameThread] on_connect bfaf57c5 echo
+2025-03-17 22:03:40: [GameThread] on_create_lobby  bfaf57c5
+2025-03-17 22:03:40: [GameThread] on_seal_lobby  bfaf57c5
+2025-03-17 22:03:40: [GameThread] on_close bfaf57c5
+2025-03-17 22:03:41: [GameThread] on_connect cef6a3f8 echo
+2025-03-17 22:03:41: [GameThread] on_seal_lobby  cef6a3f8
+2025-03-17 22:03:41: [GameThread] on_close cef6a3f8
+2025-03-17 22:03:42: [GameThread] on_connect be736f9b echo
+2025-03-17 22:03:42: [GameThread] on_create_lobby  be736f9b
+2025-03-17 22:03:42: [GameThread] on_connect 7cec7951 echo
+2025-03-17 22:03:42: [GameThread] on_join_lobby  7cec7951
+2025-03-17 22:03:42: [GameThread] on_seal_lobby  7cec7951
+2025-03-17 22:03:42: [GameThread] on_close 7cec7951
+2025-03-17 22:03:42: [GameThread] on_close be736f9b
+2025-03-17 22:03:42: [GameThread] on_connect 45a2a27f echo
+2025-03-17 22:03:42: [GameThread] on_create_lobby  45a2a27f
+2025-03-17 22:03:42: [GameThread] on_seal_lobby  45a2a27f
+2025-03-17 22:03:42: [GameThread] on_unseal_lobby  45a2a27f
+2025-03-17 22:03:42: [GameThread] on_close 45a2a27f
+2025-03-17 22:03:44: [GameThread] on_connect 5d8ff5ff echo
+2025-03-17 22:03:44: [GameThread] on_unseal_lobby  5d8ff5ff
+2025-03-17 22:03:44: [GameThread] on_close 5d8ff5ff
+2025-03-17 22:03:46: [GameThread] on_connect 5a99fbd1 echo
+2025-03-17 22:03:46: [GameThread] on_create_lobby  5a99fbd1
+2025-03-17 22:03:46: [GameThread] on_connect 50266390 echo
+2025-03-17 22:03:46: [GameThread] on_join_lobby  50266390
+2025-03-17 22:03:46: [GameThread] on_unseal_lobby  50266390
+2025-03-17 22:03:46: [GameThread] on_close 50266390
+2025-03-17 22:03:46: [GameThread] on_close 5a99fbd1
+2025-03-17 22:03:48: [GameThread] on_connect 1cf1ecc2 echo
+2025-03-17 22:03:48: [GameThread] on_create_lobby  1cf1ecc2
+2025-03-17 22:03:48: [GameThread] on_lobby_tags  1cf1ecc2
+2025-03-17 22:03:48: [GameThread] on_close 1cf1ecc2
+2025-03-17 22:04:08: [GameThread] on_connect f95c7a06 echo
+2025-03-17 22:04:08: [GameThread] on_create_lobby  f95c7a06
+2025-03-17 22:04:10: [GameThread] on_lobby_tags  f95c7a06
+2025-03-17 22:04:31: [GameThread] on_close f95c7a06
+: [GameThread] on_start
+: [GameThread] on_load_games
+: [GameThread] on_load_game echo
+: [GameThread] on_load_game hangman
+: [GameThread] on_load_game tictactoe
+: [GameThread] on_start_thread
+2025-03-17 22:05:54: [GameThread] on_connect 522bedc4 echo
+2025-03-17 22:05:54: [GameThread] on_create_lobby  522bedc4
+2025-03-17 22:05:54: [GameThread] on_lobby_tags  522bedc4
+2025-03-17 22:05:54: [GameThread] on_close 522bedc4
+2025-03-17 22:06:02: [GameThread] on_connect 94f286eb echo
+2025-03-17 22:06:02: [GameThread] on_create_lobby  94f286eb
+2025-03-17 22:06:02: [GameThread] on_lobby_tags  94f286eb
+: [GameThread] on_start
+: [GameThread] on_load_games
+: [GameThread] on_load_game echo
+: [GameThread] on_load_game hangman
+: [GameThread] on_load_game tictactoe
+: [GameThread] on_start_thread
+: [GameThread] on_connect 06241647 echo
+: [GameThread] on_create_lobby  06241647
+: [GameThread] on_lobby_tags  06241647
+: [GameThread] on_close 06241647
+2025-03-17 22:07:09: [GameThread] on_connect 1983395d echo
+2025-03-17 22:07:09: [GameThread] on_create_lobby  1983395d
+2025-03-17 22:07:09: [GameThread] on_lobby_tags  1983395d
+2025-03-17 22:07:14: [GameThread] on_close 1983395d
+2025-03-17 22:07:23: [GameThread] on_connect 7ee91737 echo
+2025-03-17 22:07:23: [GameThread] on_create_lobby  7ee91737
+2025-03-17 22:07:23: [GameThread] on_lobby_tags  7ee91737
+2025-03-17 22:07:33: [GameThread] on_close 7ee91737
+: [GameThread] on_start
+: [GameThread] on_load_games
+: [GameThread] on_load_game echo
+: [GameThread] on_load_game hangman
+: [GameThread] on_load_game tictactoe
+: [GameThread] on_start_thread
+2025-03-17 22:08:39: [GameThread] on_connect 45e4d3c5 echo
+2025-03-17 22:08:39: [GameThread] on_create_lobby  45e4d3c5
+2025-03-17 22:08:39: [GameThread] on_lobby_tags  45e4d3c5
+2025-03-17 22:08:39: [GameThread] on_close 45e4d3c5
+2025-03-17 22:08:41: [GameThread] on_connect 4a88c857 echo
+2025-03-17 22:08:41: [GameThread] on_create_lobby  4a88c857
+2025-03-17 22:08:41: [GameThread] on_connect 2cfe9f3e echo
+2025-03-17 22:08:41: [GameThread] on_join_lobby  2cfe9f3e
+2025-03-17 22:08:41: [GameThread] on_kick_peer  4a88c857
+2025-03-17 22:08:51: [GameThread] on_connect f047b625 echo
+2025-03-17 22:08:51: [GameThread] on_create_lobby  f047b625
+2025-03-17 22:08:51: [GameThread] on_connect 96d35d23 echo
+2025-03-17 22:08:51: [GameThread] on_join_lobby  96d35d23
+2025-03-17 22:08:51: [GameThread] on_kick_peer  f047b625
+2025-03-17 22:09:02: [GameThread] on_close 96d35d23
+2025-03-17 22:09:02: [GameThread] on_close f047b625
+2025-03-17 22:09:05: [GameThread] on_connect 767600a6 echo
+2025-03-17 22:09:05: [GameThread] on_create_lobby  767600a6
+2025-03-17 22:09:05: [GameThread] on_connect 107cedba echo
+2025-03-17 22:09:05: [GameThread] on_join_lobby  107cedba
+2025-03-17 22:09:05: [GameThread] on_kick_peer  767600a6
+2025-03-17 22:09:11: [GameThread] on_close 2cfe9f3e
+2025-03-17 22:09:11: [GameThread] on_close 4a88c857
+2025-03-17 22:09:33: [GameThread] on_connect e5669a67 echo
+2025-03-17 22:09:33: [GameThread] on_create_lobby  e5669a67
+2025-03-17 22:09:33: [GameThread] on_connect 44c6f83a echo
+2025-03-17 22:09:33: [GameThread] on_join_lobby  44c6f83a
+2025-03-17 22:09:35: [GameThread] on_kick_peer  e5669a67
+: [GameThread] on_start
+: [GameThread] on_load_games
+: [GameThread] on_load_game echo
+: [GameThread] on_load_game hangman
+: [GameThread] on_load_game tictactoe
+: [GameThread] on_start_thread
+2025-03-17 22:10:19: [GameThread] on_connect 6bb03d6f echo
+2025-03-17 22:10:19: [GameThread] on_create_lobby  6bb03d6f
+2025-03-17 22:10:19: [GameThread] on_connect a98a37f6 echo
+2025-03-17 22:10:19: [GameThread] on_join_lobby  a98a37f6
+2025-03-17 22:10:21: [GameThread] on_kick_peer  6bb03d6f
+2025-03-17 22:10:25: [GameThread] on_connect 069f75da echo
+2025-03-17 22:10:25: [GameThread] on_create_lobby  069f75da
+2025-03-17 22:10:25: [GameThread] on_connect b65c8d9d echo
+2025-03-17 22:10:25: [GameThread] on_join_lobby  b65c8d9d
+2025-03-17 22:10:25: [GameThread] on_kick_peer  069f75da
+2025-03-17 22:10:25: [GameThread] on_connect 5c6fe6ac echo
+2025-03-17 22:10:25: [GameThread] on_kick_peer  5c6fe6ac
+2025-03-17 22:10:25: [GameThread] on_close 5c6fe6ac
+2025-03-17 22:10:26: [GameThread] on_connect 72b4d3ca echo
+2025-03-17 22:10:26: [GameThread] on_create_lobby  72b4d3ca
+2025-03-17 22:10:26: [GameThread] on_connect 400393b7 echo
+2025-03-17 22:10:26: [GameThread] on_join_lobby  400393b7
+2025-03-17 22:10:26: [GameThread] on_kick_peer  400393b7
+2025-03-17 22:10:26: [GameThread] on_close 400393b7
+2025-03-17 22:10:26: [GameThread] on_close 72b4d3ca
+2025-03-17 22:10:30: [GameThread] on_connect 8deca23a echo
+2025-03-17 22:10:30: [GameThread] on_create_lobby  8deca23a
+2025-03-17 22:10:30: [GameThread] on_connect f002b26b echo
+2025-03-17 22:10:30: [GameThread] on_join_lobby  f002b26b
+2025-03-17 22:10:30: [GameThread] on_kick_peer  8deca23a
+2025-03-17 22:10:40: [GameThread] on_connect 11df4ae1 echo
+2025-03-17 22:10:40: [GameThread] on_create_lobby  11df4ae1
+2025-03-17 22:10:40: [GameThread] on_connect 8445740f echo
+2025-03-17 22:10:40: [GameThread] on_join_lobby  8445740f
+2025-03-17 22:10:40: [GameThread] on_kick_peer  11df4ae1
+2025-03-17 22:10:44: [GameThread] on_close 8445740f
+2025-03-17 22:10:44: [GameThread] on_close 11df4ae1
+2025-03-17 22:10:49: [GameThread] on_close a98a37f6
+2025-03-17 22:10:49: [GameThread] on_close 6bb03d6f
+2025-03-17 22:10:55: [GameThread] on_close b65c8d9d
+2025-03-17 22:10:55: [GameThread] on_close 069f75da
+2025-03-17 22:11:00: [GameThread] on_close f002b26b
+2025-03-17 22:11:00: [GameThread] on_close 8deca23a
+: [GameThread] on_start
+: [GameThread] on_load_games
+: [GameThread] on_load_game echo
+: [GameThread] on_load_game hangman
+: [GameThread] on_load_game tictactoe
+: [GameThread] on_start_thread
+2025-03-17 22:11:38: [GameThread] on_connect 92a9d964 echo
+2025-03-17 22:11:38: [GameThread] on_create_lobby  92a9d964
+2025-03-17 22:11:38: [GameThread] on_connect c0f398a0 echo
+2025-03-17 22:11:38: [GameThread] on_join_lobby  c0f398a0
+2025-03-17 22:11:38: [GameThread] on_kick_peer  92a9d964
+2025-03-17 22:12:08: [GameThread] on_close c0f398a0
+2025-03-17 22:12:08: [GameThread] on_close 92a9d964
+2025-03-17 22:12:16: [GameThread] on_connect 811e4c43 echo
+2025-03-17 22:12:16: [GameThread] on_create_lobby  811e4c43
+2025-03-17 22:12:16: [GameThread] on_connect b6484bda echo
+2025-03-17 22:12:16: [GameThread] on_join_lobby  b6484bda
+2025-03-17 22:12:16: [GameThread] on_kick_peer  811e4c43
+: [GameThread] on_start
+: [GameThread] on_load_games
+: [GameThread] on_load_game echo
+: [GameThread] on_load_game hangman
+: [GameThread] on_load_game tictactoe
+: [GameThread] on_start_thread
+2025-03-17 22:12:46: [GameThread] on_connect 29e2e429 echo
+2025-03-17 22:12:46: [GameThread] on_create_lobby  29e2e429
+2025-03-17 22:12:46: [GameThread] on_connect 8d06ff6c echo
+2025-03-17 22:12:46: [GameThread] on_join_lobby  8d06ff6c
+2025-03-17 22:12:46: [GameThread] on_kick_peer  29e2e429
+2025-03-17 22:13:06: [GameThread] on_connect f62b8ea2 echo
+2025-03-17 22:13:06: [GameThread] on_create_lobby  f62b8ea2
+2025-03-17 22:13:06: [GameThread] on_connect fe9c1bf4 echo
+2025-03-17 22:13:06: [GameThread] on_join_lobby  fe9c1bf4
+2025-03-17 22:13:06: [GameThread] on_kick_peer  f62b8ea2
+: [GameThread] on_start
+: [GameThread] on_load_games
+: [GameThread] on_load_game echo
+: [GameThread] on_load_game hangman
+: [GameThread] on_load_game tictactoe
+: [GameThread] on_start_thread
+2025-03-17 22:15:33: [GameThread] on_connect 806bf892 echo
+2025-03-17 22:15:33: [GameThread] on_create_lobby  806bf892
+2025-03-17 22:15:33: [GameThread] on_connect 782f2ee0 echo
+2025-03-17 22:15:33: [GameThread] on_join_lobby  782f2ee0
+2025-03-17 22:15:33: [GameThread] on_kick_peer  806bf892
+2025-03-17 22:15:35: [GameThread] on_close 782f2ee0
+2025-03-17 22:15:35: [GameThread] on_close 806bf892
+2025-03-17 22:15:45: [GameThread] on_connect 1f0bcddd echo
+2025-03-17 22:15:45: [GameThread] on_kick_peer  1f0bcddd
+2025-03-17 22:15:45: [GameThread] on_close 1f0bcddd
+2025-03-17 22:15:49: [GameThread] on_connect 4f34220c echo
+2025-03-17 22:15:49: [GameThread] on_create_lobby  4f34220c
+2025-03-17 22:15:49: [GameThread] on_lobby_ready  4f34220c
+2025-03-17 22:15:49: [GameThread] on_close 4f34220c
+2025-03-17 22:15:49: [GameThread] on_connect 4a88d091 echo
+2025-03-17 22:15:49: [GameThread] on_lobby_ready  4a88d091
+2025-03-17 22:15:49: [GameThread] on_close 4a88d091
+2025-03-17 22:15:49: [GameThread] on_connect 24ac76b4 echo
+2025-03-17 22:15:49: [GameThread] on_create_lobby  24ac76b4
+2025-03-17 22:15:49: [GameThread] on_seal_lobby  24ac76b4
+2025-03-17 22:15:49: [GameThread] on_close 24ac76b4
+2025-03-17 22:15:50: [GameThread] on_connect 8e600edd echo
+2025-03-17 22:15:50: [GameThread] on_seal_lobby  8e600edd
+2025-03-17 22:15:50: [GameThread] on_close 8e600edd
+2025-03-17 22:15:52: [GameThread] on_connect 1854fed2 echo
+2025-03-17 22:15:52: [GameThread] on_create_lobby  1854fed2
+2025-03-17 22:15:52: [GameThread] on_connect f866c241 echo
+2025-03-17 22:15:52: [GameThread] on_join_lobby  f866c241
+2025-03-17 22:15:52: [GameThread] on_seal_lobby  f866c241
+2025-03-17 22:15:52: [GameThread] on_close f866c241
+2025-03-17 22:15:52: [GameThread] on_close 1854fed2
+2025-03-17 22:15:52: [GameThread] on_connect 9078e7b1 echo
+2025-03-17 22:15:52: [GameThread] on_create_lobby  9078e7b1
+2025-03-17 22:15:52: [GameThread] on_seal_lobby  9078e7b1
+2025-03-17 22:15:52: [GameThread] on_unseal_lobby  9078e7b1
+2025-03-17 22:15:52: [GameThread] on_close 9078e7b1
+2025-03-17 22:15:53: [GameThread] on_connect ab44d05c echo
+2025-03-17 22:15:53: [GameThread] on_unseal_lobby  ab44d05c
+2025-03-17 22:15:53: [GameThread] on_close ab44d05c
+2025-03-17 22:15:53: [GameThread] on_connect 3809ad1a echo
+2025-03-17 22:15:53: [GameThread] on_create_lobby  3809ad1a
+2025-03-17 22:15:53: [GameThread] on_connect 7b10a999 echo
+2025-03-17 22:15:53: [GameThread] on_join_lobby  7b10a999
+2025-03-17 22:15:53: [GameThread] on_unseal_lobby  7b10a999
+2025-03-17 22:15:53: [GameThread] on_close 7b10a999
+2025-03-17 22:15:53: [GameThread] on_close 3809ad1a
+2025-03-17 22:16:10: [GameThread] on_connect d11978c1 echo
+2025-03-17 22:16:10: [GameThread] on_create_lobby  d11978c1
+2025-03-17 22:16:10: [GameThread] on_connect de8fd4a8 echo
+2025-03-17 22:16:10: [GameThread] on_join_lobby  de8fd4a8
+2025-03-17 22:16:10: [GameThread] on_leave_lobby  de8fd4a8
+2025-03-17 22:16:10: [GameThread] on_close de8fd4a8
+2025-03-17 22:16:10: [GameThread] on_close d11978c1
+2025-03-17 22:16:45: [GameThread] on_connect e3f510e3 echo
+2025-03-17 22:16:45: [GameThread] on_create_lobby  e3f510e3
+2025-03-17 22:16:45: [GameThread] on_lobby_call  e3f510e3
+2025-03-17 22:16:45: [GameThread] on_close e3f510e3
+2025-03-17 22:16:46: [GameThread] on_connect e9e08e3e echo
+2025-03-17 22:16:46: [GameThread] on_create_lobby  e9e08e3e
+2025-03-17 22:16:46: [GameThread] on_lobby_call  e9e08e3e
+2025-03-17 22:16:46: [GameThread] on_close e9e08e3e
+2025-03-17 22:16:56: [GameThread] on_connect 85f4848e echo
+2025-03-17 22:16:57: [GameThread] on_create_lobby  85f4848e
+2025-03-17 22:16:57: [GameThread] on_lobby_call  85f4848e
+2025-03-17 22:17:30: [GameThread] on_close 85f4848e
+: [GameThread] on_start
+: [GameThread] on_load_games
+: [GameThread] on_load_game echo
+: [GameThread] on_load_game hangman
+: [GameThread] on_load_game tictactoe
+: [GameThread] on_start_thread
+2025-03-17 22:18:05: [GameThread] on_connect e2b69bf2 echo
+2025-03-17 22:18:05: [GameThread] on_create_lobby  e2b69bf2
+2025-03-17 22:18:05: [GameThread] on_lobby_call  e2b69bf2
+2025-03-17 22:18:05: [GameThread] on_close e2b69bf2
+2025-03-17 22:18:08: [GameThread] on_connect ec22ce45 echo
+2025-03-17 22:18:08: [GameThread] on_create_lobby  ec22ce45
+2025-03-17 22:18:08: [GameThread] on_close ec22ce45
+2025-03-17 22:18:08: [GameThread] on_connect 631ee328 echo
+2025-03-17 22:18:08: [GameThread] on_create_lobby  631ee328
+2025-03-17 22:18:08: [GameThread] on_create_lobby  631ee328
+2025-03-17 22:18:08: [GameThread] on_close 631ee328
+2025-03-17 22:18:08: [GameThread] on_connect e63a9b79 echo
+2025-03-17 22:18:08: [GameThread] on_create_lobby  e63a9b79
+2025-03-17 22:18:08: [GameThread] on_connect 020cb70d echo
+2025-03-17 22:18:08: [GameThread] on_join_lobby  020cb70d
+2025-03-17 22:18:08: [GameThread] on_close 020cb70d
+2025-03-17 22:18:08: [GameThread] on_close e63a9b79
+2025-03-17 22:18:08: [GameThread] on_connect 27056a47 echo
+2025-03-17 22:18:08: [GameThread] on_create_lobby  27056a47
+2025-03-17 22:18:08: [GameThread] on_connect 59d1130c echo
+2025-03-17 22:18:08: [GameThread] on_join_lobby  59d1130c
+2025-03-17 22:18:08: [GameThread] on_close 59d1130c
+2025-03-17 22:18:08: [GameThread] on_connect 59d1130c echo
+2025-03-17 22:18:08: [GameThread] on_join_lobby  59d1130c
+2025-03-17 22:18:08: [GameThread] on_close 59d1130c
+2025-03-17 22:18:08: [GameThread] on_close 27056a47
+2025-03-17 22:18:08: [GameThread] on_connect e5921084 echo
+2025-03-17 22:18:08: [GameThread] on_create_lobby  e5921084
+2025-03-17 22:18:08: [GameThread] on_join_lobby  e5921084
+2025-03-17 22:18:08: [GameThread] on_close e5921084
+2025-03-17 22:18:08: [GameThread] on_connect fa150763 echo
+2025-03-17 22:18:08: [GameThread] on_join_lobby  fa150763
+2025-03-17 22:18:08: [GameThread] on_close fa150763
+2025-03-17 22:18:08: [GameThread] on_connect d6d55505 echo
+2025-03-17 22:18:08: [GameThread] on_create_lobby  d6d55505
+2025-03-17 22:18:08: [GameThread] on_leave_lobby  d6d55505
+2025-03-17 22:18:08: [GameThread] on_close d6d55505
+2025-03-17 22:18:08: [GameThread] on_connect d17d3213 echo
+2025-03-17 22:18:08: [GameThread] on_leave_lobby  d17d3213
+2025-03-17 22:18:08: [GameThread] on_close d17d3213
+2025-03-17 22:18:08: [GameThread] on_connect ebc906be echo
+2025-03-17 22:18:08: [GameThread] on_create_lobby  ebc906be
+2025-03-17 22:18:08: [GameThread] on_connect a73fb3e6 echo
+2025-03-17 22:18:08: [GameThread] on_join_lobby  a73fb3e6
+2025-03-17 22:18:08: [GameThread] on_leave_lobby  ebc906be
+2025-03-17 22:18:08: [GameThread] on_close a73fb3e6
+2025-03-17 22:18:08: [GameThread] on_close ebc906be
+2025-03-17 22:18:08: [GameThread] on_connect 016718c1 echo
+2025-03-17 22:18:08: [GameThread] on_create_lobby  016718c1
+2025-03-17 22:18:08: [GameThread] on_connect 0f35fed7 echo
+2025-03-17 22:18:08: [GameThread] on_join_lobby  0f35fed7
+2025-03-17 22:18:08: [GameThread] on_leave_lobby  0f35fed7
+2025-03-17 22:18:08: [GameThread] on_close 0f35fed7
+2025-03-17 22:18:08: [GameThread] on_close 016718c1
+2025-03-17 22:18:08: [GameThread] on_connect e56a3c9f echo
+2025-03-17 22:18:08: [GameThread] on_error  e56a3c9f Unkown command list_lobby
+2025-03-17 22:18:08: [GameThread] on_close e56a3c9f
+2025-03-17 22:18:11: [GameThread] on_connect fd8373d6 echo
+2025-03-17 22:18:11: [GameThread] on_create_lobby  fd8373d6
+2025-03-17 22:18:11: [GameThread] on_lobby_call  fd8373d6
+2025-03-17 22:18:11: [GameThread] on_close fd8373d6
+2025-03-17 22:18:11: [GameThread] on_connect d70b5084 echo
+2025-03-17 22:18:11: [GameThread] on_create_lobby  d70b5084
+2025-03-17 22:18:11: [GameThread] on_lobby_call  d70b5084
+2025-03-17 22:18:11: [GameThread] on_close d70b5084
+: [GameThread] on_start
+: [GameThread] on_load_games
+: [GameThread] on_load_game echo
+: [GameThread] on_load_game hangman
+: [GameThread] on_load_game tictactoe
+: [GameThread] on_start_thread
+2025-03-17 22:25:51: [GameThread] on_connect 1251cfa5 echo
+2025-03-17 22:25:51: [GameThread] on_create_lobby  1251cfa5
+2025-03-17 22:25:51: [GameThread] on_close 1251cfa5
+2025-03-17 22:25:51: [GameThread] on_connect 3e966b05 echo
+2025-03-17 22:25:51: [GameThread] on_create_lobby  3e966b05
+2025-03-17 22:25:51: [GameThread] on_create_lobby  3e966b05
+2025-03-17 22:25:51: [GameThread] on_close 3e966b05
+2025-03-17 22:25:51: [GameThread] on_connect 0461db5a echo
+2025-03-17 22:25:51: [GameThread] on_create_lobby  0461db5a
+2025-03-17 22:25:51: [GameThread] on_connect 53c2a36e echo
+2025-03-17 22:25:51: [GameThread] on_join_lobby  53c2a36e
+2025-03-17 22:25:51: [GameThread] on_close 53c2a36e
+2025-03-17 22:25:51: [GameThread] on_close 0461db5a
+2025-03-17 22:25:51: [GameThread] on_connect 6ce86af6 echo
+2025-03-17 22:25:51: [GameThread] on_create_lobby  6ce86af6
+2025-03-17 22:25:51: [GameThread] on_connect 405ea3b0 echo
+2025-03-17 22:25:51: [GameThread] on_join_lobby  405ea3b0
+2025-03-17 22:25:51: [GameThread] on_close 405ea3b0
+2025-03-17 22:25:51: [GameThread] on_connect 405ea3b0 echo
+2025-03-17 22:25:51: [GameThread] on_join_lobby  405ea3b0
+2025-03-17 22:25:51: [GameThread] on_close 405ea3b0
+2025-03-17 22:25:51: [GameThread] on_close 6ce86af6
+2025-03-17 22:25:51: [GameThread] on_connect 91aa1ec2 echo
+2025-03-17 22:25:51: [GameThread] on_create_lobby  91aa1ec2
+2025-03-17 22:25:51: [GameThread] on_join_lobby  91aa1ec2
+2025-03-17 22:25:51: [GameThread] on_close 91aa1ec2
+2025-03-17 22:25:51: [GameThread] on_connect 1b9fbe80 echo
+2025-03-17 22:25:51: [GameThread] on_join_lobby  1b9fbe80
+2025-03-17 22:25:51: [GameThread] on_close 1b9fbe80
+2025-03-17 22:25:51: [GameThread] on_connect 8a4dcfbe echo
+2025-03-17 22:25:51: [GameThread] on_create_lobby  8a4dcfbe
+2025-03-17 22:25:51: [GameThread] on_leave_lobby  8a4dcfbe
+2025-03-17 22:25:51: [GameThread] on_close 8a4dcfbe
+2025-03-17 22:25:51: [GameThread] on_connect 4c8beff9 echo
+2025-03-17 22:25:51: [GameThread] on_leave_lobby  4c8beff9
+2025-03-17 22:25:51: [GameThread] on_close 4c8beff9
+2025-03-17 22:25:51: [GameThread] on_connect 2d960025 echo
+2025-03-17 22:25:51: [GameThread] on_create_lobby  2d960025
+2025-03-17 22:25:51: [GameThread] on_connect 5bed9176 echo
+2025-03-17 22:25:51: [GameThread] on_join_lobby  5bed9176
+2025-03-17 22:25:51: [GameThread] on_leave_lobby  2d960025
+2025-03-17 22:25:51: [GameThread] on_close 5bed9176
+2025-03-17 22:25:51: [GameThread] on_close 2d960025
+2025-03-17 22:25:51: [GameThread] on_connect d76ce16d echo
+2025-03-17 22:25:51: [GameThread] on_create_lobby  d76ce16d
+2025-03-17 22:25:51: [GameThread] on_connect e99865bd echo
+2025-03-17 22:25:51: [GameThread] on_join_lobby  e99865bd
+2025-03-17 22:25:51: [GameThread] on_leave_lobby  e99865bd
+2025-03-17 22:25:51: [GameThread] on_close e99865bd
+2025-03-17 22:25:51: [GameThread] on_close d76ce16d
+2025-03-17 22:25:51: [GameThread] on_connect 07e1d5a3 echo
+2025-03-17 22:25:51: [GameThread] on_error  07e1d5a3 Unkown command list_lobby
+2025-03-17 22:25:51: [GameThread] on_close 07e1d5a3
