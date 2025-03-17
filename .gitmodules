@@ -13,3 +13,6 @@
 [submodule "external/angelscript"]
 	path = external/angelscript
 	url = https://github.com/codecat/angelscript-mirror
+[submodule "external/yyjson"]
+	path = external/yyjson
+	url = https://github.com/ibireme/yyjson
