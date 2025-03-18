@@ -13,6 +13,7 @@ struct GameData {
     std::unordered_map<std::string, PeerData> peers;
     std::unordered_map<std::string, int64_t> disconnected_peers;
     std::unordered_map<std::string, LobbyData> lobbies;
+    std::unordered_set<std::string> lobby_listing_peers;
     std::unordered_set<std::string> enabled_callbacks;
     ScriptLua lua;
     //ScriptAngelScript angelscript;

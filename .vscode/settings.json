@@ -82,6 +82,7 @@
         "atomic": "cpp",
         "*.tpp": "cpp",
         "iterator": "cpp",
-        "__config": "cpp"
+        "__config": "cpp",
+        "utility": "cpp"
     }
 }

@@ -38,7 +38,7 @@ public:
     void on_create_lobby(GameData &game, std::string command_id, PeerData &peer, yyjson_val *data_val);
     void on_join_lobby(GameData &game, std::string command_id, PeerData &peer, yyjson_val *data_val);
     void on_leave_lobby(GameData &game, std::string command_id, PeerData &peer, yyjson_val *data_val);
-    void on_list_lobbys(GameData &game, std::string command_id, PeerData &peer, yyjson_val *data_val);
+    void on_list_lobby(GameData &game, std::string command_id, PeerData &peer, yyjson_val *data_val);
     void on_chat_lobby(GameData &game, std::string command_id, PeerData &peer, yyjson_val *data_val);
     void on_lobby_tags(GameData &game, std::string command_id, PeerData &peer, yyjson_val *data_val);
     void on_kick_peer(GameData &game, std::string command_id, PeerData &peer, yyjson_val *data_val);
@@ -48,6 +48,9 @@ public:
     void on_seal_lobby(GameData &game, std::string command_id, PeerData &peer, yyjson_val *data_val);
     void on_unseal_lobby(GameData &game, std::string command_id, PeerData &peer, yyjson_val *data_val);
 
+    void set_lobby_sealed(LobbyData &lobby, std::string peer_id, std::string command_id, bool sealed);
+    void set_lobby_ready(LobbyData &lobby, PeerData &peer, std::string command_id, bool ready);
+
     void remove_peer_from_lobby(GameData &game, std::string peer_id);
 
     AnyElement scripted_function_call(std::string &lobby_id, GameData &game, std::string funcname, bool override, std::vector<AnyElement> &args, bool &has_error);
@@ -55,14 +58,8 @@ public:
     AnyElement decode_luatable(lua_State *L, int idx);
     AnyElement decode_luavalue(lua_State *L, int idx);
 
-    std::string decode_array(yyjson_val *array, AnyElement &element);
-    std::string decode_object(yyjson_val *object, std::unordered_map<std::string, AnyElement> &dict);
-    std::string decode_value(yyjson_val *value, AnyElement &element);
-
-    std::string decode_string_or_default(yyjson_val *object, std::string key, std::string default_value);
-    int decode_int_or_default(yyjson_val *object, std::string key, int default_value);
-
-    void send(std::string &peer_id, const std::string &message, uWS::OpCode opCode = uWS::OpCode::TEXT);
+    void notify_lobby_changes(const std::string& game_id, const std::string &lobby_id);
+    void send(const std::string &peer_id, const std::string &message, uWS::OpCode opCode = uWS::OpCode::TEXT);
     GameThread(bool verbose,
         std::string log_folder,
         std::string scripts_folder,

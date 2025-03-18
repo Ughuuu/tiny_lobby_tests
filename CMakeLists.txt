@@ -45,18 +45,20 @@ set(LUAJIT_INCLUDE_DIR "/usr/local/include/luajit-2.1")
 set(LUAJIT_LIB_DIR "/usr/local/lib")
 set(LUAJIT_LIBRARIES "/usr/local/lib/libluajit-5.1.a")
 
+find_package(Sol2 REQUIRED)
+
 # Add LuaJIT include directory
 include_directories(${LUAJIT_INCLUDE_DIR})
 
 # Angelscript
-
+add_compile_options(-Wno-deprecated-declarations)
 add_subdirectory(external/angelscript/sdk/angelscript/projects/cmake)
 file(GLOB SCRIPTSTDSTRING_SOURCES external/angelscript/sdk/add_on/scriptstdstring/*.cpp)
 file(GLOB SCRIPTARRAY_SOURCES external/angelscript/sdk/add_on/scriptarray/*.cpp)
 file(GLOB SCRIPTDICTIONARY_SOURCES external/angelscript/sdk/add_on/scriptdictionary/*.cpp)
 
 add_executable(lobby_server ${SOURCES})
-target_link_libraries(lobby_server PRIVATE Boost::uuid Boost::lockfree uWebSockets angelscript readerwriterqueue unofficial::inih::inireader yyjson ${LUAJIT_LIBRARIES})
+target_link_libraries(lobby_server PRIVATE Boost::uuid Boost::lockfree uWebSockets angelscript readerwriterqueue unofficial::inih::inireader yyjson sol2 ${LUAJIT_LIBRARIES})
 target_include_directories(lobby_server PRIVATE
   "external/angelscript/sdk/angelscript/include"
   "external/angelscript/sdk/add_on"

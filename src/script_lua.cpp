@@ -1,5 +1,6 @@
 #include "script_lua.h"
 #include "game_thread.h"
+#include <sol/sol.hpp>
 
 static AnyElement decode_luavalue(lua_State *L,int idx);
 
@@ -7,31 +8,48 @@ static AnyElement decode_luatable(lua_State *L, int idx) {
     std::unordered_map<std::string, AnyElement> result_dict;
     std::vector<AnyElement> result_array;
     if (!lua_istable(L, idx)) {
-		return AnyElement{std::monostate{}};
+        return AnyElement{std::monostate{}};
     }
     lua_pushnil(L);
-    bool is_dict = true;
+    bool is_dict = false;
     while (lua_next(L, idx) != 0) {
         if (lua_isstring(L, -2)) {
-            auto key = lua_tostring(L, -2);
-			result_dict.emplace(key, decode_luavalue(L, -1));
+            lua_pushvalue(L, -2);
+            std::string key = lua_tostring(L, -1);
             lua_pop(L, 1);
-			is_dict = true;
+            result_dict.emplace(key, decode_luavalue(L, -1));
+            is_dict = true;
         } else if (lua_isnumber(L, -2)) {
             auto key = lua_tointeger(L, -2);
-			result_array.push_back(decode_luavalue(L, -1));
-			is_dict = false;
-            lua_pop(L, 1);
-		} else {
+            result_array.push_back(decode_luavalue(L, -1));
+        } else {
             luaL_error(L, "invalid key type");
             lua_settop(L, 0);
             return AnyElement{std::monostate{}};
         }
+        lua_pop(L, 1);
     }
     if (is_dict) {
         return AnyElement{result_dict};
     } else {
         return AnyElement{result_array};
+    }
+}
+
+static AnyElement decode_luavalue(lua_State *L,int idx) {
+    switch (lua_type(L, idx)) {
+        case LUA_TNIL:
+            return AnyElement{std::monostate{}};
+        case LUA_TBOOLEAN:
+            return AnyElement{bool(lua_toboolean(L, idx))};
+        case LUA_TNUMBER:
+            return AnyElement{lua_tonumber(L, idx)};
+        case LUA_TSTRING:
+            return AnyElement{lua_tostring(L, idx)};
+        case LUA_TTABLE:
+            return decode_luatable(L, lua_gettop(L));
+        default:
+            return AnyElement{std::monostate{}};
     }
 }
 
@@ -67,23 +85,6 @@ static void push_lua_value(lua_State *L, const AnyElement &value) {
         }
     } else {
         lua_pushnil(L);
-    }
-}
-
-static AnyElement decode_luavalue(lua_State *L,int idx) {
-    switch (lua_type(L, idx)) {
-        case LUA_TNIL:
-            return AnyElement{std::monostate{}};
-        case LUA_TBOOLEAN:
-            return AnyElement{bool(lua_toboolean(L, idx))};
-        case LUA_TNUMBER:
-            return AnyElement{lua_tonumber(L, idx)};
-        case LUA_TSTRING:
-            return AnyElement{lua_tostring(L, idx)};
-        case LUA_TTABLE:
-            return decode_luatable(L, lua_gettop(L));
-        default:
-            return AnyElement{std::monostate{}};
     }
 }
 
@@ -210,6 +211,8 @@ static int lobby_save(lua_State *L) {
             }
         }
     }
+    // notify peers about the changes
+    game_thread->notify_lobby_changes(game_id, lobby_id);
     return 0;
 }
 
@@ -314,8 +317,10 @@ AnyElement ScriptLua::func_call(std::string &func_name, std::vector<AnyElement> 
     if (!enabled) {
         return AnyElement{"Lua script is not enabled"};
     }
-    close();
-    open();
+    if (autoreload) {
+        //close();
+        //open();
+    }
     if (!enabled) {
         return AnyElement{"Lua script is not enabled"};
     }

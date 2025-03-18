@@ -23,7 +23,7 @@ int main(int argc, char* argv[]) {
     int port = config_reader.GetUnsigned("webserverserver", "port", 9001);
     std::cout<< "Starting webserver on " << port << std::endl;
     
-    moodycamel::BlockingReaderWriterQueue<WebSocketMessage> message_queue(100);
+    moodycamel::BlockingReaderWriterQueue<WebSocketMessage> message_queue(1024 * 10);
     if (config_reader.GetBoolean("ssl", "enabled", false)) {
         WebSocketServer<false> webserver(verbose, config_reader.GetString("webserverserver", "log_folder", "logs"), message_queue);
         uWS::App app = uWS::App()

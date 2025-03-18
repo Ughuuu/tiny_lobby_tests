@@ -15,7 +15,7 @@ function callbacks.on_create(peerID, minPlayers, maxPlayers)
 
     l.tags["max_points"] = l.tags["max_points"] or 0
     l.public_data["game_state"] = "setup"
-    lobby.save()
+    lobby.save(l)
     return nil
 end
 

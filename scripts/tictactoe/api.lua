@@ -18,7 +18,7 @@ function api.start_game(peerID)
         l.peers[k].public_data["total_points"] = 0
     end
     l = api.set_initial_data(l)
-    lobby.save()
+    lobby.save(l)
 end
 
 function api.place_piece(peerID, placementTileX, placementTileY)
@@ -74,7 +74,7 @@ function api.place_piece(peerID, placementTileX, placementTileY)
     end
 
     l = turn.increment_turn(l)
-    lobby.save()
+    lobby.save(l)
 end
 
 function api.set_initial_data(l)
@@ -95,7 +95,7 @@ function api.end_game(l, peerID, state)
     if state == "won" then
         l.peers[peerID].public_data["points"] = l.peers[peerID].public_data["points"] + 1
     end
-    lobby.save()
+    lobby.save(l)
     return lobby.StartTimer("_on_timer_restart_game", 1, peerID)
 end
 
@@ -106,7 +106,7 @@ function api.on_timer_restart_game(peerID)
     else
         l = api.set_initial_data(l)
     end
-    lobby.save()
+    lobby.save(l)
 end
 
 return api

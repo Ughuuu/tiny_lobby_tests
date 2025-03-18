@@ -4,6 +4,8 @@
 #include <unordered_map>
 #include "yyjson.h"
 
+#define EMPTY_STRING ""
+
 struct AnyElement;
 
 using VariantElement = std::variant<
@@ -74,3 +76,9 @@ struct AnyElement {
         return json_str;
     }
 };
+
+std::string decode_string_or_default(yyjson_val *object, std::string key, std::string default_value);
+int decode_int_or_default(yyjson_val *object, std::string key, int default_value);
+std::string decode_array(yyjson_val *array, AnyElement &element);
+std::string decode_value(yyjson_val *value, AnyElement &element);
+std::string decode_object(yyjson_val *object, std::unordered_map<std::string, AnyElement> &dict);

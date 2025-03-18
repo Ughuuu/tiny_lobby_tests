@@ -4,7 +4,7 @@ const path = require('path');
 
 // Configuration
 const serverUrl = 'ws://localhost:8080/connect'; // Your WebSocket server URL
-const numClients = 1;  // Number of WebSocket clients to simulate
+const numClients = 5000;  // Number of WebSocket clients to simulate
 const messagesPerClient = 200; // Number of messages each client will send. Set to 0 for infinite
 const messageInterval = 50;  // Interval in milliseconds between messages
 const max_time = 15000; // 15 s
@@ -53,7 +53,7 @@ function startClient(clientId) {
 
     ws.on('message', (message) => {
         messagesReceived++;
-        console.log(JSON.parse(message.toString()))
+        //console.log(JSON.parse(message.toString()))
     });
 
     ws.on('close', (code, reason) => {

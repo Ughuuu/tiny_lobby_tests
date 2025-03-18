@@ -107,7 +107,7 @@ void WebSocketServer<SSL>::on_message(uWS::WebSocket<SSL, true, PerSocketData> *
     logger.debug_log("[WebSocketServer] on_message: ", data->id, " ", message, " ", opCode);
     message_queue.enqueue(WebSocketMessage {
         .id = data->id,
-        .message = std::string(message),
+        .message = std::move(std::string(message)),
         .event = WebSocketEvent::MESSAGE,
         .game_id = data->game_id,
         .reconnection_token = data->reconnection_token,
@@ -123,7 +123,7 @@ void WebSocketServer<SSL>::on_close(uWS::WebSocket<SSL, true, PerSocketData> *ws
     logger.debug_log("[WebSocketServer] on_close: ", data->id, " ", message, " ", opCode);
     message_queue.enqueue(WebSocketMessage {
         .id = data->id,
-        .message = std::string(message),
+        .message = std::move(std::string(message)),
         .event = WebSocketEvent::CLOSE,
         .game_id = data->game_id,
         .reconnection_token = data->reconnection_token,

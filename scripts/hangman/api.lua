@@ -19,7 +19,7 @@ function api.start_game(peerID)
     end
     l.PrivateData["words"] = {}
     l = api.set_initial_data(l)
-    lobby.save()
+    lobby.save(l)
 end
 
 function api.set_word(peerID, word)
@@ -57,7 +57,7 @@ function api.set_word(peerID, word)
         local letter = word:sub(i, i)
         l.public_data["guessed"] = l.public_data["guessed"] .. (letter == ' ' and ' ' or '_')
     end
-    lobby.save()
+    lobby.save(l)
 end
 
 function api.guess_letter(peerID, letter)
@@ -81,7 +81,7 @@ function api.guess_letter(peerID, letter)
     if not string.find(word, letter, 1, true) then
         l.public_data["health"] = l.public_data["health"] - 1
         l.public_data["pressed"][letter] = peerID
-        lobby.save()
+        lobby.save(l)
         if l.public_data["health"] == 0 then api.end_game("lost") end
         return { error = "Letter is not in the word." }
     end
@@ -103,7 +103,7 @@ function api.guess_letter(peerID, letter)
     l.Peers[peerID].public_data["points"] = points
     l.Peers[peerID].public_data["total_points"] = (l.Peers[peerID].public_data["total_points"] or 0) + points
     l.public_data["pressed"][letter] = peerID
-    lobby.save()
+    lobby.save(l)
 
     if l.public_data["guessed"] == word then
         lobby.StartTimer("_on_timer_restart_game", 1)
@@ -130,7 +130,7 @@ function api.end_game(newState)
         l.public_data["guessed"] = l.Peers[dealerID].PrivateData["word"]
         l.Peers[dealerID].public_data["points"] = points
     end
-    lobby.save()
+    lobby.save(l)
     lobby.StartTimer("_on_timer_restart_game", 1)
 end
 
@@ -145,11 +145,11 @@ function api.on_timer_restart_game()
     end
     if game_ended then
         l.public_data["game_state"] = "setup"
-        lobby.save()
+        lobby.save(l)
         return
     end
     l = api.set_initial_data(l)
-    lobby.save()
+    lobby.save(l)
 end
 
 function api.set_initial_data(l)

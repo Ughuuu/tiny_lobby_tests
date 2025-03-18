@@ -1,9 +1,9 @@
 #pragma once
 #include <angelscript.h>
-#include "INIReader.h"
 #include "scriptstdstring/scriptstdstring.h"
 #include "scriptarray/scriptarray.h"
 #include "scriptdictionary/scriptdictionary.h"
+#include "INIReader.h"
 
 class ScriptAngelScript {
     bool enabled = false;

@@ -2,6 +2,8 @@
 mkdir build
 cd build
 cmake -S .. -B . \
--DCMAKE_TOOLCHAIN_FILE=external/vcpkg/scripts/buildsystems/vcpkg.cmake -G ninja \
+-DCMAKE_TOOLCHAIN_FILE=external/vcpkg/scripts/buildsystems/vcpkg.cmake -G Ninja \
 -DCMAKE_BUILD_TYPE=Debug
 cmake --build . --config Debug
+cd ..
+codesign --entitlements ./debug.entitlements --sign "-" --force build/lobby_server
