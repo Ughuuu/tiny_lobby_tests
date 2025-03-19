@@ -1,6 +1,4 @@
 Write-Output "Building the project in release mode"
-# Remove the build directory if it exists
-Remove-Item -Recurse -Force -Path "build"
 
 # Create the build directory
 New-Item -ItemType Directory -Path "build"
