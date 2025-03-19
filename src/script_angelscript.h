@@ -1,6 +1,7 @@
 #pragma once
 #include <angelscript.h>
 
+#include "server_logger.h"
 #include "INIReader.h"
 #include "scriptarray/scriptarray.h"
 #include "scriptdictionary/scriptdictionary.h"
@@ -41,10 +42,12 @@ class ScriptAngelScript {
 
         // Load the script
         std::string script_path = scripts_folder + "/" + folder_name + "/" + script_entrypoint;
+        /* TODO fix when enabling angelscript
         if (!std::filesystem::exists(script_path)) {
             logger.error_log("[GameThread] Script file does not exist: " + script_path);
             return;
         }
+        */
 
         std::ifstream script_file(script_path);
         std::string script_content((std::istreambuf_iterator<char>(script_file)),
