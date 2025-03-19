@@ -145,8 +145,8 @@ static int start_timer(lua_State *L) {
                                           .id = timer_id,
                                           .lobby_id = lobby_id,
                                           .game_id = game_id,
-                                          .args = args,
                                           .end_time = duration * 1000 + get_time_now(),
+                                          .args = args,
                                       });
 
     return 0;
