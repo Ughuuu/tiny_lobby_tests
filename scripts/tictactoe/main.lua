@@ -1,5 +1,4 @@
 -- Load Modules
-local lobby = require("lobby")
 local api = require("api")
 
 -- Callable Function

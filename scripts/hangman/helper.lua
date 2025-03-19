@@ -2,25 +2,16 @@ local helper = {}
 
 function helper.peers_ordered(l)
     local peerIDs = {}
-
     -- Collect all peer IDs
-    for peerID, _ in pairs(l.Peers) do
+    for peerID, _ in pairs(l.peers) do
         table.insert(peerIDs, peerID)
     end
 
     table.sort(peerIDs, function(a, b)
-        return l.Peers[a].OrderID < l.Peers[b].OrderID
+        return l.peers[a].order_id < l.peers[b].order_id
     end)
 
     return peerIDs
-end
-
-function helper.map_length(dict)
-    local length = 0
-    for _, _ in pairs(dict) do
-        length = length + 1
-    end
-    return length
 end
 
 return helper

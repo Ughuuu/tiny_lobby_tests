@@ -1,11 +1,10 @@
-local lobby = require("lobby")
 local helper = require("helper")
 local turn = require("turn")
 
 local api = {}
 
 function api.start_game(peerID)
-    local l = lobby.get()
+    local l = lobby
     local ord = helper.peers_ordered(l)
     if l.peers[peerID].id ~= l.host then
         return { error = "You are not the host" }
@@ -18,7 +17,6 @@ function api.start_game(peerID)
         l.peers[k].public_data["total_points"] = 0
     end
     l = api.set_initial_data(l)
-    lobby.save(l)
 end
 
 function api.place_piece(peerID, placementTileX, placementTileY)
@@ -30,7 +28,7 @@ function api.place_piece(peerID, placementTileX, placementTileY)
     if placementTileX < 1 or placementTileX > 3 or placementTileY < 1 or placementTileY > 3 then
         return { error = "Placement Tile X and Y index must be a from 0 to 3." }
     end
-    local l = lobby.get()
+    local l = lobby
     if l.public_data["game_state"] ~= "playing" then
         return { error = "Game has not started." }
     end
@@ -74,7 +72,6 @@ function api.place_piece(peerID, placementTileX, placementTileY)
     end
 
     l = turn.increment_turn(l)
-    lobby.save(l)
 end
 
 function api.set_initial_data(l)
@@ -95,18 +92,16 @@ function api.end_game(l, peerID, state)
     if state == "won" then
         l.peers[peerID].public_data["points"] = l.peers[peerID].public_data["points"] + 1
     end
-    lobby.save(l)
-    return lobby.StartTimer("_on_timer_restart_game", 1, peerID)
+    return start_timer("_on_timer_restart_game", 1, peerID)
 end
 
 function api.on_timer_restart_game(peerID)
-    local l = lobby.get()
+    local l = lobby
     if l.peers[peerID].public_data["points"] >= l.tags["max_points"] and l.tags["max_points"] ~= 0 then
         l.public_data["game_state"] = "setup"
     else
         l = api.set_initial_data(l)
     end
-    lobby.save(l)
 end
 
 return api

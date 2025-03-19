@@ -1,5 +1,4 @@
 local callbacks = {}
-local lobby = require("lobby")
 function callbacks.on_create(peerID, minPlayers, maxPlayers)
     return nil
 end

@@ -1,5 +1,15 @@
-local lobby = require("lobby")
 function echo(peerID, message)
+    local a = lobby.id
+    local b = lobby.name
+    local c = lobby.host
+    local d = lobby.max_players
+    local e = lobby.create_time
+    local f = lobby.sealed
+    local g = lobby.tags
+    local h = lobby.public_data
+    local i = lobby.private_data
+    local d = lobby.peers
+    -- print(lobby.id)
     return message
 end
 

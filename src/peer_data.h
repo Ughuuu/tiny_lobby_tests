@@ -14,6 +14,8 @@ struct PeerData {
     std::unordered_map<std::string, AnyElement> user_data;
     bool disconnected = false;
     bool ready = false;
+    bool public_data_dirty = false;
+    bool private_data_dirty = false;
 
     void leave_lobby() {
         lobby_id = "";
@@ -34,7 +36,7 @@ struct PeerData {
             peer_dict["private_data"] = AnyElement{private_data};
         }
         peer_dict["user_data"] = AnyElement{user_data};
-        peer_dict["disconnected"] = AnyElement{disconnected};
+        peer_dict["is_disconnected"] = AnyElement{disconnected};
         peer_dict["ready"] = AnyElement{ready};
         return AnyElement{peer_dict}.to_string();
     }

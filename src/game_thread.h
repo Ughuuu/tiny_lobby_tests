@@ -12,7 +12,10 @@
 #include <boost/uuid/uuid_io.hpp>
 
 class GameThread {
+    int messages_sent = 0;
+    int messages_received = 0;
     int MAX_RECONNECTION_TIME = 6 * 60 * 1000;
+    int LISTING_INTERVAL = 3000;
     ServerLogger logger;
     std::string logs_folder;
     std::string scripts_folder;
@@ -29,14 +32,16 @@ public:
     void run();
     void handle_events();
     void handle_disconnects();
+    void handle_lobby_list();
+    void handle_timers();
     void on_connect(GameData &game, std::string &peer_id, std::string &game_id, std::string &reconnection_token);
     void on_close(GameData &game, std::string &peer_id);
-    void on_error(std::string command_id, std::string &peer_id, std::string message, bool close = false);
+    void on_error(std::string command_id, std::string peer_id, std::string message, bool close = false, bool logical_error = false);
 
     void on_lobby_call(GameData &game, std::string command_id, PeerData &peer, yyjson_val *data_val);
     void on_quick_join(GameData &game, std::string command_id, PeerData &peer, yyjson_val *data_val);
     void on_create_lobby(GameData &game, std::string command_id, PeerData &peer, yyjson_val *data_val);
-    void on_join_lobby(GameData &game, std::string command_id, PeerData &peer, yyjson_val *data_val);
+    bool on_join_lobby(GameData &game, std::string command_id, PeerData &peer, yyjson_val *data_val, std::string lobby_id_override = "");
     void on_leave_lobby(GameData &game, std::string command_id, PeerData &peer, yyjson_val *data_val);
     void on_list_lobby(GameData &game, std::string command_id, PeerData &peer, yyjson_val *data_val);
     void on_chat_lobby(GameData &game, std::string command_id, PeerData &peer, yyjson_val *data_val);
@@ -51,14 +56,14 @@ public:
     void set_lobby_sealed(LobbyData &lobby, std::string peer_id, std::string command_id, bool sealed);
     void set_lobby_ready(LobbyData &lobby, PeerData &peer, std::string command_id, bool ready);
 
-    void remove_peer_from_lobby(GameData &game, std::string peer_id);
+    void remove_peer_from_lobby(GameData &game, LobbyData &lobby, PeerData &peer, const std::string &command_id);
 
     AnyElement scripted_function_call(std::string &lobby_id, GameData &game, std::string funcname, bool override, std::vector<AnyElement> &args, bool &has_error);
 
     AnyElement decode_luatable(lua_State *L, int idx);
     AnyElement decode_luavalue(lua_State *L, int idx);
 
-    void notify_lobby_changes(const std::string& game_id, const std::string &lobby_id);
+    void notify_lobby_changes(GameData &game, std::string &lobby_id);
     void send(const std::string &peer_id, const std::string &message, uWS::OpCode opCode = uWS::OpCode::TEXT);
     GameThread(bool verbose,
         std::string log_folder,

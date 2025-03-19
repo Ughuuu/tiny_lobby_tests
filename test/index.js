@@ -21,7 +21,7 @@ fs.writeFileSync(csvFilePath, 'timestamp,client_count,client_errors,messages_sen
 
 // Function to start a WebSocket client
 function startClient(clientId) {
-    const ws = new WebSocket(serverUrl, ['blazium', 'tictactoe']);
+    const ws = new WebSocket(serverUrl, ['blazium', 'echo']);
     ws.on('open', () => {
         clientCount++;
 
@@ -36,7 +36,7 @@ function startClient(clientId) {
             const message = `Client ${clientId} - Message ${messageCount + 1}`;
             ws.send(JSON.stringify({
                 "command": "lobby_call",
-                "data": { "function": "start_game", "inputs": ["abc"], "id": "123" }
+                "data": { "function": "echo", "inputs": ["abc"], "id": "123" }
             }));
 
             messagesSent++;
@@ -53,7 +53,9 @@ function startClient(clientId) {
 
     ws.on('message', (message) => {
         messagesReceived++;
-        //console.log(JSON.parse(message.toString()))
+        if (numClients == 1) {
+            console.log(JSON.parse(message.toString()))
+        }
     });
 
     ws.on('close', (code, reason) => {

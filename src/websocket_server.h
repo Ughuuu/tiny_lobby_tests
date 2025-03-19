@@ -9,9 +9,12 @@
 static int64_t get_time_now();
 
 struct PerSocketData {
+    std::string uid;
     std::string id;
     std::string game_id;
     std::string reconnection_token;
+    int message_count = 0;
+    int64_t last_message_time = 0;
 };
 
 template <bool SSL>
@@ -50,6 +53,7 @@ class WebSocketServer {
     std::unordered_map<std::string, PeerConnectionData<SSL>> connection_data;
     std::unordered_map<std::string, ReconnectionTokens> reconnections;
 public:
+    void tick();
     void on_upgrade(uWS::HttpResponse<SSL> *res, uWS::HttpRequest *req, struct us_socket_context_t *context);
     void on_open(uWS::WebSocket<SSL, true, PerSocketData> *ws);
     void on_message(uWS::WebSocket<SSL, true, PerSocketData> *ws, const std::string_view &message, uWS::OpCode opCode);

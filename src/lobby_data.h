@@ -11,15 +11,18 @@ struct LobbyData {
     std::string host;
     std::string password;
     int max_players;
-    std::unordered_set<std::string> peer_ids;
+    std::set<std::string> peer_ids;
     int64_t create_time;
     std::string game_id;
     bool sealed = false;
     std::unordered_map<std::string, AnyElement> public_data;
     std::unordered_map<std::string, AnyElement> private_data;
     std::unordered_map<std::string, AnyElement> tags;
-    std::unordered_map<std::string, std::string> timer_data;
     int order_id_counter = 0;
+    bool public_data_dirty = false;
+    bool private_data_dirty = false;
+    bool tags_dirty = false;
+    bool sealed_dirty = false;
 
     std::string to_string(bool include_private = false) {
         std::unordered_map<std::string, AnyElement> lobby_dict;

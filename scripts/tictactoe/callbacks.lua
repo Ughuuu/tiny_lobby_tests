@@ -1,13 +1,12 @@
 -- Load modules
 local turn = require("turn")
-local lobby = require("lobby")
 local api = require("api")
 local helper = require("helper")
 
 local callbacks = {}
 
 function callbacks.on_create(peerID, minPlayers, maxPlayers)
-    local l = lobby.get()
+    local l = lobby
     local max_players = l.max_players
     if max_players < minPlayers or max_players > maxPlayers then
         return { error = ("Max players must be between " .. tostring(minPlayers) .. " and " .. tostring(maxPlayers)) }
@@ -15,12 +14,11 @@ function callbacks.on_create(peerID, minPlayers, maxPlayers)
 
     l.tags["max_points"] = l.tags["max_points"] or 0
     l.public_data["game_state"] = "setup"
-    lobby.save(l)
     return nil
 end
 
 function callbacks.on_left(peerID)
-    local l = lobby.get()
+    local l = lobby
     if l.public_data["game_state"] == "setup" then return nil end
     
     if not l.peers[l.public_data["dealer"]] then

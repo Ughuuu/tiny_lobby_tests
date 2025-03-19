@@ -6,6 +6,14 @@
 #include "script_angelscript.h"
 #include <unordered_set>
 
+struct TimerData {
+    std::string id;
+    std::string lobby_id;
+    std::string game_id;
+    int64_t end_time;
+    std::vector<AnyElement> args;
+};
+
 struct GameData {
     std::string id;
     std::string entrypoint;
@@ -14,7 +22,9 @@ struct GameData {
     std::unordered_map<std::string, int64_t> disconnected_peers;
     std::unordered_map<std::string, LobbyData> lobbies;
     std::unordered_set<std::string> lobby_listing_peers;
+    std::unordered_set<std::string> lobbies_updated;
     std::unordered_set<std::string> enabled_callbacks;
+    std::unordered_map<std::string, TimerData> timer_data;
     ScriptLua lua;
     //ScriptAngelScript angelscript;
     
