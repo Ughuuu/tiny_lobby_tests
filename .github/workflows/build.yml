@@ -10,7 +10,25 @@ on:
       - main
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install clang-format and clang-tidy
+        run: |
+          sudo apt-get update
+          sudo apt-get install clang-format clang-tidy
+
+      - name: Check formatting in src directory
+        run: ./check_format.sh
+
+      - name: Run clang-tidy in src directory
+        run: ./check_lint.sh
   build:
+    needs: lint
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
