@@ -55,7 +55,7 @@ file(GLOB SCRIPTARRAY_SOURCES external/angelscript/sdk/add_on/scriptarray/*.cpp)
 file(GLOB SCRIPTDICTIONARY_SOURCES external/angelscript/sdk/add_on/scriptdictionary/*.cpp)
 
 add_executable(lobby_server ${SOURCES})
-target_link_libraries(lobby_server PRIVATE Boost::uuid Boost::lockfree uWebSockets angelscript readerwriterqueue unofficial::inih::inireader yyjson ${LUAJIT_LIBRARIES})
+target_link_libraries(lobby_server PRIVATE Boost::uuid uWebSockets angelscript readerwriterqueue unofficial::inih::inireader yyjson ${LUAJIT_LIBRARIES})
 target_include_directories(lobby_server PRIVATE
   "external/angelscript/sdk/angelscript/include"
   "external/angelscript/sdk/add_on"
