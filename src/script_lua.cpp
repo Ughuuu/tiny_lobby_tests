@@ -1,8 +1,10 @@
 #include "script_lua.h"
-#include "game_thread.h"
+
 #include <filesystem>
 
-static AnyElement decode_luavalue(lua_State *L,int idx);
+#include "game_thread.h"
+
+static AnyElement decode_luavalue(lua_State *L, int idx);
 
 static AnyElement decode_luatable(lua_State *L, int idx) {
     std::unordered_map<std::string, AnyElement> result_dict;
@@ -48,7 +50,7 @@ static AnyElement decode_luatable(lua_State *L, int idx) {
     }
 }
 
-static AnyElement decode_luavalue(lua_State *L,int idx) {
+static AnyElement decode_luavalue(lua_State *L, int idx) {
     switch (lua_type(L, idx)) {
         case LUA_TNIL:
             return AnyElement{std::monostate{}};
@@ -86,28 +88,30 @@ static void push_table(lua_State *L, const std::unordered_map<std::string, AnyEl
 }
 
 static void push_lua_value(lua_State *L, const AnyElement &value) {
-    std::visit([L](auto &&v) {
-        using T = std::decay_t<decltype(v)>;
-        if constexpr (std::is_same_v<T, std::monostate>) {
-            lua_pushnil(L);
-        } else if constexpr (std::is_same_v<T, bool>) {
-            lua_pushboolean(L, v);
-        } else if constexpr (std::is_same_v<T, int64_t>) {
-            lua_pushinteger(L, v);
-        } else if constexpr (std::is_same_v<T, double>) {
-            lua_pushnumber(L, v);
-        } else if constexpr (std::is_same_v<T, std::string>) {
-            // Use string view to avoid copying string contents.
-            std::string_view str_view(v);
-            lua_pushlstring(L, str_view.data(), str_view.size());
-        } else if constexpr (std::is_same_v<T, std::vector<AnyElement>>) {
-            push_table(L, v);
-        } else if constexpr (std::is_same_v<T, std::unordered_map<std::string, AnyElement>>) {
-            push_table(L, v);
-        } else {
-            lua_pushnil(L);
-        }
-    }, value.value);
+    std::visit(
+        [L](auto &&v) {
+            using T = std::decay_t<decltype(v)>;
+            if constexpr (std::is_same_v<T, std::monostate>) {
+                lua_pushnil(L);
+            } else if constexpr (std::is_same_v<T, bool>) {
+                lua_pushboolean(L, v);
+            } else if constexpr (std::is_same_v<T, int64_t>) {
+                lua_pushinteger(L, v);
+            } else if constexpr (std::is_same_v<T, double>) {
+                lua_pushnumber(L, v);
+            } else if constexpr (std::is_same_v<T, std::string>) {
+                // Use string view to avoid copying string contents.
+                std::string_view str_view(v);
+                lua_pushlstring(L, str_view.data(), str_view.size());
+            } else if constexpr (std::is_same_v<T, std::vector<AnyElement>>) {
+                push_table(L, v);
+            } else if constexpr (std::is_same_v<T, std::unordered_map<std::string, AnyElement>>) {
+                push_table(L, v);
+            } else {
+                lua_pushnil(L);
+            }
+        },
+        value.value);
 }
 
 static int start_timer(lua_State *L) {
@@ -132,18 +136,18 @@ static int start_timer(lua_State *L) {
     lua_pop(L, 1);
 
     lua_getfield(L, LUA_REGISTRYINDEX, "game_thread");
-    GameThread* game_thread = static_cast<GameThread*>(lua_touserdata(L, -1));
+    GameThread *game_thread = static_cast<GameThread *>(lua_touserdata(L, -1));
     lua_pop(L, 1);
 
     auto &game = game_thread->games[game_id];
     auto &lobby = game.lobbies[lobby_id];
     game.timer_data.emplace(timer_id, TimerData{
-        .id = timer_id,
-        .lobby_id = lobby_id,
-        .game_id = game_id,
-        .args = args,
-        .end_time = duration * 1000 + get_time_now(), 
-    });
+                                          .id = timer_id,
+                                          .lobby_id = lobby_id,
+                                          .game_id = game_id,
+                                          .args = args,
+                                          .end_time = duration * 1000 + get_time_now(),
+                                      });
 
     return 0;
 }
@@ -159,7 +163,7 @@ static int stop_timer(lua_State *L) {
     lua_pop(L, 1);
 
     lua_getfield(L, LUA_REGISTRYINDEX, "game_thread");
-    GameThread* game_thread = static_cast<GameThread*>(lua_touserdata(L, -1));
+    GameThread *game_thread = static_cast<GameThread *>(lua_touserdata(L, -1));
     lua_pop(L, 1);
 
     auto &game = game_thread->games[game_id];
@@ -168,7 +172,7 @@ static int stop_timer(lua_State *L) {
     return 0;
 }
 
-static int get_order_of_element(const std::set<std::string>& ordered_set, const std::string& key) {
+static int get_order_of_element(const std::set<std::string> &ordered_set, const std::string &key) {
     auto it = ordered_set.find(key);
     if (it != ordered_set.end()) {
         return std::distance(ordered_set.begin(), it);
@@ -176,18 +180,18 @@ static int get_order_of_element(const std::set<std::string>& ordered_set, const 
     return -1;
 }
 
-static std::string get_element_at_index(const std::set<std::string>& ordered_set, int index) {
+static std::string get_element_at_index(const std::set<std::string> &ordered_set, int index) {
     if (index < 0 || index >= ordered_set.size()) {
-        return ""; // Invalid index
+        return "";  // Invalid index
     }
 
     auto it = ordered_set.begin();
-    std::advance(it, index); // Move iterator to the specified index
-    return *it; // Return the element at the specified index
+    std::advance(it, index);  // Move iterator to the specified index
+    return *it;               // Return the element at the specified index
 }
 
-static int lobby_newindex(lua_State* L) {
-    LuaWrapperInfo* info = static_cast<LuaWrapperInfo*>(lua_touserdata(L, 1));
+static int lobby_newindex(lua_State *L) {
+    LuaWrapperInfo *info = static_cast<LuaWrapperInfo *>(lua_touserdata(L, 1));
     if (!info) {
         luaL_error(L, "Expected light userdata as first argument.");
         return 0;
@@ -201,14 +205,14 @@ static int lobby_newindex(lua_State* L) {
     lua_pop(L, 1);
 
     lua_getfield(L, LUA_REGISTRYINDEX, "game_thread");
-    GameThread* game_thread = static_cast<GameThread*>(lua_touserdata(L, -1));
+    GameThread *game_thread = static_cast<GameThread *>(lua_touserdata(L, -1));
     lua_pop(L, 1);
 
     auto &game = game_thread->games[game_id];
     auto &lobby = game.lobbies[lobby_id];
 
     auto key = luaL_checkstring(L, 2);
-    
+
     if (info->name == "lobby") {
         if (strcmp(key, "sealed") == 0) {
             lobby.sealed = lua_toboolean(L, 3);
@@ -238,8 +242,8 @@ static int lobby_newindex(lua_State* L) {
     return 0;
 }
 
-static int lobby_index(lua_State* L) {
-    LuaWrapperInfo* info = static_cast<LuaWrapperInfo*>(lua_touserdata(L, 1));
+static int lobby_index(lua_State *L) {
+    LuaWrapperInfo *info = static_cast<LuaWrapperInfo *>(lua_touserdata(L, 1));
     if (!info) {
         luaL_error(L, "Expected light userdata as first argument.");
         return 0;
@@ -254,36 +258,31 @@ static int lobby_index(lua_State* L) {
     lua_pop(L, 1);
 
     lua_getfield(L, LUA_REGISTRYINDEX, "game_thread");
-    GameThread* game_thread = static_cast<GameThread*>(lua_touserdata(L, -1));
+    GameThread *game_thread = static_cast<GameThread *>(lua_touserdata(L, -1));
     lua_pop(L, 1);
 
     auto &game = game_thread->games[game_id];
     auto &lobby = game.lobbies[lobby_id];
 
-    const char* key = luaL_checkstring(L, 2);
+    const char *key = luaL_checkstring(L, 2);
 
     if (info->name == "lobby") {
         if (strcmp(key, "id") == 0) {
             lua_pushstring(L, lobby_id.c_str());
             return 1;
-        } 
-        else if (strcmp(key, "name") == 0) {
+        } else if (strcmp(key, "name") == 0) {
             lua_pushstring(L, lobby.name.c_str());
             return 1;
-        } 
-        else if (strcmp(key, "host") == 0) {
+        } else if (strcmp(key, "host") == 0) {
             lua_pushstring(L, lobby.host.c_str());
             return 1;
-        } 
-        else if (strcmp(key, "max_players") == 0) {
+        } else if (strcmp(key, "max_players") == 0) {
             lua_pushinteger(L, lobby.max_players);
             return 1;
-        } 
-        else if (strcmp(key, "create_time") == 0) {
+        } else if (strcmp(key, "create_time") == 0) {
             lua_pushinteger(L, int64_t(lobby.create_time));
             return 1;
-        }
-        else if (strcmp(key, "sealed") == 0) {
+        } else if (strcmp(key, "sealed") == 0) {
             lua_pushboolean(L, lobby.sealed);
             return 1;
         } else if (strcmp(key, "tags") == 0) {
@@ -299,9 +298,10 @@ static int lobby_index(lua_State* L) {
             lua_newtable(L);
 
             int index = 0;
-            for (const auto& peer_id : lobby.peer_ids) {
-                auto& peer = game.peers[peer_id];
-                lua_getfield(L, LUA_REGISTRYINDEX, ("peer_object_" + std::to_string(index)).c_str());
+            for (const auto &peer_id : lobby.peer_ids) {
+                auto &peer = game.peers[peer_id];
+                lua_getfield(L, LUA_REGISTRYINDEX,
+                             ("peer_object_" + std::to_string(index)).c_str());
                 lua_setfield(L, -2, peer_id.c_str());
                 index++;
             }
@@ -342,13 +342,16 @@ static int lobby_index(lua_State* L) {
             lua_pushboolean(L, peer.disconnected);
             return 1;
         } else if (strcmp(key, "public_data") == 0) {
-            lua_getfield(L, LUA_REGISTRYINDEX, ("peer_public_data_" + std::to_string(info->idx)).c_str());
+            lua_getfield(L, LUA_REGISTRYINDEX,
+                         ("peer_public_data_" + std::to_string(info->idx)).c_str());
             return 1;
         } else if (strcmp(key, "private_data") == 0) {
-            lua_getfield(L, LUA_REGISTRYINDEX, ("peer_private_data_" + std::to_string(info->idx)).c_str());
+            lua_getfield(L, LUA_REGISTRYINDEX,
+                         ("peer_private_data_" + std::to_string(info->idx)).c_str());
             return 1;
         } else if (strcmp(key, "user_data") == 0) {
-            lua_getfield(L, LUA_REGISTRYINDEX, ("peer_user_data_" + std::to_string(info->idx)).c_str());
+            lua_getfield(L, LUA_REGISTRYINDEX,
+                         ("peer_user_data_" + std::to_string(info->idx)).c_str());
             return 1;
         }
     } else if (info->name == "peer_public_data") {
@@ -393,7 +396,7 @@ void ScriptLua::set_lua_metatables() {
     lua_settable(L, -3);
     lua_pop(L, 1);
 
-    auto register_object = [&](void* userdata, const char* name) {
+    auto register_object = [&](void *userdata, const char *name) {
         lua_pushlightuserdata(L, userdata);
         luaL_getmetatable(L, "SharedMetatable");
         lua_setmetatable(L, -2);
@@ -406,8 +409,10 @@ void ScriptLua::set_lua_metatables() {
 
     for (int i = 0; i < 10; i++) {
         register_object(&peers_elements_wrapper[i], ("peer_object_" + std::to_string(i)).c_str());
-        register_object(&peers_public_wrapper[i], ("peer_public_data_" + std::to_string(i)).c_str());
-        register_object(&peers_private_wrapper[i], ("peer_private_data_" + std::to_string(i)).c_str());
+        register_object(&peers_public_wrapper[i],
+                        ("peer_public_data_" + std::to_string(i)).c_str());
+        register_object(&peers_private_wrapper[i],
+                        ("peer_private_data_" + std::to_string(i)).c_str());
         register_object(&peers_user_wrapper[i], ("peer_user_data_" + std::to_string(i)).c_str());
     }
 
@@ -418,7 +423,7 @@ void ScriptLua::set_lua_metatables() {
     lua_setglobal(L, "lobby");
 }
 
-int lua_print_to_file(lua_State* L) {
+int lua_print_to_file(lua_State *L) {
     lua_getfield(L, LUA_REGISTRYINDEX, "logs_path");
     std::string logs_path = lua_tostring(L, -1);
     lua_pop(L, 1);
@@ -428,10 +433,10 @@ int lua_print_to_file(lua_State* L) {
         return 0;
     }
 
-    int n = lua_gettop(L); // Number of arguments
+    int n = lua_gettop(L);  // Number of arguments
     for (int i = 1; i <= n; ++i) {
         if (i > 1) {
-            outfile << "\t"; // Add tab between arguments
+            outfile << "\t";  // Add tab between arguments
         }
 
         // Check argument type and convert it to string
@@ -444,15 +449,15 @@ int lua_print_to_file(lua_State* L) {
         }
     }
 
-    outfile << "\n"; // New line after printing all arguments
+    outfile << "\n";  // New line after printing all arguments
 
     // Close the file
     outfile.close();
 
-    return 0; // Return nothing to Lua
+    return 0;  // Return nothing to Lua
 }
 
-static void setup_print_redirect(lua_State* L) {
+static void setup_print_redirect(lua_State *L) {
     lua_pushcfunction(L, lua_print_to_file);
     lua_setglobal(L, "print");
 }
@@ -467,25 +472,28 @@ void ScriptLua::open() {
         enabled = false;
         return;
     }
-    INIReader config_reader(scripts_folder +"/" + folder_name + "/config.ini");
+    INIReader config_reader(scripts_folder + "/" + folder_name + "/config.ini");
     autoreload = config_reader.GetBoolean("script", "autoreload", false);
     luaL_openlibs(L);
 
     lua_pushcfunction(L, &start_timer);
     lua_setglobal(L, "start_timer");
-    
+
     lua_pushcfunction(L, &stop_timer);
     lua_setglobal(L, "stop_timer");
 
     set_lua_metatables();
 
     // setup_print_redirect(L);
-    luaL_dostring(L, ("package.path = \"" + scripts_folder + "/" + folder_name + "/?.lua;\" .. package.path").c_str());
+    luaL_dostring(
+        L, ("package.path = \"" + scripts_folder + "/" + folder_name + "/?.lua;\" .. package.path")
+               .c_str());
     luaL_dofile(L, (scripts_folder + "/" + folder_name + "/" + script_entrypoint).c_str());
     enabled = true;
 }
 
-AnyElement ScriptLua::func_call(std::string &func_name, std::vector<AnyElement> &args, std::string &lobby_id, std::string &game_id, bool &has_error) {
+AnyElement ScriptLua::func_call(std::string &func_name, std::vector<AnyElement> &args,
+                                std::string &lobby_id, std::string &game_id, bool &has_error) {
     if (!enabled) {
         return AnyElement{"Lua script is not enabled"};
     }

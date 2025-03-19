@@ -1,11 +1,11 @@
 #pragma once
 #include <chrono>
-#include <iomanip>
 #include <ctime>
-#include <iostream>
-#include <fstream>
-#include <sstream>
 #include <filesystem>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <sstream>
 
 class ServerLogger {
     std::ofstream log_file;
@@ -14,8 +14,8 @@ class ServerLogger {
     int retries = 0;
     const int MAX_RETRIES = 3;
 
-    const size_t MAX_LOG_SIZE = 10 * 1024 * 1024; // 10MB size limit (adjustable)
-    const size_t BUFFER_LIMIT = 0; // 4KB buffer limit before flushing
+    const size_t MAX_LOG_SIZE = 10 * 1024 * 1024;  // 10MB size limit (adjustable)
+    const size_t BUFFER_LIMIT = 0;                 // 4KB buffer limit before flushing
 
     std::ostringstream buffer;
 
@@ -29,7 +29,8 @@ class ServerLogger {
         auto now = std::chrono::steady_clock::now();
         if (now - last_time_check > TIME_UPDATE_INTERVAL) {
             last_time_check = now;
-            auto now_time_t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+            auto now_time_t =
+                std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
             std::tm* now_tm = std::localtime(&now_time_t);
             std::ostringstream oss;
             oss << std::put_time(now_tm, "%Y-%m-%d %H:%M:%S");
@@ -42,7 +43,7 @@ class ServerLogger {
     void flush_buffer() {
         if (log_file.is_open() && !buffer.str().empty()) {
             log_file << buffer.str();
-            log_file.flush(); // Ensure data is written to disk
+            log_file.flush();  // Ensure data is written to disk
             buffer.str("");
             buffer.clear();
         }
@@ -51,45 +52,45 @@ class ServerLogger {
     // Attempt to reopen log file if it's closed
     bool reopen_file() {
         if (retries >= MAX_RETRIES) {
-            return false; // Stop retrying after reaching the limit
+            return false;  // Stop retrying after reaching the limit
         }
-        log_file.close(); // Close if half-open
-        log_file.open(file_name, std::ios::app); // Reopen in append mode
+        log_file.close();                         // Close if half-open
+        log_file.open(file_name, std::ios::app);  // Reopen in append mode
         if (!log_file.is_open()) {
             ++retries;
-            std::cerr << "Failed to reopen log file: " << file_name << " (Attempt " << retries << "/" << MAX_RETRIES << ")" << std::endl;
+            std::cerr << "Failed to reopen log file: " << file_name << " (Attempt " << retries
+                      << "/" << MAX_RETRIES << ")" << std::endl;
             return false;
         }
-        retries = 0; // Reset retry count on success
+        retries = 0;  // Reset retry count on success
         return true;
     }
 
     // Internal file logging with retries, size check, and buffer flushing
-    template<typename... Args>
+    template <typename... Args>
     void log_to_file(const Args&... args) {
         if (!log_file.is_open() && !reopen_file()) {
-            return; // Give up if cannot reopen
+            return;  // Give up if cannot reopen
         }
 
         buffer << get_cached_time() << ": ";
         (buffer << ... << args) << '\n';
 
         if (buffer.tellp() >= static_cast<std::streampos>(BUFFER_LIMIT)) {
-            flush_buffer(); // Flush when buffer exceeds limit
+            flush_buffer();  // Flush when buffer exceeds limit
         }
     }
 
-public:
-
+   public:
     // Public log method for debug-level logs
-    template<typename... Args>
+    template <typename... Args>
     void debug_log(const Args&... args) {
         if (verbose) {
             log_to_file(args...);
         }
     }
 
-    template<typename... Args>
+    template <typename... Args>
     void error_log(const Args&... args) {
         log_to_file(args...);
     }
@@ -97,7 +98,7 @@ public:
     // Constructor with file open
     ServerLogger(bool verbose, const std::string& file_name)
         : verbose(verbose), file_name(file_name) {
-        log_file.open(file_name, std::ios::app); // Open in append mode
+        log_file.open(file_name, std::ios::app);  // Open in append mode
         if (!log_file.is_open()) {
             std::cerr << "Error opening log file: " << file_name << std::endl;
         }
@@ -105,7 +106,7 @@ public:
 
     // Destructor flushes buffer and closes file
     ~ServerLogger() {
-        flush_buffer(); // Ensure nothing is left in buffer
+        flush_buffer();  // Ensure nothing is left in buffer
         if (log_file.is_open()) {
             log_file.close();
         }

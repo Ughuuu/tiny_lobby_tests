@@ -2,8 +2,9 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
-#include "peer_data.h"
+
 #include "any_type.h"
+#include "peer_data.h"
 
 struct LobbyData {
     std::string id;

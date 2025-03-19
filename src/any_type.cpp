@@ -1,7 +1,7 @@
 #include "any_type.h"
 
-
-std::string decode_string_or_default(yyjson_val *object, std::string key, std::string default_value) {
+std::string decode_string_or_default(yyjson_val *object, std::string key,
+                                     std::string default_value) {
     if (!object || !yyjson_is_obj(object)) {
         return default_value;
     }
@@ -50,7 +50,7 @@ std::string decode_array(yyjson_val *array, AnyElement &element) {
 }
 
 std::string decode_value(yyjson_val *value, AnyElement &element) {
-    if (!value){
+    if (!value) {
         return "Null value";
     }
 
@@ -62,13 +62,11 @@ std::string decode_value(yyjson_val *value, AnyElement &element) {
             element.value = yyjson_get_bool(value);
             break;
         case YYJSON_TYPE_NUM:
-            if (yyjson_is_int(value)){
+            if (yyjson_is_int(value)) {
                 element.value = yyjson_get_int(value);
-            }
-            else if (yyjson_is_uint(value)) {
+            } else if (yyjson_is_uint(value)) {
                 element.value = static_cast<int64_t>(yyjson_get_uint(value));
-            }
-            else {
+            } else {
                 element.value = yyjson_get_real(value);
             }
             break;

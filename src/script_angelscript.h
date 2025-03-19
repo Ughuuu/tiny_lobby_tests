@@ -1,9 +1,10 @@
 #pragma once
 #include <angelscript.h>
-#include "scriptstdstring/scriptstdstring.h"
+
+#include "INIReader.h"
 #include "scriptarray/scriptarray.h"
 #include "scriptdictionary/scriptdictionary.h"
-#include "INIReader.h"
+#include "scriptstdstring/scriptstdstring.h"
 
 class ScriptAngelScript {
     bool enabled = false;
@@ -11,17 +12,14 @@ class ScriptAngelScript {
     asIScriptModule *mod = nullptr;
     asIScriptFunction *func = nullptr;
 
-public:
-    ScriptAngelScript(std::string &script_language,
-        std::string &scripts_folder,
-        std::string &folder_name,
-        std::string &script_entrypoint,
-        ServerLogger &logger,
-        INIReader &config_reader) {
+   public:
+    ScriptAngelScript(std::string &script_language, std::string &scripts_folder,
+                      std::string &folder_name, std::string &script_entrypoint,
+                      ServerLogger &logger, INIReader &config_reader) {
         if (config_reader.Get("game", "language", "lua") != "angelscript") {
             return;
         }
-        
+
         // Create AngelScript engine
         engine = asCreateScriptEngine();
         RegisterStdString(engine);
@@ -139,7 +137,7 @@ public:
                 int64_t value = context->GetReturnQWord();
                 return AnyElement{value};
             }
-            
+
             case asTYPEID_FLOAT: {
                 float value = context->GetReturnFloat();
                 return AnyElement{value};

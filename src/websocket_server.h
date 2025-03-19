@@ -1,8 +1,10 @@
 #pragma once
+#include <readerwriterqueue.h>
+
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
-#include <readerwriterqueue.h>
+
 #include "App.h"
 #include "server_logger.h"
 
@@ -22,14 +24,10 @@ struct PeerConnectionData {
     std::string id;
     std::string game_id;
     std::string reconnection_token;
-    uWS::WebSocket<SSL, true, PerSocketData>* ws;
+    uWS::WebSocket<SSL, true, PerSocketData> *ws;
 };
 
-enum WebSocketEvent {
-    OPEN,
-    MESSAGE,
-    CLOSE
-};
+enum WebSocketEvent { OPEN, MESSAGE, CLOSE };
 
 struct WebSocketMessage {
     std::string id;
@@ -52,15 +50,20 @@ class WebSocketServer {
     ServerLogger logger;
     std::unordered_map<std::string, PeerConnectionData<SSL>> connection_data;
     std::unordered_map<std::string, ReconnectionTokens> reconnections;
-public:
+
+   public:
     void tick();
-    void on_upgrade(uWS::HttpResponse<SSL> *res, uWS::HttpRequest *req, struct us_socket_context_t *context);
+    void on_upgrade(uWS::HttpResponse<SSL> *res, uWS::HttpRequest *req,
+                    struct us_socket_context_t *context);
     void on_open(uWS::WebSocket<SSL, true, PerSocketData> *ws);
-    void on_message(uWS::WebSocket<SSL, true, PerSocketData> *ws, const std::string_view &message, uWS::OpCode opCode);
-    void on_close(uWS::WebSocket<SSL, true, PerSocketData> *ws, const std::string_view &message, int opCode);
+    void on_message(uWS::WebSocket<SSL, true, PerSocketData> *ws, const std::string_view &message,
+                    uWS::OpCode opCode);
+    void on_close(uWS::WebSocket<SSL, true, PerSocketData> *ws, const std::string_view &message,
+                  int opCode);
     void send(std::string id, const std::string &message, uWS::OpCode opCode = uWS::OpCode::TEXT);
 
-    WebSocketServer(bool verbose, std::string log_folder, moodycamel::BlockingReaderWriterQueue<WebSocketMessage>& message_queue);
+    WebSocketServer(bool verbose, std::string log_folder,
+                    moodycamel::BlockingReaderWriterQueue<WebSocketMessage> &message_queue);
 };
 
 #include "websocket_server.tpp"

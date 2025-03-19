@@ -1,10 +1,11 @@
 #pragma once
 #include <string>
-#include "peer_data.h"
-#include "lobby_data.h"
-#include "script_lua.h"
-#include "script_angelscript.h"
 #include <unordered_set>
+
+#include "lobby_data.h"
+#include "peer_data.h"
+#include "script_angelscript.h"
+#include "script_lua.h"
 
 struct TimerData {
     std::string id;
@@ -26,15 +27,15 @@ struct GameData {
     std::unordered_set<std::string> enabled_callbacks;
     std::unordered_map<std::string, TimerData> timer_data;
     ScriptLua lua;
-    //ScriptAngelScript angelscript;
-    
+    // ScriptAngelScript angelscript;
+
     void close() {
         lua.close();
-        //angelscript.close();
+        // angelscript.close();
     }
     void open() {
         lua.open();
-        //angelscript.open();
+        // angelscript.open();
     }
 
     std::string peers_to_string(std::string &lobby_id) {
