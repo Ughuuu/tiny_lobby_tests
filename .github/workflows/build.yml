@@ -84,7 +84,7 @@ jobs:
         ./build_release_macos-x64.sh
     
     - name: Build & Install dependencies for Windows
-      shell: cmd
+      shell: pwsh
       if: matrix.platform.os == 'windows-latest'
       run: |
         .\install-windows.ps1
