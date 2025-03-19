@@ -58,16 +58,11 @@ jobs:
         ./install-linux.sh
         ./build_release.sh
 
-    - name: Build & Install dependencies for macOS
+    - name: Build & Install dependencies for macOS ARM64
       if: matrix.os == 'macos-latest'
       run: |
-        brew update
-        brew install llvm@16
-        export PATH="/opt/homebrew/opt/llvm@16/bin:$PATH"
-        export LDFLAGS="-L/opt/homebrew/opt/llvm@16/lib"
-        export CPPFLAGS="-I/opt/homebrew/opt/llvm@16/include"
-        ./install-macos.sh
-        ./build_release_macos.sh
+        ./install-macos-arm64.sh
+        ./build_release_macos-arm64.sh
 
     
     - name: Build & Install dependencies for Windows
