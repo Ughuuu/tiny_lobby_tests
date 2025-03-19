@@ -93,7 +93,7 @@ void WebSocketServer<SSL>::on_open(uWS::WebSocket<SSL, true, PerSocketData> *ws)
         .peer_id = data->id,
         .timestamp = get_time_now()
     });
-    connection_data.insert_or_assign(data->id, PeerConnectionData {
+    connection_data.insert_or_assign(data->id, PeerConnectionData<SSL> {
         .id = data->id,
         .game_id = data->game_id,
         .reconnection_token = data->reconnection_token,
