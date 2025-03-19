@@ -17,7 +17,6 @@ target_link_libraries(uWebSockets INTERFACE uSockets ${ZLIB_LIBRARIES})
 target_compile_options(uWebSockets INTERFACE -Wno-deprecated-declarations)
 
 find_package(boost_uuid REQUIRED CONFIG)
-find_package(boost_lockfree REQUIRED COMPONENTS lockfree)
 file(GLOB SOURCES "src/*.cpp")
 
 FetchContent_Declare(
