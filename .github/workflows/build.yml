@@ -52,12 +52,6 @@ jobs:
       run: |
         sudo apt update
         sudo apt install -y software-properties-common
-        sudo add-apt-repository ppa:ubuntu-toolchain-r/test
-        sudo apt update
-        sudo apt install clang-16
-        which clang-16
-        which clang
-        clang --version
         ./install-linux.sh
         ./build_release.sh
 
