@@ -1,4 +1,5 @@
 # Build uWebSockets
+set WITH_ZLIB=0
 cd external/uWebSockets
 mingw32-make
 mingw32-make install
