@@ -102,9 +102,9 @@ void WebSocketServer<SSL>::on_open(uWS::WebSocket<SSL, true, PerSocketData> *ws)
     message_queue.enqueue(WebSocketMessage {
         .id = data->id,
         .event = WebSocketEvent::OPEN,
-        .message = std::string()
+        .message = std::string(),
         .game_id = data->game_id,
-        .reconnection_token = data->reconnection_token,
+        .reconnection_token = data->reconnection_token
     });
 }
 template <bool SSL>
@@ -127,9 +127,9 @@ void WebSocketServer<SSL>::on_message(uWS::WebSocket<SSL, true, PerSocketData> *
     message_queue.enqueue(WebSocketMessage {
         .id = data->id,
         .event = WebSocketEvent::MESSAGE,
-        .message = std::string(message)
+        .message = std::string(message),
         .game_id = data->game_id,
-        .reconnection_token = data->reconnection_token,
+        .reconnection_token = data->reconnection_token
     });
 }
 template <bool SSL>
@@ -143,9 +143,9 @@ void WebSocketServer<SSL>::on_close(uWS::WebSocket<SSL, true, PerSocketData> *ws
     message_queue.enqueue(WebSocketMessage {
         .id = data->id,
         .event = WebSocketEvent::CLOSE,
-        .message = std::string(message)
+        .message = std::string(message),
         .game_id = data->game_id,
-        .reconnection_token = data->reconnection_token,
+        .reconnection_token = data->reconnection_token
     });
 }
 
