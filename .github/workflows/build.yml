@@ -39,6 +39,13 @@ jobs:
       with:
         fetch-depth: 0
         submodules: recursive
+    
+    - name: Print versions
+      shell: bash
+      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
+      run: |
+        cmake --version
+        clang --version
 
     - name: Build & Install dependencies for Linux
       if: matrix.os == 'ubuntu-latest'
