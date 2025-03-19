@@ -55,11 +55,11 @@ jobs:
         ./install-linux.sh
         ./build_release.sh
 
-    - name: Build & Install dependencies for macOS ARM64
+    - name: Build & Install dependencies for macOS
       if: matrix.os == 'macos-latest'
       run: |
-        ./install-macos-arm64.sh
-        ./build_release_macos-arm64.sh
+        ./install-macos.sh
+        ./build_release_macos.sh
 
     
     - name: Build & Install dependencies for Windows
