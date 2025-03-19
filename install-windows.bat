@@ -6,6 +6,7 @@ cd ../..
 # Install packages
 cd external/vcpkg
 bootstrap-vcpkg.bat
+vcpkg install zlib
 vcpkg install boost-uuid:x64-windows
 vcpkg install readerwriterqueue:x64-windows
 vcpkg install inih:x64-windows

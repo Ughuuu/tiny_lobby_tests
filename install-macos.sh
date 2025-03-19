@@ -8,9 +8,13 @@ cd ../..
 # Install packages
 cd external/vcpkg
 ./bootstrap-vcpkg.sh
-./vcpkg install boost-uuid
-./vcpkg install readerwriterqueue
-./vcpkg install inih
+./vcpkg install boost-uuid --triplet x64-osx
+./vcpkg install boost-uuid --triplet arm64-osx
+./vcpkg install readerwriterqueue --triplet x64-osx
+./vcpkg install readerwriterqueue --triplet arm64-osx
+./vcpkg install inih --triplet x64-osx
+./vcpkg install inih --triplet arm64-osx
+./vcpkg list
 ./vcpkg integrate install
 cd ../..
 # Install luajit

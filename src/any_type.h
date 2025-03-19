@@ -2,6 +2,7 @@
 #include <variant>
 #include <vector>
 #include <unordered_map>
+#include <string>
 #include "yyjson.h"
 
 #define EMPTY_STRING ""
