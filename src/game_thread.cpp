@@ -661,14 +661,14 @@ void GameThread::on_create_lobby(GameData &game, std::string command_id, PeerDat
     peer.lobby_id = small_uuid;
     game.lobbies.emplace(small_uuid, LobbyData{
         .id = small_uuid,
-        .create_time = get_time_now(),
-        .host = peer.id,
-        .game_id = peer.game_id,
-        .max_players = decode_int_or_default(data_val, "max_players", 0),
-        .password = decode_string_or_default(data_val, "password", ""),
-        .tags = lobby_tags,
         .name = decode_string_or_default(data_val, "name", ""),
+        .host = peer.id,
+        .password = decode_string_or_default(data_val, "password", ""),
+        .max_players = decode_int_or_default(data_val, "max_players", 0),
         .peer_ids = {peer.id},
+        .create_time = get_time_now(),
+        .game_id = peer.game_id,
+        .tags = lobby_tags,
     });
     game.lobby_listing_peers.erase(peer.id);
     // SCRIPTED CALL
