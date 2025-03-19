@@ -10,7 +10,6 @@ cd ../..
 cd external/vcpkg
 ./bootstrap-vcpkg.sh
 ./vcpkg install boost-uuid
-./vcpkg install readerwriterqueue
 ./vcpkg install inih
 ./vcpkg integrate install
 cd ../..
