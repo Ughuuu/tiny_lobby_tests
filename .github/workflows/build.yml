@@ -47,9 +47,6 @@ jobs:
         cmake --version
         clang --version
 
-        cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON . CMakeCache.txt
-        cat CMakeCache.txt
-
     - name: Build & Install dependencies for Linux
       if: matrix.os == 'ubuntu-latest'
       run: |
