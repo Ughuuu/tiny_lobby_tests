@@ -72,13 +72,13 @@ jobs:
         ./build_release.sh
 
     - name: Build & Install dependencies for macOS arm64
-      if: matrix.platform.os == 'macos-latest' and matrix.platform.arch == 'arm64'
+      if: matrix.platform.os == 'macos-latest' && matrix.platform.arch == 'arm64'
       run: |
         ./install-macos-arm64.sh
         ./build_release_macos-arm64.sh
 
     - name: Build & Install dependencies for macOS x64
-      if: matrix.platform.os == 'macos-latest' and matrix.platform.arch == 'x64'
+      if: matrix.platform.os == 'macos-latest' && matrix.platform.arch == 'x64'
       run: |
         ./install-macos-x64.sh
         ./build_release_macos-x64.sh
