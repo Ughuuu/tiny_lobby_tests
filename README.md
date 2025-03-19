@@ -4,6 +4,8 @@ This is the C++ implementation of the Blazium Web Server. It uses [uWebSockets](
 
 ## Requirements
 
+- clang version 16.0.0
+- cmake version 3.30.5
 - Run `install.sh`
 
 1. MacOS
