@@ -27,11 +27,27 @@ jobs:
 
   build:
     needs: lint
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.platform.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        platform: [{
+              os: ubuntu-latest,
+              arch: x64
+            }, 
+            {
+              os: windows-latest,
+              arch: x64
+            }, 
+            {
+            os: macos-latest,
+            arch: x64
+            }, 
+            {
+            os: macos-latest,
+            arch: arm64
+            }
+              ]
 
     steps:
     - name: Checkout code
@@ -42,29 +58,34 @@ jobs:
     
     - name: Print versions
       shell: bash
-      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
+      if: matrix.platform.os == 'ubuntu-latest' || matrix.platform.os == 'macos-latest'
       run: |
         cmake --version
         clang --version
 
     - name: Build & Install dependencies for Linux
-      if: matrix.os == 'ubuntu-latest'
+      if: matrix.platform.os == 'ubuntu-latest'
       run: |
         sudo apt update
         sudo apt install -y software-properties-common
         ./install-linux.sh
         ./build_release.sh
 
-    - name: Build & Install dependencies for macOS
-      if: matrix.os == 'macos-latest'
+    - name: Build & Install dependencies for macOS arm64
+      if: matrix.platform.os == 'macos-latest' and matrix.platform.arch == 'arm64'
       run: |
-        ./install-macos.sh
-        ./build_release_macos.sh
+        ./install-macos-arm64.sh
+        ./build_release_macos-arm64.sh
 
+    - name: Build & Install dependencies for macOS x64
+      if: matrix.platform.os == 'macos-latest' and matrix.platform.arch == 'x64'
+      run: |
+        ./install-macos-x64.sh
+        ./build_release_macos-x64.sh
     
     - name: Build & Install dependencies for Windows
       shell: cmd
-      if: matrix.os == 'windows-latest'
+      if: matrix.platform.os == 'windows-latest'
       run: |
         .\install-windows.ps1
 
@@ -74,7 +95,7 @@ jobs:
     - name: Archive build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ matrix.os }}-lobby_server
+        name: lobby_server-${{ matrix.platform.os }}-${{ matrix.platform.arch }}
         path: |
           build/lobby_server*
         if-no-files-found: error
