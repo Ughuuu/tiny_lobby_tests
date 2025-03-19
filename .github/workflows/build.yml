@@ -31,7 +31,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-24.04, windows-latest, macos-latest]
 
     steps:
     - name: Checkout code
@@ -55,6 +55,8 @@ jobs:
         sudo add-apt-repository ppa:ubuntu-toolchain-r/test
         sudo apt update
         sudo apt install clang-16
+        which clang-16
+        which clang
         clang --version
         ./install-linux.sh
         ./build_release.sh
@@ -72,9 +74,31 @@ jobs:
 
     
     - name: Build & Install dependencies for Windows
+      shell: cmd
       if: matrix.os == 'windows-latest'
       run: |
-        ./install-windows.bat
+
+        set WITH_ZLIB=0
+        cd external/uWebSockets
+        mingw32-make
+        mingw32-make install
+        cd ../..
+
+
+        cd external/vcpkg
+        bootstrap-vcpkg.bat
+        vcpkg install boost-uuid:x64-windows
+        vcpkg install readerwriterqueue:x64-windows
+        vcpkg install inih:x64-windows
+        vcpkg integrate install
+        cd ../..
+
+
+        cd external/luajit
+        mingw32-make
+        mingw32-make install
+        cd ../..
+
         ./build_release.bat
 
     - name: Archive build artifacts
