@@ -13,5 +13,5 @@ cd external/vcpkg
 cd ../..
 # Install luajit
 cd external/LuaJIT
-make
+make MACOSX_DEPLOYMENT_TARGET=10.15
 sudo make install
