@@ -1,3 +1,6 @@
+# Install deps
+sudo apt-get update
+sudo apt-get install -y build-essential zlib1g-dev
 # Build uWebSockets
 cd external/uWebSockets
 make

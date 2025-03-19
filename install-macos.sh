@@ -1,3 +1,5 @@
+# Install deps
+brew install zlib
 # Build uWebSockets
 cd external/uWebSockets
 make
