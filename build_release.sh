@@ -7,4 +7,3 @@ cmake -S .. -B . \
 -DCMAKE_CXX_FLAGS_RELWITHDEBINFO="-O3 -march=native -flto -DNDEBUG"
 cmake --build . --config RelWithDebInfo
 cd ..
-./build/lobby_server

@@ -1,4 +1,5 @@
 build/*
+logs/*
 test/node_modules/*
 test/stress_test_results.csv
 test/stress_test_results.csv

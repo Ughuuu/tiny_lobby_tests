@@ -49,13 +49,10 @@ int main(int argc, char* argv[]) {
                     webserver.on_message(ws, message, opCode);
                 },
                 .drain = [](auto */*ws*/) {
-                    std::cout<< "Drain?\n";
                 },
                 .ping = [](auto */*ws*/, std::string_view) {
-                    std::cout<< "Ping";
                 },
                 .pong = [](auto */*ws*/, std::string_view) {
-                    std::cout<< "Pong";
                 },
                 .close = [&](auto *ws, int code, std::string_view message) {
                     webserver.on_close(ws, message, code);

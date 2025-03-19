@@ -1,0 +1,18 @@
+# Build uWebSockets
+cd external/uWebSockets
+mingw32-make
+mingw32-make install
+cd ../..
+# Install packages
+cd external/vcpkg
+bootstrap-vcpkg.bat
+vcpkg integrate install
+vcpkg install sol2:x64-windows
+vcpkg install boost-uuid:x64-windows
+vcpkg install readerwriterqueue:x64-windows
+vcpkg install inih:x64-windows
+cd ../..
+# Install luajit
+cd external/luajit
+mingw32-make
+mingw32-make install
