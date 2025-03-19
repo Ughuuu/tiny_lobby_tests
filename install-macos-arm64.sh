@@ -17,6 +17,6 @@ cd external/vcpkg
 cd ../..
 # Install luajit
 cd external/LuaJIT
-make MACOSX_DEPLOYMENT_TARGET=10.15 ARCH=arm64
+make MACOSX_DEPLOYMENT_TARGET=10.15 # ARCH=arm64
 sudo make install
 cd ../..
