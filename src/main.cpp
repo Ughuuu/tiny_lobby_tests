@@ -39,15 +39,15 @@ int main(int argc, char *argv[]) {
                      // max 2 kb
                      .maxPayloadLength = static_cast<unsigned int>(config_reader.GetUnsigned(
                          "webserverserver", "max_payload_length", 2 * 1024)),
-                     .resetIdleTimeoutOnSend = config_reader.GetBoolean(
-                         "webserverserver", "reset_idle_timeout_on_send", true),
-                     .closeOnBackpressureLimit = true,
                      // 3 minutes
                      .idleTimeout = static_cast<unsigned short>(
                          config_reader.GetUnsigned("webserverserver", "idle_timeout", 180)),
                      // 64 kb
                      .maxBackpressure = static_cast<unsigned int>(config_reader.GetUnsigned(
                          "webserverserver", "max_backpressure", 64 * 1024)),
+                     .closeOnBackpressureLimit = true,
+                     .resetIdleTimeoutOnSend = config_reader.GetBoolean(
+                         "webserverserver", "reset_idle_timeout_on_send", true),
                      /* Handlers */
                      .upgrade = [&](auto *res, auto *req,
                                     auto *context) { webserver.on_upgrade(res, req, context); },
@@ -95,15 +95,15 @@ int main(int argc, char *argv[]) {
                      // max 2 kb
                      .maxPayloadLength = static_cast<unsigned int>(config_reader.GetUnsigned(
                          "webserverserver", "max_payload_length", 2 * 1024)),
-                     .resetIdleTimeoutOnSend = config_reader.GetBoolean(
-                         "webserverserver", "reset_idle_timeout_on_send", true),
-                     .closeOnBackpressureLimit = true,
                      // 3 minutes
                      .idleTimeout = static_cast<unsigned short>(
                          config_reader.GetUnsigned("webserverserver", "idle_timeout", 180)),
                      // 64 kb
                      .maxBackpressure = static_cast<unsigned int>(config_reader.GetUnsigned(
                          "webserverserver", "max_backpressure", 64 * 1024)),
+                     .closeOnBackpressureLimit = true,
+                     .resetIdleTimeoutOnSend = config_reader.GetBoolean(
+                         "webserverserver", "reset_idle_timeout_on_send", true),
                      /* Handlers */
                      .upgrade = [&](auto *res, auto *req,
                                     auto *context) { webserver.on_upgrade(res, req, context); },

@@ -100,11 +100,11 @@ void WebSocketServer<SSL>::on_open(uWS::WebSocket<SSL, true, PerSocketData> *ws)
         .ws = ws,
     });
     message_queue.enqueue(WebSocketMessage {
-        .id = data->id,
-        .message = std::string(),
         .event = WebSocketEvent::OPEN,
+        .id = data->id,
         .game_id = data->game_id,
         .reconnection_token = data->reconnection_token,
+        .message = std::string()
     });
 }
 template <bool SSL>
@@ -125,11 +125,11 @@ void WebSocketServer<SSL>::on_message(uWS::WebSocket<SSL, true, PerSocketData> *
     }
     logger.debug_log("[WebSocketServer] on_message: ", data->uid, " ", data->id, " ", data->game_id, " ", message, " ", opCode);
     message_queue.enqueue(WebSocketMessage {
-        .id = data->id,
-        .message = std::string(message),
         .event = WebSocketEvent::MESSAGE,
+        .id = data->id,
         .game_id = data->game_id,
         .reconnection_token = data->reconnection_token,
+        .message = std::string(message)
     });
 }
 template <bool SSL>
@@ -141,11 +141,11 @@ void WebSocketServer<SSL>::on_close(uWS::WebSocket<SSL, true, PerSocketData> *ws
     }
     logger.debug_log("[WebSocketServer] on_close: ", data->uid, " ", data->id, " ", data->game_id, " ", opCode);
     message_queue.enqueue(WebSocketMessage {
-        .id = data->id,
-        .message = std::string(message),
         .event = WebSocketEvent::CLOSE,
+        .id = data->id,
         .game_id = data->game_id,
         .reconnection_token = data->reconnection_token,
+        .message = std::string(message)
     });
 }
 
