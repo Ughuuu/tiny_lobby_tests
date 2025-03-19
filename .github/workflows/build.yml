@@ -11,7 +11,7 @@ on:
 
 jobs:
   lint:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout code
@@ -31,7 +31,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, windows-latest, macos-latest]
+        os: [ubuntu-22.04, windows-latest, macos-latest]
 
     steps:
     - name: Checkout code
@@ -42,13 +42,13 @@ jobs:
     
     - name: Print versions
       shell: bash
-      if: matrix.os == 'ubuntu-24.04' || matrix.os == 'macos-latest'
+      if: matrix.os == 'ubuntu-22.04' || matrix.os == 'macos-latest'
       run: |
         cmake --version
         clang --version
 
     - name: Build & Install dependencies for Linux
-      if: matrix.os == 'ubuntu-24.04'
+      if: matrix.os == 'ubuntu-22.04'
       run: |
         sudo apt update
         sudo apt install -y software-properties-common
@@ -77,29 +77,10 @@ jobs:
       shell: cmd
       if: matrix.os == 'windows-latest'
       run: |
+        .\install-windows.ps1
 
-        set WITH_ZLIB=0
-        cd external/uWebSockets
-        mingw32-make
-        mingw32-make install
-        cd ../..
-
-
-        cd external/vcpkg
-        bootstrap-vcpkg.bat
-        vcpkg install boost-uuid:x64-windows
-        vcpkg install readerwriterqueue:x64-windows
-        vcpkg install inih:x64-windows
-        vcpkg integrate install
-        cd ../..
-
-
-        cd external/luajit
-        mingw32-make
-        mingw32-make install
-        cd ../..
-
-        ./build_release.bat
+        # Run build_release.bat
+        .\build_release.ps1
 
     - name: Archive build artifacts
       uses: actions/upload-artifact@v4
