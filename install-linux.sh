@@ -18,3 +18,4 @@ cd ../..
 cd external/LuaJIT
 make
 sudo make install
+cd ../..

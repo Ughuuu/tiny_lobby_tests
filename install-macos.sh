@@ -17,3 +17,4 @@ cd ../..
 cd external/LuaJIT
 make MACOSX_DEPLOYMENT_TARGET=10.15
 sudo make install
+cd ../..

@@ -15,3 +15,4 @@ cd ../..
 cd external/luajit
 mingw32-make
 mingw32-make install
+cd ../..
