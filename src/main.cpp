@@ -75,7 +75,7 @@ int main(int argc, char *argv[]) {
         });
         std::thread GameThread_thread = std::thread([&]() {
             GameThread GameThread(verbose, config_reader.GetString("game", "log_folder", "logs"),
-                                  config_reader.Get("game", "scripts_folder", ""), message_queue,
+                                  config_reader.Get("game", "scripts_folder", "scripts"), message_queue,
                                   app.getLoop(), nullptr, &webserver);
             GameThread.run();
         });
@@ -134,7 +134,7 @@ int main(int argc, char *argv[]) {
         });
         std::thread GameThread_thread = std::thread([&]() {
             GameThread GameThread(verbose, config_reader.GetString("game", "log_folder", "logs"),
-                                  config_reader.Get("game", "scripts_folder", ""), message_queue,
+                                  config_reader.Get("game", "scripts_folder", "scripts"), message_queue,
                                   app.getLoop(), &webserver, nullptr);
             GameThread.run();
         });
