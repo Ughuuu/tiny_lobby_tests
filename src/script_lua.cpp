@@ -18,6 +18,7 @@ static AnyElement decode_luatable(lua_State *L, int idx) {
         if (lua_isnumber(L, -2)) {
             auto key = lua_tointeger(L, -2);
             result_array.push_back(decode_luavalue(L, -1));
+            is_dict = false;
         } else if (lua_isstring(L, -2)) {
             lua_pushvalue(L, -2);
             std::string key = lua_tostring(L, -1);

@@ -55,7 +55,7 @@ function api.place_piece(placementTileX, placementTileY)
 
     -- Check if peer won
     if line0 or line1 or line2 or column0 or column1 or column2 or diagonal0 or diagonal1 then
-        return api.end_game(l, l.calling_peer_id, "won")
+        return api.end_game(l, "won")
     end
 
     -- Check draw
@@ -69,7 +69,7 @@ function api.place_piece(placementTileX, placementTileY)
     end
 
     if is_draw then
-        return api.end_game(l, l.calling_peer_id, "draw")
+        return api.end_game(l, "draw")
     end
 
     l = turn.increment_turn(l)
@@ -77,11 +77,18 @@ end
 
 function api.set_initial_data(l)
     l.public_data["game_state"] = "playing"
-    l.public_data["board"] = {
+    board = {
         {0, 0, 0},
         {0, 0, 0},
         {0, 0, 0},
     }
+    l.public_data["board"] = board
+    print(board)
+    print(board[1])
+    print(board[1][1])
+    print(l.public_data["board"])
+    print(l.public_data["board"][1])
+    print(l.public_data["board"][1][1])
     l = turn.increment_dealer(l)
     l.public_data["turn_idx"] = -1
     l = turn.increment_turn(l)
@@ -93,7 +100,7 @@ function api.end_game(l, state)
     if state == "won" then
         l.peers[l.calling_peer_id].public_data["points"] = l.peers[l.calling_peer_id].public_data["points"] + 1
     end
-    return start_timer("_on_timer_restart_game", 1)
+    return lobby.start_timer("_on_timer_restart_game", 1)
 end
 
 function api.on_timer_restart_game()

@@ -103,7 +103,7 @@ function api.guess_letter(letter)
     l.peers[l.calling_peer_id].public_data["total_points"] = (l.peers[l.calling_peer_id].public_data["total_points"] or 0) + points
 
     if l.public_data["guessed"] == word then
-        start_timer("_on_timer_restart_game", 1)
+        lobby.start_timer("_on_timer_restart_game", 1)
         api.end_game("won")
     end
 end
@@ -127,7 +127,7 @@ function api.end_game(newState)
         l.public_data["guessed"] = l.peers[dealerID].private_data["word"]
         l.peers[dealerID].public_data["points"] = points
     end
-    start_timer("_on_timer_restart_game", 1)
+    lobby.start_timer("_on_timer_restart_game", 1)
 end
 
 function api.on_timer_restart_game()
@@ -156,7 +156,7 @@ function api.set_initial_data(l)
     for k, _ in pairs(l.peers) do
         l.peers[k].public_data["points"] = 0
     end
-    start_timer("_on_timer_word_timeout", 180, l.public_data["dealer"])
+    lobby.start_timer("_on_timer_word_timeout", 180, l.public_data["dealer"])
     return l
 end
 
