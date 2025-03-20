@@ -74,12 +74,13 @@ function api.guess_letter(letter)
         return { error = "Letter was already pressed." }
     end
 
+    local pressed = l.public_data["pressed"]
+    pressed[letter] = l.calling_peer_id
+    l.public_data["pressed"] = pressed
+
     local word = l.peers[dealerID].private_data["word"]
     if not string.find(word, letter, 1, true) then
         l.public_data["health"] = l.public_data["health"] - 1
-        print("Setting pressed letter to " .. l.calling_peer_id)
-        print("Letter: " .. letter)
-        l.public_data["pressed"][letter] = l.calling_peer_id
         if l.public_data["health"] == 0 then api.end_game("lost") end
         return { error = "Letter is not in the word." }
     end
@@ -100,7 +101,6 @@ function api.guess_letter(letter)
 
     l.peers[l.calling_peer_id].public_data["points"] = points
     l.peers[l.calling_peer_id].public_data["total_points"] = (l.peers[l.calling_peer_id].public_data["total_points"] or 0) + points
-    l.public_data["pressed"][letter] = l.calling_peer_id
 
     if l.public_data["guessed"] == word then
         start_timer("_on_timer_restart_game", 1)

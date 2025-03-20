@@ -157,7 +157,7 @@ void WebSocketServer<SSL>::send(std::string id, const std::string &message, uWS:
             logger.debug_log("[WebSocketServer] on_send: ", data->uid, " ", data->id, " ", data->game_id, " ", message, " ", opCode);
             it->second.ws->send(message, opCode);
             if (opCode == uWS::OpCode::CLOSE) {
-                connection_data[id].ws = nullptr;
+                it->second.ws = nullptr;
             }
         } else {
             logger.debug_log("[WebSocketServer] on_send failed, ws empty: ", id, " ", message, " ", opCode);
