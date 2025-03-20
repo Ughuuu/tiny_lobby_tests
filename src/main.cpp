@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    int port = config_reader.GetUnsigned("webserverserver", "port", 9001);
+    int port = config_reader.GetUnsigned("webserverserver", "port", 8080);
     std::cout << "Starting webserver on " << port << std::endl;
 
     moodycamel::BlockingReaderWriterQueue<WebSocketMessage> message_queue(1024 * 10);
