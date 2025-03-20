@@ -70,6 +70,9 @@ int main(int argc, char *argv[]) {
                         std::cout << "Failed to listen on port" << port << std::endl;
                     }
                 });
+        app.get("/health", [](auto *res, auto *req) {
+            res->writeStatus("200 OK")->end("OK");
+        });
         std::thread GameThread_thread = std::thread([&]() {
             GameThread GameThread(verbose, config_reader.GetString("game", "log_folder", "logs"),
                                   config_reader.Get("game", "scripts_folder", ""), message_queue,
@@ -126,6 +129,9 @@ int main(int argc, char *argv[]) {
                         std::cout << "Failed to listen on port" << port << std::endl;
                     }
                 });
+        app.get("/health", [](auto *res, auto *req) {
+            res->writeStatus("200 OK")->end("OK");
+        });
         std::thread GameThread_thread = std::thread([&]() {
             GameThread GameThread(verbose, config_reader.GetString("game", "log_folder", "logs"),
                                   config_reader.Get("game", "scripts_folder", ""), message_queue,

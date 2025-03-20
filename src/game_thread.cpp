@@ -223,6 +223,10 @@ GameThread::GameThread(bool verbose, std::string log_folder, std::string scripts
 
 void GameThread::load_games() {
     logger.debug_log("[GameThread] on_load_games");
+    if (!std::filesystem::exists(scripts_folder)) {
+        logger.error_log("[GameThread] Cannot open " + scripts_folder);
+        return;
+    }
     for (const auto &entry : std::filesystem::directory_iterator(scripts_folder)) {
         if (entry.is_directory()) {
             std::string folder_name = entry.path().filename().string();
