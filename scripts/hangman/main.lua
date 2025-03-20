@@ -13,7 +13,7 @@ _on_timer_word_timeout = api.on_timer_word_timeout
 
 -- Callback functions
 local callbacks = require("callbacks")
-_on_create = function(peerID) return callbacks.on_create(peerID, 2, 10) end
+_on_create = function() return callbacks.on_create(2, 10) end
 _on_join = callbacks.on_join
 _on_chat = callbacks.on_chat
 _on_tags = callbacks.on_tags

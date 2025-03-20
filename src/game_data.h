@@ -11,6 +11,7 @@ struct TimerData {
     std::string id;
     std::string lobby_id;
     std::string game_id;
+    std::string peer_id;
     int64_t end_time;
     std::vector<AnyElement> args;
 };

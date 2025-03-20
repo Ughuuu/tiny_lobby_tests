@@ -1,12 +1,13 @@
 local helper = require("helper")
 local turn = require("turn")
+local lobby = require("lobby")
 
 local api = {}
 
-function api.start_game(peerID)
-    local l = lobby
+function api.start_game()
+    local l = lobby.get()
     local ord = helper.peers_ordered(l)
-    if l.peers[peerID].id ~= l.host then
+    if l.peers[l.calling_peer_id].id ~= l.host then
         return { error = "You are not the host" }
     end
     if l.public_data["game_state"] ~= "setup" then
@@ -19,7 +20,7 @@ function api.start_game(peerID)
     l = api.set_initial_data(l)
 end
 
-function api.place_piece(peerID, placementTileX, placementTileY)
+function api.place_piece(placementTileX, placementTileY)
     if type(placementTileX) ~= "number" or type(placementTileY) ~= "number" then
         return { error = "Placement Tile X and Y index must be a number." }
     end
@@ -28,11 +29,11 @@ function api.place_piece(peerID, placementTileX, placementTileY)
     if placementTileX < 1 or placementTileX > 3 or placementTileY < 1 or placementTileY > 3 then
         return { error = "Placement Tile X and Y index must be a from 0 to 3." }
     end
-    local l = lobby
+    local l = lobby.get()
     if l.public_data["game_state"] ~= "playing" then
         return { error = "Game has not started." }
     end
-    if l.public_data["turn"] ~= peerID then
+    if l.public_data["turn"] ~= l.calling_peer_id then
         return { error = "Not your turn." }
     end
     local board = l.public_data["board"]
@@ -40,7 +41,7 @@ function api.place_piece(peerID, placementTileX, placementTileY)
     if board[placementTileY][placementTileX] ~= 0 then
         return { error = "Piece already placed." }
     end
-    board[placementTileY][placementTileX] = peerID
+    board[placementTileY][placementTileX] = l.calling_peer_id
     l.public_data["board"] = board
 
     local line0 = board[1][1] == board[1][2] and board[1][2] == board[1][3] and board[1][1] ~= 0
@@ -54,7 +55,7 @@ function api.place_piece(peerID, placementTileX, placementTileY)
 
     -- Check if peer won
     if line0 or line1 or line2 or column0 or column1 or column2 or diagonal0 or diagonal1 then
-        return api.end_game(l, peerID, "won")
+        return api.end_game(l, l.calling_peer_id, "won")
     end
 
     -- Check draw
@@ -68,7 +69,7 @@ function api.place_piece(peerID, placementTileX, placementTileY)
     end
 
     if is_draw then
-        return api.end_game(l, peerID, "draw")
+        return api.end_game(l, l.calling_peer_id, "draw")
     end
 
     l = turn.increment_turn(l)
@@ -87,17 +88,17 @@ function api.set_initial_data(l)
     return l
 end
 
-function api.end_game(l, peerID, state)
+function api.end_game(l, state)
     l.public_data["game_state"] = state
     if state == "won" then
-        l.peers[peerID].public_data["points"] = l.peers[peerID].public_data["points"] + 1
+        l.peers[l.calling_peer_id].public_data["points"] = l.peers[l.calling_peer_id].public_data["points"] + 1
     end
-    return start_timer("_on_timer_restart_game", 1, peerID)
+    return start_timer("_on_timer_restart_game", 1)
 end
 
-function api.on_timer_restart_game(peerID)
-    local l = lobby
-    if l.peers[peerID].public_data["points"] >= l.tags["max_points"] and l.tags["max_points"] ~= 0 then
+function api.on_timer_restart_game()
+    local l = lobby.get()
+    if l.peers[l.calling_peer_id].public_data["points"] >= l.tags["max_points"] and l.tags["max_points"] ~= 0 then
         l.public_data["game_state"] = "setup"
     else
         l = api.set_initial_data(l)

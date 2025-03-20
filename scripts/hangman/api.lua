@@ -1,12 +1,12 @@
 local turn = require("turn")
 local helper = require("helper")
-
+local lobby = require("lobby")
 local api = {}
 
-function api.start_game(peerID)
-    local l = lobby
+function api.start_game()
+    local l = lobby.get()
     local ord = helper.peers_ordered(l)
-    if l.peers[peerID].id ~= l.host then
+    if l.peers[l.calling_peer_id].id ~= l.host then
         return { error = "You are not the host" }
     end
     if l.public_data["game_state"] ~= "setup" then
@@ -20,7 +20,7 @@ function api.start_game(peerID)
     l = api.set_initial_data(l)
 end
 
-function api.set_word(peerID, word)
+function api.set_word(word)
     word = string.upper(tostring(word))
     if #word > 20 then
         return { error = "Too long word." }
@@ -38,12 +38,12 @@ function api.set_word(peerID, word)
         return { error = "Invalid word." }
     end
 
-    local l = lobby
+    local l = lobby.get()
     local err = turn.validate_game_state_is("setting_word")
     if err then return err end
 
     local dealerID = l.public_data["dealer"]
-    if dealerID ~= peerID then return "Only the dealer can set the word." end
+    if dealerID ~= l.calling_peer_id then return "Only the dealer can set the word." end
     if l.private_data["words"][word] then return "Word was already used." end
 
     l.peers[dealerID].private_data["word"] = word
@@ -57,15 +57,15 @@ function api.set_word(peerID, word)
     end
 end
 
-function api.guess_letter(peerID, letter)
+function api.guess_letter(letter)
     letter = string.upper(tostring(letter))
     if #letter ~= 1 then return { error = "Too many letters." } end
 
     if not api.is_letter(letter) then return { error = "Invalid letter." } end
 
-    local l = lobby
+    local l = lobby.get()
     local dealerID = l.public_data["dealer"]
-    if dealerID == peerID then return { error = "The dealer cannot guess the word." } end
+    if dealerID == l.calling_peer_id then return { error = "The dealer cannot guess the word." } end
 
     local err = turn.validate_game_state_is("playing")
     if err then return err end
@@ -77,7 +77,9 @@ function api.guess_letter(peerID, letter)
     local word = l.peers[dealerID].private_data["word"]
     if not string.find(word, letter, 1, true) then
         l.public_data["health"] = l.public_data["health"] - 1
-        l.public_data["pressed"][letter] = peerID
+        print("Setting pressed letter to " .. l.calling_peer_id)
+        print("Letter: " .. letter)
+        l.public_data["pressed"][letter] = l.calling_peer_id
         if l.public_data["health"] == 0 then api.end_game("lost") end
         return { error = "Letter is not in the word." }
     end
@@ -96,9 +98,9 @@ function api.guess_letter(peerID, letter)
         l.peers[k].public_data["points"] = 0
     end
 
-    l.peers[peerID].public_data["points"] = points
-    l.peers[peerID].public_data["total_points"] = (l.peers[peerID].public_data["total_points"] or 0) + points
-    l.public_data["pressed"][letter] = peerID
+    l.peers[l.calling_peer_id].public_data["points"] = points
+    l.peers[l.calling_peer_id].public_data["total_points"] = (l.peers[l.calling_peer_id].public_data["total_points"] or 0) + points
+    l.public_data["pressed"][letter] = l.calling_peer_id
 
     if l.public_data["guessed"] == word then
         start_timer("_on_timer_restart_game", 1)
@@ -106,15 +108,15 @@ function api.guess_letter(peerID, letter)
     end
 end
 
-function api.skip(peerID)
-    local l = lobby
-    if l.public_data["dealer"] ~= peerID then return { error = "Only dealer can skip." } end
+function api.skip()
+    local l = lobby.get()
+    if l.public_data["dealer"] ~= l.calling_peer_id then return { error = "Only dealer can skip." } end
     if l.public_data["game_state"] ~= "setting_word" then return { error = "Word is already set." } end
     api.end_game("lost")
 end
 
 function api.end_game(newState)
-    local l = lobby
+    local l = lobby.get()
     local points = 0
     for i = 1, #l.public_data["guessed"] do
         if l.public_data["guessed"]:sub(i, i) == '_' then points = points + 1 end
@@ -129,7 +131,7 @@ function api.end_game(newState)
 end
 
 function api.on_timer_restart_game()
-    local l = lobby
+    local l = lobby.get()
     local game_ended = false
     for k, _ in pairs(l.peers) do
         l.peers[k].private_data["word"] = nil
@@ -159,7 +161,7 @@ function api.set_initial_data(l)
 end
 
 function api.on_timer_word_timeout(dealerID)
-    local l = lobby
+    local l = lobby.get()
     if l.public_data["game_state"] == "setting_word" or l.public_data["dealer"] == dealerID then
         api.end_game("lost")
     end

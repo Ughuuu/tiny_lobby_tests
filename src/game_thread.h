@@ -77,7 +77,7 @@ class GameThread {
     void remove_peer_from_lobby(GameData &game, LobbyData &lobby, PeerData &peer,
                                 const std::string &command_id);
 
-    AnyElement scripted_function_call(std::string &lobby_id, GameData &game, std::string funcname,
+    AnyElement scripted_function_call(std::string peer_id, std::string &lobby_id, GameData &game, std::string funcname,
                                       bool override, std::vector<AnyElement> &args,
                                       bool &has_error);
 

@@ -1,4 +1,5 @@
 local helper = require("helper")
+local lobby = require("lobby")
 
 local turn = {}
 
@@ -27,7 +28,8 @@ function turn.increment_turn(l)
 end
 
 function turn.validate_game_state_is(state_to_validate)
-    if lobby.public_data["game_state"] ~= state_to_validate then
+    local l = lobby.get()
+    if l.public_data["game_state"] ~= state_to_validate then
         return { error = "Game state is not " .. state_to_validate }
     end
 end

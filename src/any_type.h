@@ -67,6 +67,35 @@ struct AnyElement {
         return json_str;
     }
 };
+static bool operator==(const AnyElement &lhs, const AnyElement &rhs) {
+    // Compare if both variants hold the same type and value.
+    if (lhs.value.index() != rhs.value.index()) {
+        return false;
+    }
+
+    if (std::holds_alternative<std::monostate>(lhs.value)) {
+        return true;
+    } else if (std::holds_alternative<bool>(lhs.value)) {
+        return std::get<bool>(lhs.value) == std::get<bool>(rhs.value);
+    } else if (std::holds_alternative<int64_t>(lhs.value)) {
+        return std::get<int64_t>(lhs.value) == std::get<int64_t>(rhs.value);
+    } else if (std::holds_alternative<double>(lhs.value)) {
+        return std::get<double>(lhs.value) == std::get<double>(rhs.value);
+    } else if (std::holds_alternative<std::string>(lhs.value)) {
+        return std::get<std::string>(lhs.value) == std::get<std::string>(rhs.value);
+    } else if (std::holds_alternative<std::unordered_map<std::string, AnyElement>>(lhs.value)) {
+        return std::get<std::unordered_map<std::string, AnyElement>>(lhs.value) == 
+               std::get<std::unordered_map<std::string, AnyElement>>(rhs.value);
+    } else if (std::holds_alternative<std::vector<AnyElement>>(lhs.value)) {
+        return std::get<std::vector<AnyElement>>(lhs.value) == 
+               std::get<std::vector<AnyElement>>(rhs.value);
+    }
+
+    return false;
+}
+static bool operator!=(const AnyElement &lhs, const AnyElement &rhs) {
+    return !(lhs == rhs);
+}
 
 std::string decode_string_or_default(yyjson_val *object, std::string key,
                                      std::string default_value);

@@ -127,6 +127,10 @@ static int start_timer(lua_State *L) {
         args.push_back(decode_luavalue(L, i));
     }
 
+    lua_getfield(L, LUA_REGISTRYINDEX, "peer_id");
+    std::string peer_id = lua_tostring(L, -1);
+    lua_pop(L, 1);
+
     lua_getfield(L, LUA_REGISTRYINDEX, "game_id");
     std::string game_id = lua_tostring(L, -1);
     lua_pop(L, 1);
@@ -145,6 +149,7 @@ static int start_timer(lua_State *L) {
                                           .id = timer_id,
                                           .lobby_id = lobby_id,
                                           .game_id = game_id,
+                                          .peer_id = peer_id,
                                           .end_time = duration * 1000 + get_time_now(),
                                           .args = args,
                                       });
@@ -215,28 +220,46 @@ static int lobby_newindex(lua_State *L) {
 
     if (info->name == "lobby") {
         if (strcmp(key, "sealed") == 0) {
-            lobby.sealed = lua_toboolean(L, 3);
-            lobby.sealed_dirty = true;
+            bool new_sealed = lua_toboolean(L, 3);
+            if (new_sealed != lobby.sealed) {
+                lobby.sealed = new_sealed;
+                lobby.sealed_dirty = true;
+            }
         }
     } else if (info->name == "tags") {
-        lobby.tags[key] = decode_luavalue(L, 3);
-        lobby.tags_dirty = true;
+        auto new_tag = decode_luavalue(L, 3);
+        if (new_tag != lobby.tags[key]) {
+            lobby.tags[key] = new_tag;
+            lobby.tags_dirty = true;
+        }
     } else if (info->name == "public_data") {
-        lobby.public_data[key] = decode_luavalue(L, 3);
-        lobby.public_data_dirty = true;
+        auto new_public_data = decode_luavalue(L, 3);
+        if (new_public_data != lobby.public_data[key]) {
+            lobby.public_data[key] = new_public_data;
+            lobby.public_data_dirty = true;
+        }
     } else if (info->name == "private_data") {
-        lobby.private_data[key] = decode_luavalue(L, 3);
-        lobby.private_data_dirty = true;
+        auto new_private_data = decode_luavalue(L, 3);
+        if (new_private_data != lobby.private_data[key]) {
+            lobby.private_data[key] = new_private_data;
+            lobby.private_data_dirty = true;
+        }
     } else if (info->name == "peer_public_data") {
         auto peer_id = get_element_at_index(lobby.peer_ids, info->idx);
         auto &peer = game.peers[peer_id];
-        peer.public_data[key] = decode_luavalue(L, 3);
-        peer.public_data_dirty = true;
+        auto new_public_data = decode_luavalue(L, 3);
+        if (new_public_data != peer.public_data[key]) {
+            peer.public_data[key] = new_public_data;
+            peer.public_data_dirty = true;
+        }
     } else if (info->name == "peer_private_data") {
         auto peer_id = get_element_at_index(lobby.peer_ids, info->idx);
         auto &peer = game.peers[peer_id];
-        peer.private_data[key] = decode_luavalue(L, 3);
-        peer.private_data_dirty = true;
+        auto new_private_data = decode_luavalue(L, 3);
+        if (new_private_data != peer.private_data[key]) {
+            peer.private_data[key] = new_private_data;
+            peer.private_data_dirty = true;
+        }
     }
 
     return 0;
@@ -248,6 +271,10 @@ static int lobby_index(lua_State *L) {
         luaL_error(L, "Expected light userdata as first argument.");
         return 0;
     }
+
+    lua_getfield(L, LUA_REGISTRYINDEX, "peer_id");
+    std::string peer_id = lua_tostring(L, -1);
+    lua_pop(L, 1);
 
     lua_getfield(L, LUA_REGISTRYINDEX, "game_id");
     std::string game_id = lua_tostring(L, -1);
@@ -267,7 +294,10 @@ static int lobby_index(lua_State *L) {
     const char *key = luaL_checkstring(L, 2);
 
     if (info->name == "lobby") {
-        if (strcmp(key, "id") == 0) {
+        if (strcmp(key, "calling_peer_id") == 0) {
+            lua_pushstring(L, peer_id.c_str());
+            return 1;
+        } else if (strcmp(key, "id") == 0) {
             lua_pushstring(L, lobby_id.c_str());
             return 1;
         } else if (strcmp(key, "name") == 0) {
@@ -380,6 +410,30 @@ static int lobby_index(lua_State *L) {
     return 0;
 }
 
+int get_lobby(lua_State* L) {
+    lua_getfield(L, LUA_REGISTRYINDEX, "lobby");
+    return 1;
+}
+
+void luaopen_lobby(lua_State* L) {
+    lua_newtable(L);
+
+    lua_pushcfunction(L, get_lobby);
+    lua_setfield(L, -2, "get");
+
+    lua_pushcfunction(L, start_timer);
+    lua_setfield(L, -2, "start_timer");
+
+    lua_pushcfunction(L, stop_timer);
+    lua_setfield(L, -2, "stop_timer");
+
+    lua_getglobal(L, "package");
+    lua_getfield(L, -1, "loaded");
+    lua_pushstring(L, "lobby");
+    lua_pushvalue(L, -4);
+    lua_settable(L, -3);
+}
+
 void ScriptLua::set_lua_metatables() {
     // game thread
     lua_pushlightuserdata(L, game_thread);
@@ -420,7 +474,8 @@ void ScriptLua::set_lua_metatables() {
     lua_pushlightuserdata(L, &lobby_wrapper);
     luaL_getmetatable(L, "SharedMetatable");
     lua_setmetatable(L, -2);
-    lua_setglobal(L, "lobby");
+    lua_setfield(L, LUA_REGISTRYINDEX, "lobby");
+    luaopen_lobby(L);
 }
 
 int lua_print_to_file(lua_State *L) {
@@ -476,12 +531,6 @@ void ScriptLua::open() {
     autoreload = config_reader.GetBoolean("script", "autoreload", false);
     luaL_openlibs(L);
 
-    lua_pushcfunction(L, &start_timer);
-    lua_setglobal(L, "start_timer");
-
-    lua_pushcfunction(L, &stop_timer);
-    lua_setglobal(L, "stop_timer");
-
     set_lua_metatables();
 
     // setup_print_redirect(L);
@@ -493,6 +542,7 @@ void ScriptLua::open() {
 }
 
 AnyElement ScriptLua::func_call(std::string &func_name, std::vector<AnyElement> &args,
+                                std::string &peer_id,
                                 std::string &lobby_id, std::string &game_id, bool &has_error) {
     if (!enabled) {
         return AnyElement{"Lua script is not enabled"};
@@ -504,6 +554,9 @@ AnyElement ScriptLua::func_call(std::string &func_name, std::vector<AnyElement> 
     if (!enabled) {
         return AnyElement{"Lua script is not enabled"};
     }
+
+    lua_pushstring(L, peer_id.c_str());
+    lua_setfield(L, LUA_REGISTRYINDEX, "peer_id");
 
     lua_pushstring(L, lobby_id.c_str());
     lua_setfield(L, LUA_REGISTRYINDEX, "lobby_id");

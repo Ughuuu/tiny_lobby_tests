@@ -120,7 +120,6 @@ void WebSocketServer<SSL>::on_message(uWS::WebSocket<SSL, true, PerSocketData> *
     if (data->message_count > MAX_MESSAGES_PER_PERIOD) {
         logger.error_log("[WebSocketServer] on_message Rate limit exceeded: ", data->uid, " ", data->id, " ", data->game_id, " ", message, " ", opCode);
         send(data->id, "Rate limit exceeded", uWS::OpCode::CLOSE);
-        ws->close();
         return;
     }
     logger.debug_log("[WebSocketServer] on_message: ", data->uid, " ", data->id, " ", data->game_id, " ", message, " ", opCode);
@@ -138,8 +137,8 @@ void WebSocketServer<SSL>::on_close(uWS::WebSocket<SSL, true, PerSocketData> *ws
     // delete websocket only if reconnection_token matches
     if (data->reconnection_token == connection_data[data->id].reconnection_token) {
         connection_data[data->id].ws = nullptr;
-    }
-    logger.debug_log("[WebSocketServer] on_close: ", data->uid, " ", data->id, " ", data->game_id, " ", opCode);
+}
+    logger.debug_log("[WebSocketServer] on_close: ", data->uid, " ", data->id, " ", data->game_id, " ", message , " ", opCode);
     message_queue.enqueue(WebSocketMessage {
         .id = data->id,
         .event = WebSocketEvent::CLOSE,

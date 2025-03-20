@@ -83,6 +83,11 @@
         "*.tpp": "cpp",
         "iterator": "cpp",
         "__config": "cpp",
-        "utility": "cpp"
+        "utility": "cpp",
+        "exception": "cpp",
+        "chrono": "cpp",
+        "filesystem": "cpp",
+        "random": "cpp",
+        "ranges": "cpp"
     }
 }

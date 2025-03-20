@@ -66,6 +66,7 @@ struct ScriptLua {
    public:
     bool enabled = false;
     AnyElement func_call(std::string &func_name, std::vector<AnyElement> &args,
+        std::string &peer_id,
                          std::string &lobby_id, std::string &game_id, bool &has_error);
     void open();
     void close();

@@ -2,11 +2,12 @@
 local turn = require("turn")
 local api = require("api")
 local helper = require("helper")
+local lobby = require("lobby")
 
 local callbacks = {}
 
-function callbacks.on_create(peerID, minPlayers, maxPlayers)
-    local l = lobby
+function callbacks.on_create(minPlayers, maxPlayers)
+    local l = lobby.get()
     local max_players = l.max_players
     if max_players < minPlayers or max_players > maxPlayers then
         return { error = ("Max players must be between " .. tostring(minPlayers) .. " and " .. tostring(maxPlayers)) }
@@ -17,8 +18,8 @@ function callbacks.on_create(peerID, minPlayers, maxPlayers)
     return nil
 end
 
-function callbacks.on_left(peerID)
-    local l = lobby
+function callbacks.on_left()
+    local l = lobby.get()
     if l.public_data["game_state"] == "setup" then return nil end
     
     if not l.peers[l.public_data["dealer"]] then
@@ -26,11 +27,11 @@ function callbacks.on_left(peerID)
     end
 end
 
-function callbacks.on_join(peerID) return nil end
-function callbacks.on_chat(peerID, message) return nil end
+function callbacks.on_join() return nil end
+function callbacks.on_chat(message) return nil end
 function callbacks.on_tags(tags) return turn.validate_game_state_is("setup") end
-function callbacks.on_kick(peerID) return nil end
-function callbacks.on_ready(peerID, ready) return turn.validate_game_state_is("setup") end
+function callbacks.on_kick() return nil end
+function callbacks.on_ready(ready) return turn.validate_game_state_is("setup") end
 function callbacks.on_seal(seal) return nil end
 
 return callbacks
