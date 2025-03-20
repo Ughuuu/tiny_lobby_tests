@@ -98,6 +98,8 @@ class ServerLogger {
     // Constructor with file open
     ServerLogger(bool verbose, const std::string& file_name)
         : verbose(verbose), file_name(file_name) {
+        std::filesystem::path path(file_name);
+        std::filesystem::create_directories(path.parent_path());
         log_file.open(file_name, std::ios::app);  // Open in append mode
         if (!log_file.is_open()) {
             std::cerr << "Error opening log file: " << file_name << std::endl;
