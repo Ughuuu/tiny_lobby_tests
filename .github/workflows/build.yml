@@ -3,11 +3,9 @@ name: Build
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
+    branches: ["*"]
   pull_request:
-    branches:
-      - main
+    branches: ["*"]
 
 concurrency:
   group: ${{ github.ref }}
@@ -15,6 +13,7 @@ concurrency:
 
 jobs:
   lint:
+    name: Lint Code (Ubuntu)
     runs-on: ubuntu-latest
 
     steps:
@@ -29,77 +28,143 @@ jobs:
       - name: Check formatting in src directory
         run: ./check_format.sh
 
-  build:
+  build-linux:
+    name: Build on Linux (Ubuntu x64)
     needs: lint
-    runs-on: ${{ matrix.platform.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        platform: [{
-              os: ubuntu-latest,
-              arch: x64
-            }, 
-            {
-              os: windows-latest,
-              arch: x64
-            }, 
-            {
-            os: macos-latest,
-            arch: x64
-            }, 
-            {
-            os: macos-latest,
-            arch: arm64
-            }
-              ]
+    runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-        submodules: recursive
-    
-    - name: Print versions
-      shell: bash
-      if: matrix.platform.os == 'ubuntu-latest' || matrix.platform.os == 'macos-latest'
-      run: |
-        cmake --version
-        clang --version
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
 
-    - name: Build & Install dependencies for Linux
-      if: matrix.platform.os == 'ubuntu-latest'
-      run: |
-        sudo apt update
-        sudo apt install -y software-properties-common
-        ./install-linux.sh
-        ./build_release.sh
+      - name: Print versions
+        run: |
+          cmake --version
+          clang --version
 
-    - name: Build & Install dependencies for macOS arm64
-      if: matrix.platform.os == 'macos-latest' && matrix.platform.arch == 'arm64'
-      run: |
-        ./install-macos-arm64.sh
-        ./build_release_macos-arm64.sh
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y software-properties-common autoconf 
+          ./install-linux.sh
 
-    - name: Build & Install dependencies for macOS x64
-      if: matrix.platform.os == 'macos-latest' && matrix.platform.arch == 'x64'
-      run: |
-        ./install-macos-x64.sh
-        ./build_release_macos-x64.sh
-    
-    - name: Build & Install dependencies for Windows
-      shell: pwsh
-      if: matrix.platform.os == 'windows-latest'
-      run: |
-        .\install-windows.ps1
+      - name: Build Release
+        run: |
+          ./build_release.sh
 
-        # Run build_release.bat
-        .\build_release.ps1
+      - name: Archive build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: lobby_server-linux-x64
+          path: build/lobby_server
+          if-no-files-found: error
 
-    - name: Archive build artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: lobby_server-${{ matrix.platform.os }}-${{ matrix.platform.arch }}
-        path: |
-          build/lobby_server*
-        if-no-files-found: error
+  build-macos:
+    name: Build on macOS (${{ matrix.arch }})
+    needs: lint
+    strategy:
+      matrix:
+        arch: [x64, arm64]
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Print versions
+        run: |
+          cmake --version
+          clang --version
+
+      - name: Install dependencies (macOS ${{ matrix.arch }})
+        run: |
+          ./install-macos-${{ matrix.arch }}.sh
+
+      - name: Build (macOS ${{ matrix.arch }})
+        run: |
+          ./build_release_macos-${{ matrix.arch }}.sh
+
+      - name: Archive build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: lobby_server-macos-${{ matrix.arch }}
+          path: build/lobby_server*
+          if-no-files-found: error
+
+  build-windows:
+    name: Build on Windows (x64)
+    if: false
+    needs: lint
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Install dependencies
+        shell: pwsh
+        run: |
+          .\install-windows.ps1
+
+      - name: Install pkg-config
+        run: choco install pkgconfiglite
+
+      - name: Set PKG_CONFIG_PATH
+        run: |
+          echo "PKG_CONFIG_PATH=C:\tools\pkgconfiglite" >> $env:GITHUB_ENV
+
+      - name: Build Release
+        shell: pwsh
+        run: |
+          .\build_release.ps1
+
+      - name: Archive build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: lobby_server-windows-x64
+          path: build/lobby_server*
+          if-no-files-found: error
+  
+  docker-build:
+    name: Build Docker Image (Linux)
+    needs: build-linux
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Download Linux build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: lobby_server-linux-x64
+          path: build/      
+
+      - name: List contents of build directory
+        run: ls -R build
+        
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          build-args: |
+            GITHUB_SHA=${{ github.sha }}
+          tags: |
+            lobby-service:latest
+            lobby-service:${{ github.sha }}

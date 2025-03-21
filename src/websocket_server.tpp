@@ -7,7 +7,7 @@
 
 // Constants
 const int RATE_LIMIT_WINDOW = 1000;
-const int MAX_MESSAGES_PER_PERIOD = 500;
+const int MAX_MESSAGES_PER_PERIOD = 5;
 
 int64_t get_time_now() {
     auto now = std::chrono::system_clock::now().time_since_epoch();
