@@ -23,7 +23,7 @@ end
 function api.set_word(word)
     word = string.upper(tostring(word))
     if #word > 20 then
-        return { error = "Too long word." }
+        return { error = "Word too long." }
     end
 
     local foundLetter = false

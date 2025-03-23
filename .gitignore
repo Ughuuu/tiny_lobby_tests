@@ -7,3 +7,5 @@ game_thread_log.txt
 websocket_log.txt
 .DS_Store
 
+public.key
+src/public_key.h

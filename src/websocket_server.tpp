@@ -5,12 +5,11 @@
 #include <cctype>
 #include <atomic>
 
-// Constants
+// 1 second
 const int RATE_LIMIT_WINDOW = 1000;
-const int MAX_MESSAGES_PER_PERIOD = 5;
 
 int64_t get_time_now() {
-    auto now = std::chrono::system_clock::now().time_since_epoch();
+    auto now = std::chrono::steady_clock::now().time_since_epoch();
     return std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
 }
 
@@ -29,7 +28,7 @@ template <bool SSL>
 void WebSocketServer<SSL>::on_upgrade(uWS::HttpResponse<SSL> *res,uWS::HttpRequest *req, struct us_socket_context_t *context) {
     std::string protocol(req->getHeader("sec-websocket-protocol"));
     std::stringstream ss(protocol);
-    std::vector<std::string> protocols_split;
+    boost::container::vector<std::string> protocols_split;
 
     while( ss.good() )
     {
@@ -99,13 +98,16 @@ void WebSocketServer<SSL>::on_open(uWS::WebSocket<SSL, true, PerSocketData> *ws)
         .reconnection_token = data->reconnection_token,
         .ws = ws,
     });
-    message_queue.enqueue(WebSocketMessage {
+    if (!receive_queue.enqueue(WebSocketReceivedMessage {
         .id = data->id,
         .event = WebSocketEvent::OPEN,
         .message = std::string(),
         .game_id = data->game_id,
         .reconnection_token = data->reconnection_token
-    });
+    })) {
+        logger.error_log("[WebSocketServer] on_open error out of memory: ", data->uid, " ", data->id, " ", data->game_id);
+        send(data->id, "Out of memory", uWS::OpCode::CLOSE);
+    }
 }
 template <bool SSL>
 void WebSocketServer<SSL>::on_message(uWS::WebSocket<SSL, true, PerSocketData> *ws, const std::string_view &message, uWS::OpCode opCode) {
@@ -117,19 +119,22 @@ void WebSocketServer<SSL>::on_message(uWS::WebSocket<SSL, true, PerSocketData> *
         data->last_message_time = now;
         data->message_count = 1;
     }
-    if (data->message_count > MAX_MESSAGES_PER_PERIOD) {
+    if (data->message_count > max_messages_per_second) {
         logger.error_log("[WebSocketServer] on_message Rate limit exceeded: ", data->uid, " ", data->id, " ", data->game_id, " ", message, " ", opCode);
         send(data->id, "Rate limit exceeded", uWS::OpCode::CLOSE);
         return;
     }
     logger.debug_log("[WebSocketServer] on_message: ", data->uid, " ", data->id, " ", data->game_id, " ", message, " ", opCode);
-    message_queue.enqueue(WebSocketMessage {
+    if (!receive_queue.try_enqueue(WebSocketReceivedMessage {
         .id = data->id,
         .event = WebSocketEvent::MESSAGE,
         .message = std::string(message),
         .game_id = data->game_id,
         .reconnection_token = data->reconnection_token
-    });
+    })) {
+        logger.error_log("[WebSocketServer] on_message error out of memory: ", data->uid, " ", data->id, " ", data->game_id, " ", message, " ", opCode);
+        send(data->id, "Out of memory", uWS::OpCode::CLOSE);
+    }
 }
 template <bool SSL>
 void WebSocketServer<SSL>::on_close(uWS::WebSocket<SSL, true, PerSocketData> *ws, const std::string_view &message, int opCode) {
@@ -139,7 +144,7 @@ void WebSocketServer<SSL>::on_close(uWS::WebSocket<SSL, true, PerSocketData> *ws
         connection_data[data->id].ws = nullptr;
 }
     logger.debug_log("[WebSocketServer] on_close: ", data->uid, " ", data->id, " ", data->game_id, " ", message , " ", opCode);
-    message_queue.enqueue(WebSocketMessage {
+    receive_queue.enqueue(WebSocketReceivedMessage {
         .id = data->id,
         .event = WebSocketEvent::CLOSE,
         .message = std::string(message),
@@ -168,6 +173,8 @@ void WebSocketServer<SSL>::send(std::string id, const std::string &message, uWS:
 template <bool SSL>
 WebSocketServer<SSL>::WebSocketServer(bool verbose,
     std::string log_folder,
-    moodycamel::BlockingReaderWriterQueue<WebSocketMessage>& message_queue) : logger(verbose, log_folder + "/websocket.txt"), message_queue(message_queue) {
+    moodycamel::BlockingReaderWriterQueue<WebSocketReceivedMessage>& receive_queue,
+    int max_messages_per_second) :
+    logger(verbose, log_folder + "/websocket.txt"), receive_queue(receive_queue), max_messages_per_second(max_messages_per_second) {
     logger.debug_log("[WebSocketServer] on_start");
 }

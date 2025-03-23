@@ -2,6 +2,8 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <boost/container/flat_map.hpp>
+#include <boost/container/flat_set.hpp>
 
 #include "any_type.h"
 #include "peer_data.h"
@@ -12,13 +14,13 @@ struct LobbyData {
     std::string host;
     std::string password;
     int max_players;
-    std::set<std::string> peer_ids;
+    boost::container::flat_set<std::string> peer_ids;
     int64_t create_time;
     std::string game_id;
     bool sealed = false;
-    std::unordered_map<std::string, AnyElement> public_data;
-    std::unordered_map<std::string, AnyElement> private_data;
-    std::unordered_map<std::string, AnyElement> tags;
+    boost::container::flat_map<std::string, AnyElement> public_data;
+    boost::container::flat_map<std::string, AnyElement> private_data;
+    boost::container::flat_map<std::string, AnyElement> tags;
     int order_id_counter = 0;
     bool public_data_dirty = false;
     bool private_data_dirty = false;
@@ -26,7 +28,7 @@ struct LobbyData {
     bool sealed_dirty = false;
 
     std::string to_string(bool include_private = false) {
-        std::unordered_map<std::string, AnyElement> lobby_dict;
+        boost::container::flat_map<std::string, AnyElement> lobby_dict;
         lobby_dict["id"] = AnyElement{id};
         lobby_dict["name"] = AnyElement{name};
         lobby_dict["host"] = AnyElement{host};

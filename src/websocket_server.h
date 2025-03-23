@@ -29,7 +29,7 @@ struct PeerConnectionData {
 
 enum WebSocketEvent { OPEN, MESSAGE, CLOSE };
 
-struct WebSocketMessage {
+struct WebSocketReceivedMessage {
     std::string id;
     WebSocketEvent event;
     std::string message;
@@ -45,8 +45,9 @@ struct ReconnectionTokens {
 template <bool SSL>
 class WebSocketServer {
     int MAX_RECONNECTION_TIME = 6 * 60 * 1000;
+    int max_messages_per_second;
     boost::uuids::random_generator gen;
-    moodycamel::BlockingReaderWriterQueue<WebSocketMessage> &message_queue;
+    moodycamel::BlockingReaderWriterQueue<WebSocketReceivedMessage> &receive_queue;
     ServerLogger logger;
     std::unordered_map<std::string, PeerConnectionData<SSL>> connection_data;
     std::unordered_map<std::string, ReconnectionTokens> reconnections;
@@ -60,10 +61,12 @@ class WebSocketServer {
                     uWS::OpCode opCode);
     void on_close(uWS::WebSocket<SSL, true, PerSocketData> *ws, const std::string_view &message,
                   int opCode);
+                
     void send(std::string id, const std::string &message, uWS::OpCode opCode = uWS::OpCode::TEXT);
 
     WebSocketServer(bool verbose, std::string log_folder,
-                    moodycamel::BlockingReaderWriterQueue<WebSocketMessage> &message_queue);
+                    moodycamel::BlockingReaderWriterQueue<WebSocketReceivedMessage> &receive_queue,
+                    int max_messages_per_second);
 };
 
 #include "websocket_server.tpp"

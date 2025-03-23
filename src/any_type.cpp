@@ -29,12 +29,23 @@ int decode_int_or_default(yyjson_val *object, std::string key, int default_value
     return default_value;
 }
 
+bool decode_bool_or_default(yyjson_val *object, std::string key, bool default_value) {
+    if (!object || yyjson_get_type(object) != YYJSON_TYPE_OBJ) {
+        return default_value;
+    }
+
+    yyjson_val *val = yyjson_obj_get(object, key.c_str());
+    if (!val) return default_value;
+
+    return yyjson_get_bool(val);
+}
+
 std::string decode_array(yyjson_val *array, AnyElement &element) {
     if (!array || yyjson_get_type(array) != YYJSON_TYPE_ARR) {
         return "Not an array";
     }
 
-    std::vector<AnyElement> result;
+    boost::container::vector<AnyElement> result;
     yyjson_val *item;
     size_t idx, max;
     max = yyjson_arr_size(array);
@@ -79,7 +90,7 @@ std::string decode_value(yyjson_val *value, AnyElement &element) {
             break;
         }
         case YYJSON_TYPE_OBJ: {
-            std::unordered_map<std::string, AnyElement> map_result;
+            boost::container::flat_map<std::string, AnyElement> map_result;
             std::string error = decode_object(value, map_result);
             if (!error.empty()) return error;
             element.value = map_result;
@@ -92,7 +103,7 @@ std::string decode_value(yyjson_val *value, AnyElement &element) {
     return EMPTY_STRING;
 }
 
-std::string decode_object(yyjson_val *object, std::unordered_map<std::string, AnyElement> &dict) {
+std::string decode_object(yyjson_val *object, boost::container::flat_map<std::string, AnyElement> &dict) {
     if (!object || yyjson_get_type(object) != YYJSON_TYPE_OBJ) {
         return EMPTY_STRING;
     }

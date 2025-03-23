@@ -5,12 +5,12 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Debug",
+            "name": "Build & Debug",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/lobby_server",
             "args": [
-                "--verbose"
+                //"--verbose"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -18,6 +18,20 @@
             "externalConsole": false,
             "MIMode": "lldb",
             "preLaunchTask": "Build Lobby Server"
+        } ,
+        {
+            "name": "Debug",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/lobby_server",
+            "args": [
+                //"--verbose"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "lldb"
         } ,
     ]
 }

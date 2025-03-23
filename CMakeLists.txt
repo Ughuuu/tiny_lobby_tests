@@ -20,6 +20,7 @@ target_link_libraries(uWebSockets INTERFACE uSockets ${ZLIB_LIBRARIES})
 target_compile_options(uWebSockets INTERFACE -Wno-deprecated-declarations)
 
 find_package(boost_uuid REQUIRED CONFIG)
+find_package(boost_container REQUIRED CONFIG)
 file(GLOB SOURCES "src/*.cpp")
 
 FetchContent_Declare(
@@ -40,10 +41,20 @@ FetchContent_MakeAvailable(yyjson)
 
 find_package(unofficial-inih CONFIG REQUIRED)
 find_package(libpqxx CONFIG REQUIRED)
+find_package(httplib CONFIG REQUIRED)
 
 # LuaJIT
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(LuaJIT REQUIRED IMPORTED_TARGET luajit)
+
+# Path to LuaJIT
+set(LUAJIT_INCLUDE_DIR "/usr/local/include/luajit-2.1")
+set(LUAJIT_LIB_DIR "/usr/local/lib")
+set(LUAJIT_LIBRARIES "/usr/local/lib/libluajit-5.1.a")
+
+# Add LuaJIT include directory
+include_directories(${LUAJIT_INCLUDE_DIR})
+
+# GPGME
+pkg_check_modules(gpgme REQUIRED IMPORTED_TARGET gpgme)
 
 # Angelscript
 add_compile_options(-Wno-deprecated-declarations)
@@ -52,8 +63,17 @@ file(GLOB SCRIPTSTDSTRING_SOURCES external/angelscript/sdk/add_on/scriptstdstrin
 file(GLOB SCRIPTARRAY_SOURCES external/angelscript/sdk/add_on/scriptarray/*.cpp)
 file(GLOB SCRIPTDICTIONARY_SOURCES external/angelscript/sdk/add_on/scriptdictionary/*.cpp)
 
+# Public Key
+file(READ "${CMAKE_SOURCE_DIR}/public.key" PUBLIC_KEY_CONTENTS)
+set(PUBLIC_KEY "${PUBLIC_KEY_CONTENTS}")
+configure_file(
+    ${CMAKE_SOURCE_DIR}/src/public_key.h.in
+    ${CMAKE_SOURCE_DIR}/src/public_key.h
+    @ONLY
+)
+
 add_executable(lobby_server ${SOURCES})
-target_link_libraries(lobby_server PRIVATE Boost::uuid uWebSockets angelscript readerwriterqueue unofficial::inih::inireader yyjson PkgConfig::LuaJIT libpqxx::pqxx)
+target_link_libraries(lobby_server PRIVATE Boost::uuid Boost::container uWebSockets angelscript readerwriterqueue unofficial::inih::inireader yyjson ${LUAJIT_LIBRARIES} libpqxx::pqxx PkgConfig::gpgme httplib::httplib)
 target_include_directories(lobby_server PRIVATE
   "external/angelscript/sdk/angelscript/include"
   "external/angelscript/sdk/add_on"

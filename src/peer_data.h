@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <unordered_map>
+#include <boost/container/flat_map.hpp>
 
 #include "any_type.h"
 
@@ -10,9 +11,9 @@ struct PeerData {
     std::string game_id;
     std::string reconnection_token;
     std::string lobby_id;
-    std::unordered_map<std::string, AnyElement> public_data;
-    std::unordered_map<std::string, AnyElement> private_data;
-    std::unordered_map<std::string, AnyElement> user_data;
+    boost::container::flat_map<std::string, AnyElement> public_data;
+    boost::container::flat_map<std::string, AnyElement> private_data;
+    boost::container::flat_map<std::string, AnyElement> user_data;
     bool disconnected = false;
     bool ready = false;
     bool public_data_dirty = false;
@@ -25,7 +26,7 @@ struct PeerData {
     }
 
     std::string to_string(bool include_private = false, bool include_reconnection = false) {
-        std::unordered_map<std::string, AnyElement> peer_dict;
+        boost::container::flat_map<std::string, AnyElement> peer_dict;
         peer_dict["id"] = AnyElement{id};
         peer_dict["order_id"] = AnyElement{order_id};
         if (include_reconnection) {

@@ -1,4 +1,5 @@
 #include "game_thread.h"
+#include "game_thread_messages.h"
 
 #include <regex>
 
@@ -6,222 +7,27 @@
 #include "any_type.h"
 #include "lua.h"
 
-std::string ERROR_CANNOT_PARSE_JSON = "Cannot parse json";
-std::string ERROR_PEER_NOT_FOUND = "Peer not found";
-std::string ERROR_PEER_ALREADY_EXISTS = "Peer already exists";
-std::string ERROR_PEER_NOT_IN_A_LOBBY = "Peer not in a lobby";
-std::string ERROR_CANNOT_KICK_SELF = "Cannot kick self";
-std::string ERROR_INVALID_FUNCTION = "Invalid function";
-std::string ERROR_INVALID_ARGUMENTS = "Invalid arguments";
-std::string ERROR_PEER_IS_IN_A_LOBBY = "Peer is in a lobby";
-std::string ERROR_PEER_NOT_HOST = "Peer is not the host";
-std::string ERROR_PEER_IS_READY = "Peer is ready";
-std::string ERROR_PEER_IS_NOT_READY = "Peer is not ready";
-std::string ERROR_LOBBY_NOT_SEALED = "Lobby is not sealed";
-std::string ERROR_LOBBY_SEALED = "Lobby is sealed";
-std::string ERROR_LOBBY_NOT_FOUND = "Lobby not found";
-std::string ERROR_GAME_NOT_FOUND = "Game not found";
-std::string ERROR_UNKOWN_COMMAND = "Unkown command";
-
-std::string NOTIFICATION_ERROR =
-    "{"
-    "\"command\": \"error\","
-    "\"message\": \"%s\","
-    "\"data\": {"
-    "\"id\": \"%s\""
-    "}"
-    "}";
-std::string NOTIFICATION_LOGICAL_ERROR =
-    "{"
-    "\"command\": \"error\","
-    "\"message\": \"%s\","
-    "\"data\": {"
-    "\"id\": \"%s\""
-    "},"
-    "\"is_logical_error\": true"
-    "}";
-std::string NOTIFICATION_LOBBY_CREATED =
-    "{"
-    "\"command\": \"lobby_created\","
-    "\"message\": \"Lobby created\","
-    "\"data\": {"
-    "\"lobby\": %s,"
-    "\"peers\": %s,"
-    "\"id\": \"%s\""
-    "}"
-    "}";
-std::string NOTIFICATION_LOBBY_UNSEALED =
-    "{"
-    "\"command\": \"lobby_unsealed\","
-    "\"message\": \"Lobby unsealed\","
-    "\"data\": {"
-    "\"peer_id\": \"%s\","
-    "\"id\": \"%s\""
-    "}"
-    "}";
-std::string NOTIFICATION_LOBBY_SEALED =
-    "{"
-    "\"command\": \"lobby_sealed\","
-    "\"message\": \"Lobby sealed\","
-    "\"data\": {"
-    "\"id\": \"%s\""
-    "}"
-    "}";
-std::string NOTIFICATION_PEER_READY =
-    "{"
-    "\"command\": \"peer_ready\","
-    "\"message\": \"Peer ready\","
-    "\"data\": {"
-    "\"peer_id\": \"%s\","
-    "\"id\": \"%s\""
-    "}"
-    "}";
-std::string NOTIFICATION_PEER_UNREADY =
-    "{"
-    "\"command\": \"peer_unready\","
-    "\"message\": \"Peer unready\","
-    "\"data\": {"
-    "\"peer_id\": \"%s\","
-    "\"id\": \"%s\""
-    "}"
-    "}";
-std::string NOTIFICATION_LOBBY_LEFT =
-    "{"
-    "\"command\": \"lobby_left\","
-    "\"message\": \"Lobby Left\","
-    "\"data\": {"
-    "\"id\": \"%s\""
-    "}"
-    "}";
-std::string NOTIFICATION_PEER_LEFT =
-    "{"
-    "\"command\": \"peer_left\","
-    "\"message\": \"Peer left\","
-    "\"data\": {"
-    "\"peer_id\": \"%s\","
-    "\"id\": \"%s\""
-    "}"
-    "}";
-std::string NOTIFICATION_PEER_KICKED =
-    "{"
-    "\"command\": \"peer_left\","
-    "\"message\": \"Peer kicked\","
-    "\"data\": {"
-    "\"peer_id\": \"%s\","
-    "\"kicked\": true,"
-    "\"id\": \"%s\""
-    "}"
-    "}";
-std::string NOTIFICATION_LOBBY_KICKED =
-    "{"
-    "\"command\": \"lobby_kicked\","
-    "\"message\": \"Lobby kicked\""
-    "}";
-std::string NOTIFICATION_PEER_STATE =
-    "{"
-    "\"command\": \"peer_state\","
-    "\"message\": \"Initial Message\","
-    "\"data\": {"
-    "\"peer\": %s"
-    "}"
-    "}";
-std::string NOTIFICATION_LOBBY_CALL =
-    "{"
-    "\"command\": \"lobby_call\","
-    "\"message\": \"Lobby Call\","
-    "\"data\": {"
-    "\"result\": %s,"
-    "\"id\": \"%s\""
-    "}"
-    "}";
-std::string NOTIFICATION_USER_DATA =
-    "{"
-    "\"command\": \"peer_user_data\","
-    "\"message\": \"User Data\","
-    "\"data\": {"
-    "\"user_data\": %s,"
-    "\"peer_id\": \"%s\","
-    "\"id\": \"%s\""
-    "}"
-    "}";
-std::string NOTIFICATION_TAGS =
-    "{"
-    "\"command\": \"lobby_tags\","
-    "\"message\": \"Tags Set\","
-    "\"data\": {"
-    "\"tags\": %s,"
-    "\"id\": \"%s\""
-    "}"
-    "}";
-std::string NOTIFICATION_CHAT =
-    "{"
-    "\"command\": \"peer_chat\","
-    "\"message\": \"Chat\","
-    "\"data\": {"
-    "\"from_peer\": \"%s\","
-    "\"chat_data\": \"%s\","
-    "\"id\": \"%s\""
-    "}"
-    "}";
-std::string NOTIFICATION_PEER_RECONNECTED =
-    "{"
-    "\"command\": \"peer_reconnected\","
-    "\"message\": \"Peer reconnected\","
-    "\"data\": {"
-    "\"peer_id\": \"%s\""
-    "}"
-    "}";
-std::string NOTIFICATION_LOBBY_JOINED =
-    "{"
-    "\"command\": \"joined_lobby\","
-    "\"message\": \"Lobby joined\","
-    "\"data\": {"
-    "\"lobby\": %s,"
-    "\"peers\": %s,"
-    "\"id\": \"%s\""
-    "}"
-    "}";
-std::string NOTIFICATION_PEER_JOINED =
-    "{"
-    "\"command\": \"peer_joined\","
-    "\"message\": \"Peer joined\","
-    "\"data\": {"
-    "\"peer\": %s"
-    "}"
-    "}";
-std::string NOTIFICATION_PEER_DICONNECTED =
-    "{"
-    "\"command\": \"peer_disconnected\","
-    "\"message\": \"Peer disconnected\","
-    "\"data\": {"
-    "\"peer_id\": \"%s\""
-    "}"
-    "}";
-std::string NOTIFICATION_LOBBY_LIST =
-    "{"
-    "\"command\": \"lobby_list\","
-    "\"message\": \"List Lobbies\","
-    "\"data\": {"
-    "\"lobbies\": %s,"
-    "\"id\": \"%s\""
-    "}"
-    "}";
-
 GameThread::GameThread(bool verbose, std::string log_folder, std::string scripts_folder,
-                       moodycamel::BlockingReaderWriterQueue<WebSocketMessage> &message_queue,
-                       uWS::Loop *loop, WebSocketServer<true> *webserver,
-                       WebSocketServer<false> *webserver_no_ssl)
-    : logger(verbose, log_folder + "/game.txt"),
+                       moodycamel::BlockingReaderWriterQueue<WebSocketReceivedMessage> &receive_queue,
+                       uWS::Loop *loop,
+                       WebSocketServer<true> *webserver,
+                       WebSocketServer<false> *webserver_no_ssl,
+                        int listing_interval,
+                        int max_recconection_time)
+    : listing_interval(listing_interval),
+        max_reconnection_time(max_recconection_time),
+      logger(verbose, log_folder + "/game.txt"),
       scripts_folder(scripts_folder),
-      message_queue(message_queue),
+      receive_queue(receive_queue),
       loop(loop),
       webserver_ssl(webserver),
       webserver_nossl(webserver_no_ssl),
-      logs_folder(log_folder) {
+      logs_folder(log_folder){
     logger.debug_log("[GameThread] on_start");
 }
 
 void GameThread::load_games() {
+    check_interval = 100;
     logger.debug_log("[GameThread] on_load_games");
     if (!std::filesystem::exists(scripts_folder)) {
         logger.error_log("[GameThread] Cannot open " + scripts_folder);
@@ -248,7 +54,7 @@ void GameThread::load_games() {
             if (script_language == "angelscript" && script_entrypoint == "") {
                 script_entrypoint = "main.as";
             }
-            std::unordered_set<std::string> enabled_callbacks;
+            boost::container::flat_set<std::string> enabled_callbacks;
             if (config_reader.GetBoolean("script", "callback_on_create", false)) {
                 enabled_callbacks.insert("_on_create");
             }
@@ -273,12 +79,22 @@ void GameThread::load_games() {
             if (config_reader.GetBoolean("script", "callback_on_left", false)) {
                 enabled_callbacks.insert("_on_left");
             }
-            long tickrate = config_reader.GetInteger("game", "tickrate", -1);
+            int tickrate = config_reader.GetInteger("game", "tickrate", 0);
+            if (tickrate < 16) {
+                tickrate = 0;
+            }
+            check_interval = std::min(check_interval, tickrate);
+            if (check_interval < 16) {
+                check_interval = 100;
+            }
+            int sendrate = config_reader.GetInteger("game", "sendrate", 0);
             games.emplace(folder_name,
                           GameData{
                               .id = folder_name,
                               .entrypoint = script_entrypoint,
+                              .lobby_control = config_reader.Get("game", "lobby_control", "scripted"),
                               .tick_rate = tickrate,
+                              .send_rate = sendrate,
                               .enabled_callbacks = enabled_callbacks,
                               .lua =
                                   ScriptLua{
@@ -292,8 +108,10 @@ void GameThread::load_games() {
                               //.angelscript = ScriptAngelScript(script_language, scripts_folder,
                               // folder_name, script_entrypoint, logger, config_reader)
                           });
-            games[folder_name].open();
         }
+    }
+    for (auto &game : games) {
+        game.second.open();
     }
 }
 
@@ -311,19 +129,29 @@ void GameThread::run() {
     int64_t last_listing = get_time_now();
     int64_t last_disconnect = get_time_now();
     int64_t last_timers = get_time_now();
-    int64_t listing_interval = LISTING_INTERVAL;
-    int64_t disconnect_interval = MAX_RECONNECTION_TIME / 6;
+    int64_t disconnect_interval = max_reconnection_time / 10;
     int64_t timer_interval = 500;
+    int min_process_size = 100;
     while (true) {
-        int64_t now = get_time_now();
-        handle_events();
+        int64_t last_message_process = get_time_now();
+        int64_t now = last_message_process;
+        // process about for either 100ms or tickrate. Check time every 100 messages.
+        int messages_processed = 0;
+        while (receive_queue.size_approx() > 0 || now - last_message_process < check_interval) {
+            if (messages_processed > min_process_size) {
+                messages_processed = 0;
+                now = get_time_now();
+            }
+            messages_processed++;
+            handle_events(now);
+        }
         if (now - last_disconnect > disconnect_interval) {
             last_disconnect = now;
-            handle_disconnects();
+            handle_disconnects(now);
         }
         if (now - last_listing > listing_interval) {
             std::cout << now << " , " << messages_received << " , " << messages_sent << " , "
-                      << message_queue.size_approx() << std::endl;
+                      << receive_queue.size_approx() << std::endl;
             messages_received = 0;
             messages_sent = 0;
             last_listing = now;
@@ -331,15 +159,90 @@ void GameThread::run() {
         }
         if (now - last_timers > timer_interval) {
             last_timers = now;
-            handle_timers();
+            handle_timers(now);
         }
+        handle_send(now);
+        handle_tick(now);
         // handle tick if/when needed
     }
     unload_games();
 }
 
-void GameThread::handle_timers() {
-    int64_t last_listing = get_time_now();
+std::string join(const boost::container::vector<std::string> &vec, const std::string &delimiter) {
+    if (vec.empty()) return "";
+
+    std::ostringstream oss;
+    auto it = vec.begin();
+    oss << *it;  // First element
+    ++it;
+    
+    for (; it != vec.end(); ++it) {
+        oss << delimiter << *it;
+    }
+    return oss.str();
+}
+
+void GameThread::handle_send(int64_t now) {
+    for (auto &game : games) {
+        auto &game_data = game.second;
+        if (game_data.send_rate == 0 || game_data.last_send_time + game_data.send_rate > now) {
+            continue;
+        }
+        game_data.last_send_time = now;
+
+        if (webserver_ssl != nullptr) {
+            loop->defer([lobby_listing_peers = std::move(game_data.peers_send_data), webserver = webserver_ssl]() {
+                for (auto &peer : lobby_listing_peers) {
+                    if (peer.second.empty()) {
+                        continue;
+                    }
+                    std::string batched_message = "[" + join(peer.second, ",") + "]";
+                    webserver->send(peer.first, batched_message, uWS::OpCode::TEXT);
+                }
+            });
+        } else {
+            loop->defer([lobby_listing_peers = std::move(game_data.peers_send_data), webserver = webserver_nossl]() {
+                for (auto &peer : lobby_listing_peers) {
+                    if (peer.second.empty()) {
+                        continue;
+                    }
+                    std::string batched_message = "[" + join(peer.second, ",") + "]";
+                    webserver->send(peer.first, batched_message, uWS::OpCode::TEXT);
+                }
+            });
+        }
+        game_data.peers_send_data.clear();
+    }
+}
+
+void GameThread::handle_tick(int64_t now) {
+    boost::container::vector<AnyElement> empty_args;
+    for (auto &game : games) {
+        auto &game_data = game.second;
+        if (game_data.tick_rate == 0 || game_data.last_tick_time + game_data.tick_rate > now) {
+            continue;
+        }
+        game_data.last_tick_time = now;
+
+        for (auto &peer : game_data.peers) {
+            auto &peer_id = peer.first;
+            if (game_data.disconnected_peers.find(peer_id) != game_data.disconnected_peers.end()) {
+                continue;
+            }
+            auto &peer_data = peer.second;
+            if (peer_data.lobby_id.empty()) {
+                continue;
+            }
+            bool has_error = false;
+            auto result = scripted_function_call(peer_id, peer_data.lobby_id, game_data, "_on_tick", true, empty_args, has_error);
+            if (has_error || std::holds_alternative<std::string>(result.value)) {
+                on_error(game_data, EMPTY_STRING, peer_id, std::get<std::string>(result.value), false);
+            }
+        }
+    }
+}
+
+void GameThread::handle_timers(int64_t last_listing) {
     for (auto &game : games) {
         for (auto &timer_data : game.second.timer_data) {
             if (timer_data.second.end_time < last_listing) {
@@ -347,8 +250,8 @@ void GameThread::handle_timers() {
                 auto result = scripted_function_call(timer_data.second.peer_id, timer_data.second.lobby_id, game.second,
                                                      timer_data.second.id, true,
                                                      timer_data.second.args, has_error);
-                if (has_error) {
-                    on_error(EMPTY_STRING, timer_data.second.peer_id, std::get<std::string>(result.value), true);
+                if (has_error || std::holds_alternative<std::string>(result.value)) {
+                    on_error(game.second, EMPTY_STRING, timer_data.second.peer_id, std::get<std::string>(result.value), true);
                 }
                 game.second.timer_data.erase(timer_data.first);
             }
@@ -356,14 +259,15 @@ void GameThread::handle_timers() {
     }
 }
 
-void GameThread::handle_events() {
-    WebSocketMessage message;
-    if (!message_queue.wait_dequeue_timed(message, 50)) {
+void GameThread::handle_events(int64_t now) {
+    WebSocketReceivedMessage message;
+    if (!receive_queue.wait_dequeue_timed(message, 50)) {
         return;
     }
     messages_received++;
     if (games.find(message.game_id) == games.end()) {
-        on_error(EMPTY_STRING, message.id, ERROR_GAME_NOT_FOUND + message.game_id, true);
+        auto fake_game = GameData{.send_rate=0};
+        on_error(fake_game, EMPTY_STRING, message.id, ERROR_GAME_NOT_FOUND + message.game_id, true);
         return;
     }
     auto &game = games[message.game_id];
@@ -372,13 +276,13 @@ void GameThread::handle_events() {
             on_connect(game, message.id, message.game_id, message.reconnection_token);
             break;
         case WebSocketEvent::CLOSE:
-            on_close(game, message.id);
+            on_close(game, message.id, now);
             break;
         case WebSocketEvent::MESSAGE:
             // decode message
             yyjson_doc *doc = yyjson_read(message.message.c_str(), message.message.size(), 0);
             if (!doc) {
-                on_error(EMPTY_STRING, message.id, ERROR_CANNOT_PARSE_JSON + " Initial decode",
+                on_error(game, EMPTY_STRING, message.id, ERROR_CANNOT_PARSE_JSON + " Initial decode",
                          true);
                 break;
             }
@@ -386,7 +290,7 @@ void GameThread::handle_events() {
             yyjson_val *root = yyjson_doc_get_root(doc);
             if (!root || !yyjson_is_obj(root)) {
                 yyjson_doc_free(doc);
-                on_error(EMPTY_STRING, message.id, ERROR_CANNOT_PARSE_JSON + " Root is not object",
+                on_error(game, EMPTY_STRING, message.id, ERROR_CANNOT_PARSE_JSON + " Root is not object",
                          true);
                 break;
             }
@@ -394,7 +298,7 @@ void GameThread::handle_events() {
             yyjson_val *command_val = yyjson_obj_get(root, "command");
             if (!command_val || !yyjson_is_str(command_val)) {
                 yyjson_doc_free(doc);
-                on_error(EMPTY_STRING, message.id,
+                on_error(game, EMPTY_STRING, message.id,
                          ERROR_CANNOT_PARSE_JSON + " Command missing or not string", true);
                 break;
             }
@@ -410,16 +314,29 @@ void GameThread::handle_events() {
             }
             if (game.peers.find(message.id) == game.peers.end()) {
                 yyjson_doc_free(doc);
-                on_error(std::string(command_id), message.id, ERROR_PEER_NOT_FOUND, true);
+                on_error(game, std::string(command_id), message.id, ERROR_PEER_NOT_FOUND, true);
                 break;
             }
             auto &peer = game.peers[message.id];
-            if (command == "lobby_call") {
+            // relay
+            if (command == "lobby_data") {
+                on_lobby_data(game, std::string(command_id), peer, data_val);
+            } else if (command == "data_to") {
+                on_data_to(game, std::string(command_id), peer, data_val);
+            } else if (command == "data_to_all") {
+                on_data_to_all(game, std::string(command_id), peer, data_val);
+            } else if (command == "notify_to") {
+                on_notify_to(game, std::string(command_id), peer, data_val);
+            } else if (command == "lobby_notify") {
+                on_lobby_notify(game, std::string(command_id), peer, data_val);
+            }
+            // scripted
+            else if (command == "lobby_call") {
                 on_lobby_call(game, std::string(command_id), peer, data_val);
             } else if (command == "quick_join") {
-                on_quick_join(game, std::string(command_id), peer, data_val);
+                on_quick_join(game, std::string(command_id), peer, data_val, now);
             } else if (command == "create_lobby") {
-                on_create_lobby(game, std::string(command_id), peer, data_val);
+                on_create_lobby(game, std::string(command_id), peer, data_val, now);
             } else if (command == "join_lobby") {
                 on_join_lobby(game, std::string(command_id), peer, data_val);
             } else if (command == "leave_lobby") {
@@ -443,7 +360,7 @@ void GameThread::handle_events() {
             } else if (command == "unseal_lobby") {
                 on_unseal_lobby(game, std::string(command_id), peer, data_val);
             } else {
-                on_error(std::string(command_id), message.id,
+                on_error(game, std::string(command_id), message.id,
                          ERROR_UNKOWN_COMMAND + " " + std::string(command), true);
             }
             yyjson_doc_free(doc);
@@ -451,10 +368,9 @@ void GameThread::handle_events() {
     }
 }
 
-void GameThread::handle_disconnects() {
+void GameThread::handle_disconnects(int64_t now) {
     for (auto &game : games) {
         auto &game_data = game.second;
-        auto now = get_time_now();
         std::unordered_set<std::string> to_erase;
         for (auto &peer : game_data.disconnected_peers) {
             auto &peer_obj = game_data.peers[peer.first];
@@ -465,7 +381,7 @@ void GameThread::handle_disconnects() {
                 continue;
             }
             auto &lobby = game_data.lobbies[peer_obj.lobby_id];
-            if (now - peer.second > MAX_RECONNECTION_TIME) {
+            if (now - peer.second > max_reconnection_time) {
                 remove_peer_from_lobby(game_data, lobby, peer_obj, EMPTY_STRING);
                 to_erase.insert(peer.first);
             }
@@ -502,7 +418,7 @@ void GameThread::handle_lobby_list() {
         notification.replace(notification.find("%s"), 2, lobbies);
         notification.replace(notification.find("%s"), 2, EMPTY_STRING);
         for (auto &peer : game_data.lobby_listing_peers) {
-            send(peer, notification, uWS::OpCode::TEXT);
+            send(game_data, peer, notification, uWS::OpCode::TEXT);
         }
         game_data.lobbies_updated.clear();
     }
@@ -512,11 +428,11 @@ void GameThread::remove_peer_from_lobby(GameData &game, LobbyData &lobby, PeerDa
                                         const std::string &command_id) {
     if (game.enabled_callbacks.find("_on_left") != game.enabled_callbacks.end()) {
         bool has_error = false;
-        std::vector<AnyElement> args;
+        boost::container::vector<AnyElement> args;
         auto func_result =
             scripted_function_call(peer.id, peer.lobby_id, game, "_on_left", true, args, has_error);
         if (has_error && std::holds_alternative<std::string>(func_result.value)) {
-            return on_error(command_id, peer.id, std::get<std::string>(func_result.value), false,
+            return on_error(game, command_id, peer.id, std::get<std::string>(func_result.value), false,
                             has_error);
         }
     }
@@ -530,11 +446,11 @@ void GameThread::remove_peer_from_lobby(GameData &game, LobbyData &lobby, PeerDa
             if (lobby_peer_id == peer.id) {
                 continue;
             }
-            send(lobby_peer_id, notification_others, uWS::OpCode::TEXT);
+            send(game, lobby_peer_id, notification_others, uWS::OpCode::TEXT);
         }
         std::string notification_self = NOTIFICATION_LOBBY_LEFT;
         notification_self.replace(notification_self.find("%s"), 2, command_id);
-        send(peer.id, notification_self, uWS::OpCode::TEXT);
+        send(game, peer.id, notification_self, uWS::OpCode::TEXT);
         game.lobbies_updated.insert(lobby.id);
         game.lobbies.erase(lobby.id);
     } else {
@@ -547,26 +463,41 @@ void GameThread::remove_peer_from_lobby(GameData &game, LobbyData &lobby, PeerDa
             if (lobby_peer_id == peer.id) {
                 continue;
             }
-            send(lobby_peer_id, notification_others, uWS::OpCode::TEXT);
+            send(game, lobby_peer_id, notification_others, uWS::OpCode::TEXT);
         }
         std::string notification_self = NOTIFICATION_LOBBY_LEFT;
         notification_self.replace(notification_self.find("%s"), 2, command_id);
         lobby.peer_ids.erase(peer.id);
-        send(peer.id, notification_self, uWS::OpCode::TEXT);
+        send(game, peer.id, notification_self, uWS::OpCode::TEXT);
     }
 }
 
-void GameThread::send(const std::string &peer_id, const std::string &message, uWS::OpCode opCode) {
-    messages_sent++;
-    if (webserver_ssl != nullptr) {
-        loop->defer([id = peer_id, msg = message, webserver = webserver_ssl]() {
-            webserver->send(id, msg, uWS::OpCode::TEXT);
-        });
-    } else {
-        loop->defer([id = peer_id, msg = message, webserver = webserver_nossl]() {
-            webserver->send(id, msg, uWS::OpCode::TEXT);
-        });
+void GameThread::send(GameData &game, const std::string &peer_id, const std::string &message, uWS::OpCode opCode) {
+    // check if peer is disconnected
+    if (game.disconnected_peers.find(peer_id) != game.disconnected_peers.end()) {
+        return;
     }
+    // send immediately or batch
+    if (game.send_rate == 0 || opCode == uWS::OpCode::CLOSE) {
+        if (webserver_ssl != nullptr) {
+            loop->defer([id = peer_id, msg = message, webserver = webserver_ssl, opCode]() {
+                webserver->send(id, msg, opCode);
+            });
+        } else {
+            loop->defer([id = peer_id, msg = message, webserver = webserver_nossl, opCode]() {
+                webserver->send(id, msg, opCode);
+            });
+        }
+    } else {
+        auto &msg_list = game.peers_send_data[peer_id];
+
+        if (msg_list.capacity() == 0) {
+            msg_list.reserve(32);
+        }
+
+        msg_list.emplace_back(message);
+    }
+    messages_sent++;
 }
 
 void GameThread::on_connect(GameData &game, std::string &peer_id, std::string &game_id,
@@ -586,15 +517,18 @@ void GameThread::on_connect(GameData &game, std::string &peer_id, std::string &g
     auto &peer = game.peers[peer_id];
     std::string notification = NOTIFICATION_PEER_STATE;
     notification.replace(notification.find("%s"), 2, peer.to_string(true, true));
-    send(peer.id, notification, uWS::OpCode::TEXT);
+    send(game, peer.id, notification, uWS::OpCode::TEXT);
 }
 
-void GameThread::on_close(GameData &game, std::string &peer_id) {
+void GameThread::on_close(GameData &game, std::string &peer_id, int64_t now) {
     logger.debug_log("[GameThread] on_close ", peer_id);
+    if (game.peers.find(peer_id) == game.peers.end()) {
+        return;
+    }
     auto &peer = game.peers[peer_id];
     peer.ready = false;
     peer.disconnected = true;
-    game.disconnected_peers.emplace(peer_id, get_time_now());
+    game.disconnected_peers.emplace(peer_id, now);
     std::string notification = NOTIFICATION_PEER_DICONNECTED;
     notification.replace(notification.find("%s"), 2, peer_id);
     if (game.lobbies.find(peer.lobby_id) != game.lobbies.end()) {
@@ -603,12 +537,12 @@ void GameThread::on_close(GameData &game, std::string &peer_id) {
             if (lobby_peer_id == peer_id) {
                 continue;
             }
-            send(lobby_peer_id, notification, uWS::OpCode::TEXT);
+            send(game, lobby_peer_id, notification, uWS::OpCode::TEXT);
         }
     }
 }
 
-void GameThread::on_error(std::string command_id, std::string peer_id, std::string message,
+void GameThread::on_error(GameData &game, std::string command_id, std::string peer_id, std::string message,
                           bool close, bool logical_error) {
     if (close) {
         logger.error_log("[GameThread] on_error ", command_id, " ", peer_id, " ", message);
@@ -620,9 +554,9 @@ void GameThread::on_error(std::string command_id, std::string peer_id, std::stri
     result.replace(result.find("%s"), 2, message);
     result.replace(result.find("%s"), 2, command_id);
     if (close) {
-        send(peer_id, message, uWS::OpCode::CLOSE);
+        send(game, peer_id, message, uWS::OpCode::CLOSE);
     } else {
-        send(peer_id, result, uWS::OpCode::TEXT);
+        send(game, peer_id, result, uWS::OpCode::TEXT);
     }
 }
 
@@ -630,38 +564,38 @@ void GameThread::on_lobby_call(GameData &game, std::string command_id, PeerData 
                                yyjson_val *data_val) {
     logger.debug_log("[GameThread] on_lobby_call ", command_id, " ", peer.id);
     if (peer.lobby_id == "") {
-        return on_error(command_id, peer.id, ERROR_PEER_NOT_IN_A_LOBBY);
+        return on_error(game, command_id, peer.id, ERROR_PEER_NOT_IN_A_LOBBY);
     }
     auto func_name = decode_string_or_default(data_val, "function", "");
     if (func_name == "") {
-        return on_error(command_id, peer.id, ERROR_INVALID_FUNCTION);
+        return on_error(game, command_id, peer.id, ERROR_INVALID_FUNCTION);
     }
-    AnyElement args{std::vector<AnyElement>()};
+    AnyElement args{boost::container::vector<AnyElement>()};
     yyjson_val *inputs_val = yyjson_obj_get(data_val, "inputs");
     if (inputs_val && yyjson_is_arr(inputs_val)) {
         decode_array(inputs_val, args);
     }
-    if (!std::holds_alternative<std::vector<AnyElement>>(args.value)) {
-        return on_error(command_id, peer.id, ERROR_INVALID_ARGUMENTS);
+    if (!std::holds_alternative<boost::container::vector<AnyElement>>(args.value)) {
+        return on_error(game, command_id, peer.id, ERROR_INVALID_ARGUMENTS);
     }
-    auto &array_value = std::get<std::vector<AnyElement>>(args.value);
+    auto &array_value = std::get<boost::container::vector<AnyElement>>(args.value);
     // SCRIPTED CALL
     bool has_error = false;
     auto func_result =
         scripted_function_call(peer.id, peer.lobby_id, game, func_name, true, array_value, has_error);
     if (has_error && std::holds_alternative<std::string>(func_result.value)) {
-        return on_error(command_id, peer.id, std::get<std::string>(func_result.value), false,
+        return on_error(game, command_id, peer.id, std::get<std::string>(func_result.value), false,
                         has_error);
     } else {
         std::string notification = NOTIFICATION_LOBBY_CALL;
         notification.replace(notification.find("%s"), 2, func_result.to_string());
         notification.replace(notification.find("%s"), 2, command_id);
-        send(peer.id, notification, uWS::OpCode::TEXT);
+        send(game, peer.id, notification, uWS::OpCode::TEXT);
     }
 }
 
 void GameThread::on_quick_join(GameData &game, std::string command_id, PeerData &peer,
-                               yyjson_val *data_val) {
+                               yyjson_val *data_val, int64_t now) {
     logger.debug_log("[GameThread] on_quick_join ", command_id, " ", peer.id);
     if (peer.lobby_id != "") {
         if (on_join_lobby(game, command_id, peer, data_val)) {
@@ -679,23 +613,23 @@ void GameThread::on_quick_join(GameData &game, std::string command_id, PeerData 
             }
         }
     }
-    on_create_lobby(game, command_id, peer, data_val);
+    on_create_lobby(game, command_id, peer, data_val, now);
 }
 
 void GameThread::on_create_lobby(GameData &game, std::string command_id, PeerData &peer,
-                                 yyjson_val *data_val) {
+                                 yyjson_val *data_val, int64_t now) {
     logger.debug_log("[GameThread] on_create_lobby ", command_id, " ", peer.id);
     // PRECONDITIONS
     if (peer.lobby_id != "") {
-        return on_error(command_id, peer.id, ERROR_PEER_IS_IN_A_LOBBY + " " + peer.lobby_id);
+        return on_error(game, command_id, peer.id, ERROR_PEER_IS_IN_A_LOBBY + " " + peer.lobby_id);
     }
     // CHANGES before scripted call, reverted if scripted call fails
     auto uuid = to_string(gen());
     auto small_uuid = uuid.substr(0, 8);
-    std::unordered_map<std::string, AnyElement> lobby_tags;
+    boost::container::flat_map<std::string, AnyElement> lobby_tags;
     std::string decode_error = decode_object(yyjson_obj_get(data_val, "tags"), lobby_tags);
     if (decode_error != "") {
-        return on_error(command_id, peer.id, "Invalid tags " + decode_error);
+        return on_error(game, command_id, peer.id, "Invalid tags " + decode_error);
     }
     peer.lobby_id = small_uuid;
     game.lobbies.emplace(small_uuid,
@@ -706,7 +640,7 @@ void GameThread::on_create_lobby(GameData &game, std::string command_id, PeerDat
                              .password = decode_string_or_default(data_val, "password", ""),
                              .max_players = decode_int_or_default(data_val, "max_players", 0),
                              .peer_ids = {peer.id},
-                             .create_time = get_time_now(),
+                             .create_time = now,
                              .game_id = peer.game_id,
                              .tags = lobby_tags,
                          });
@@ -714,14 +648,14 @@ void GameThread::on_create_lobby(GameData &game, std::string command_id, PeerDat
     // SCRIPTED CALL
     if (game.enabled_callbacks.find("_on_create") != game.enabled_callbacks.end()) {
         bool has_error = false;
-        std::vector<AnyElement> args;
+        boost::container::vector<AnyElement> args;
         auto func_result =
             scripted_function_call(peer.id, peer.lobby_id, game, "_on_create", true, args, has_error);
         if (has_error && std::holds_alternative<std::string>(func_result.value)) {
             // revert the changes
             peer.leave_lobby();
             game.lobbies.erase(small_uuid);
-            return on_error(command_id, peer.id, std::get<std::string>(func_result.value), false,
+            return on_error(game, command_id, peer.id, std::get<std::string>(func_result.value), false,
                             has_error);
         }
     }
@@ -732,7 +666,7 @@ void GameThread::on_create_lobby(GameData &game, std::string command_id, PeerDat
     notification.replace(notification.find("%s"), 2, game.lobbies[small_uuid].to_string());
     notification.replace(notification.find("%s"), 2, game.peers_to_string(small_uuid));
     notification.replace(notification.find("%s"), 2, command_id);
-    send(peer.id, notification, uWS::OpCode::TEXT);
+    send(game, peer.id, notification, uWS::OpCode::TEXT);
 }
 
 bool GameThread::on_join_lobby(GameData &game, std::string command_id, PeerData &peer,
@@ -749,21 +683,21 @@ bool GameThread::on_join_lobby(GameData &game, std::string command_id, PeerData 
         lobby_id = peer.lobby_id;
     }
     if (lobby_id == "" || game.lobbies.find(lobby_id) == game.lobbies.end()) {
-        on_error(command_id, peer.id, "Invalid lobby id");
+        on_error(game, command_id, peer.id, "Invalid lobby id");
         return false;
     }
     auto &lobby = game.lobbies[lobby_id];
     if (!reconnecting) {
         if (peer.lobby_id != "") {
-            on_error(command_id, peer.id, ERROR_PEER_IS_IN_A_LOBBY);
+            on_error(game, command_id, peer.id, ERROR_PEER_IS_IN_A_LOBBY);
             return false;
         }
         if (lobby.password != decode_string_or_default(data_val, "password", "")) {
-            on_error(command_id, peer.id, "Invalid password");
+            on_error(game, command_id, peer.id, "Invalid password");
             return false;
         }
         if (lobby.max_players != 0 && lobby.peer_ids.size() >= lobby.max_players) {
-            on_error(command_id, peer.id, "Lobby is full");
+            on_error(game, command_id, peer.id, "Lobby is full");
             return false;
         }
     }
@@ -771,11 +705,11 @@ bool GameThread::on_join_lobby(GameData &game, std::string command_id, PeerData 
     if (!reconnecting) {
         if (game.enabled_callbacks.find("_on_join") != game.enabled_callbacks.end()) {
             bool has_error = false;
-            std::vector<AnyElement> args;
+            boost::container::vector<AnyElement> args;
             auto func_result =
                 scripted_function_call(peer.id, lobby_id, game, "_on_join", true, args, has_error);
             if (has_error && std::holds_alternative<std::string>(func_result.value)) {
-                on_error(command_id, peer.id, std::get<std::string>(func_result.value), false,
+                on_error(game, command_id, peer.id, std::get<std::string>(func_result.value), false,
                          has_error);
                 return false;
             }
@@ -799,7 +733,7 @@ bool GameThread::on_join_lobby(GameData &game, std::string command_id, PeerData 
             if (lobby_peer_id == peer.id) {
                 continue;
             }
-            send(lobby_peer_id, notification, uWS::OpCode::TEXT);
+            send(game, lobby_peer_id, notification, uWS::OpCode::TEXT);
         }
     } else {
         std::string notification_others = NOTIFICATION_PEER_JOINED;
@@ -808,14 +742,15 @@ bool GameThread::on_join_lobby(GameData &game, std::string command_id, PeerData 
             if (lobby_peer_id == peer.id) {
                 continue;
             }
-            send(lobby_peer_id, notification_others, uWS::OpCode::TEXT);
+            send(game, lobby_peer_id, notification_others, uWS::OpCode::TEXT);
         }
     }
     std::string notification_self = NOTIFICATION_LOBBY_JOINED;
-    notification_self.replace(notification_self.find("%s"), 2, lobby.to_string());
+    // if it's relay, send private lobby data too at connection
+    notification_self.replace(notification_self.find("%s"), 2, lobby.to_string(game.lobby_control == "relay"));
     notification_self.replace(notification_self.find("%s"), 2, game.peers_to_string(lobby.id));
     notification_self.replace(notification_self.find("%s"), 2, command_id);
-    send(peer.id, notification_self, uWS::OpCode::TEXT);
+    send(game, peer.id, notification_self, uWS::OpCode::TEXT);
     return true;
 }
 
@@ -824,7 +759,7 @@ void GameThread::on_leave_lobby(GameData &game, std::string command_id, PeerData
     logger.debug_log("[GameThread] on_leave_lobby ", command_id, " ", peer.id);
     // PRECONDITIONS
     if (peer.lobby_id == "") {
-        return on_error(command_id, peer.id, ERROR_PEER_NOT_IN_A_LOBBY);
+        return on_error(game, command_id, peer.id, ERROR_PEER_NOT_IN_A_LOBBY);
     }
     auto &lobby = game.lobbies[peer.lobby_id];
     // CHANGES
@@ -838,12 +773,12 @@ void GameThread::on_list_lobby(GameData &game, std::string command_id, PeerData 
         std::string notification = NOTIFICATION_LOBBY_LIST;
         notification.replace(notification.find("%s"), 2, "[]");
         notification.replace(notification.find("%s"), 2, command_id);
-        return send(peer.id, notification, uWS::OpCode::TEXT);
+        return send(game, peer.id, notification, uWS::OpCode::TEXT);
     }
 
     game.lobby_listing_peers.insert(peer.id);
 
-    std::vector<LobbyData *> lobby_array;
+    boost::container::vector<LobbyData *> lobby_array;
     for (auto &lobby_pair : game.lobbies) {
         auto &lobby = lobby_pair.second;
         if (!lobby.sealed || peer.lobby_id == lobby.id) {
@@ -857,7 +792,7 @@ void GameThread::on_list_lobby(GameData &game, std::string command_id, PeerData 
 
     // Select a maximum number of lobbies to get
     int max_lobbies_to_get = std::min(100, static_cast<int>(lobby_array.size()));
-    std::vector<std::string> selected_lobbies;
+    boost::container::vector<std::string> selected_lobbies;
     for (int i = 0; i < max_lobbies_to_get; ++i) {
         selected_lobbies.push_back(lobby_array[i]->id);
     }
@@ -876,7 +811,7 @@ void GameThread::on_list_lobby(GameData &game, std::string command_id, PeerData 
     std::string notification = NOTIFICATION_LOBBY_LIST;
     notification.replace(notification.find("%s"), 2, lobbies);
     notification.replace(notification.find("%s"), 2, command_id);
-    send(peer.id, notification, uWS::OpCode::TEXT);
+    send(game, peer.id, notification, uWS::OpCode::TEXT);
 }
 
 std::string strip_BBCode(const std::string &input) {
@@ -889,23 +824,23 @@ void GameThread::on_chat_lobby(GameData &game, std::string command_id, PeerData 
     logger.debug_log("[GameThread] on_chat_lobby ", command_id, " ", peer.id);
     // PRECONDITIONS
     if (peer.lobby_id == "") {
-        return on_error(command_id, peer.id, ERROR_PEER_NOT_IN_A_LOBBY);
+        return on_error(game, command_id, peer.id, ERROR_PEER_NOT_IN_A_LOBBY);
     }
     auto &lobby = game.lobbies[peer.lobby_id];
     std::string message = decode_string_or_default(data_val, "chat", "");
     message = strip_BBCode(message);
     if (message == "" || message.size() > 256) {
-        return on_error(command_id, peer.id, "Invalid chat message");
+        return on_error(game, command_id, peer.id, "Invalid chat message");
     }
     // SCRIPTED CALL
     if (game.enabled_callbacks.find("_on_chat") != game.enabled_callbacks.end()) {
         bool has_error = false;
-        std::vector<AnyElement> args(1);
+        boost::container::vector<AnyElement> args(1);
         args[0] = AnyElement{message};
         auto func_result =
             scripted_function_call(peer.id, peer.lobby_id, game, "_on_chat", true, args, has_error);
         if (std::holds_alternative<std::string>(func_result.value)) {
-            return on_error(command_id, peer.id, std::get<std::string>(func_result.value), false,
+            return on_error(game, command_id, peer.id, std::get<std::string>(func_result.value), false,
                             has_error);
         }
     }
@@ -918,13 +853,13 @@ void GameThread::on_chat_lobby(GameData &game, std::string command_id, PeerData 
         if (lobby_peer_id == peer.id) {
             continue;
         }
-        send(lobby_peer_id, notification_others, uWS::OpCode::TEXT);
+        send(game, lobby_peer_id, notification_others, uWS::OpCode::TEXT);
     }
     std::string notification_self = NOTIFICATION_CHAT;
     notification_self.replace(notification_self.find("%s"), 2, peer.id);
     notification_self.replace(notification_self.find("%s"), 2, message);
     notification_self.replace(notification_self.find("%s"), 2, command_id);
-    send(peer.id, notification_self, uWS::OpCode::TEXT);
+    send(game, peer.id, notification_self, uWS::OpCode::TEXT);
 }
 
 void GameThread::on_lobby_tags(GameData &game, std::string command_id, PeerData &peer,
@@ -932,35 +867,35 @@ void GameThread::on_lobby_tags(GameData &game, std::string command_id, PeerData 
     logger.debug_log("[GameThread] on_lobby_tags ", command_id, " ", peer.id);
     // PRECONDITIONS
     if (peer.lobby_id == "") {
-        return on_error(command_id, peer.id, ERROR_PEER_NOT_IN_A_LOBBY);
+        return on_error(game, command_id, peer.id, ERROR_PEER_NOT_IN_A_LOBBY);
     }
     auto &lobby = game.lobbies[peer.lobby_id];
     if (lobby.host != peer.id) {
-        return on_error(command_id, peer.id, ERROR_PEER_NOT_HOST);
+        return on_error(game, command_id, peer.id, ERROR_PEER_NOT_HOST);
     }
-    std::unordered_map<std::string, AnyElement> new_tags;
+    boost::container::flat_map<std::string, AnyElement> new_tags;
     if (!data_val || !yyjson_is_obj(data_val)) {
-        return on_error(command_id, peer.id,
+        return on_error(game, command_id, peer.id,
                         ERROR_CANNOT_PARSE_JSON + " Data is missing or not an object");
     }
     yyjson_val *tags_val = yyjson_obj_get(data_val, "tags");
     if (!tags_val || !yyjson_is_obj(tags_val)) {
-        return on_error(command_id, peer.id,
+        return on_error(game, command_id, peer.id,
                         ERROR_CANNOT_PARSE_JSON + " Lobby tags missing or not object");
     }
     std::string error = decode_object(tags_val, new_tags);
     if (!error.empty()) {
-        return on_error(command_id, peer.id, error);
+        return on_error(game, command_id, peer.id, error);
     }
     // SCRIPTED CALL
     if (game.enabled_callbacks.find("_on_tags") != game.enabled_callbacks.end()) {
         bool has_error = false;
-        std::vector<AnyElement> args(1);
+        boost::container::vector<AnyElement> args(1);
         args[0] = AnyElement{new_tags};
         auto func_result =
             scripted_function_call(peer.id, peer.lobby_id, game, "_on_tags", true, args, has_error);
         if (std::holds_alternative<std::string>(func_result.value)) {
-            return on_error(command_id, peer.id, std::get<std::string>(func_result.value), false,
+            return on_error(game, command_id, peer.id, std::get<std::string>(func_result.value), false,
                             has_error);
         }
     }
@@ -982,12 +917,12 @@ void GameThread::on_lobby_tags(GameData &game, std::string command_id, PeerData 
         if (lobby_peer_id == peer.id) {
             continue;
         }
-        send(lobby_peer_id, notification_others, uWS::OpCode::TEXT);
+        send(game, lobby_peer_id, notification_others, uWS::OpCode::TEXT);
     }
     std::string notification_self = NOTIFICATION_TAGS;
     notification_self.replace(notification_self.find("%s"), 2, tags_string);
     notification_self.replace(notification_self.find("%s"), 2, command_id);
-    send(peer.id, notification_self, uWS::OpCode::TEXT);
+    send(game, peer.id, notification_self, uWS::OpCode::TEXT);
 }
 
 void GameThread::on_kick_peer(GameData &game, std::string command_id, PeerData &peer,
@@ -995,28 +930,28 @@ void GameThread::on_kick_peer(GameData &game, std::string command_id, PeerData &
     logger.debug_log("[GameThread] on_kick_peer ", command_id, " ", peer.id);
     // PRECONDITIONS
     if (peer.lobby_id == "") {
-        return on_error(command_id, peer.id, ERROR_PEER_NOT_IN_A_LOBBY);
+        return on_error(game, command_id, peer.id, ERROR_PEER_NOT_IN_A_LOBBY);
     }
     auto &lobby = game.lobbies[peer.lobby_id];
     if (lobby.host != peer.id) {
-        return on_error(command_id, peer.id, ERROR_PEER_NOT_HOST);
+        return on_error(game, command_id, peer.id, ERROR_PEER_NOT_HOST);
     }
     std::string kicked_peer_id = decode_string_or_default(data_val, "peer_id", "");
     if (kicked_peer_id == "" || lobby.peer_ids.find(kicked_peer_id) == lobby.peer_ids.end()) {
-        return on_error(command_id, peer.id, ERROR_PEER_NOT_IN_A_LOBBY);
+        return on_error(game, command_id, peer.id, ERROR_PEER_NOT_IN_A_LOBBY);
     }
     if (peer.id == kicked_peer_id) {
-        return on_error(command_id, peer.id, ERROR_CANNOT_KICK_SELF);
+        return on_error(game, command_id, peer.id, ERROR_CANNOT_KICK_SELF);
     }
     // SCRIPTED CALL
     if (game.enabled_callbacks.find("_on_kick") != game.enabled_callbacks.end()) {
         bool has_error = false;
-        std::vector<AnyElement> args(1);
+        boost::container::vector<AnyElement> args(1);
         args[0] = AnyElement{kicked_peer_id};
         auto func_result =
             scripted_function_call(peer.id, peer.lobby_id, game, "_on_kick", true, args, has_error);
         if (std::holds_alternative<std::string>(func_result.value)) {
-            return on_error(command_id, peer.id, std::get<std::string>(func_result.value), false,
+            return on_error(game, command_id, peer.id, std::get<std::string>(func_result.value), false,
                             has_error);
         }
     }
@@ -1032,33 +967,33 @@ void GameThread::on_kick_peer(GameData &game, std::string command_id, PeerData &
         if (lobby_peer_id == peer.id || lobby_peer_id == kicked_peer_id) {
             continue;
         }
-        send(lobby_peer_id, notification_others, uWS::OpCode::TEXT);
+        send(game, lobby_peer_id, notification_others, uWS::OpCode::TEXT);
     }
     std::string notification_self = NOTIFICATION_PEER_KICKED;
     notification_self.replace(notification_self.find("%s"), 2, kicked_peer_id);
     notification_self.replace(notification_self.find("%s"), 2, command_id);
-    send(peer.id, notification_self, uWS::OpCode::TEXT);
+    send(game, peer.id, notification_self, uWS::OpCode::TEXT);
     std::string notification_kicked = NOTIFICATION_LOBBY_KICKED;
-    send(kicked_peer_id, notification_kicked, uWS::OpCode::TEXT);
+    send(game, kicked_peer_id, notification_kicked, uWS::OpCode::TEXT);
 }
 
 void GameThread::on_user_data(GameData &game, std::string command_id, PeerData &peer,
                               yyjson_val *data_val) {
     logger.debug_log("[GameThread] on_user_data ", command_id, " ", peer.id);
     // CHANGES
-    std::unordered_map<std::string, AnyElement> new_userdata;
+    boost::container::flat_map<std::string, AnyElement> new_userdata;
     if (!data_val || !yyjson_is_obj(data_val)) {
-        return on_error(command_id, peer.id,
+        return on_error(game, command_id, peer.id,
                         ERROR_CANNOT_PARSE_JSON + " Data is missing or not an object");
     }
     yyjson_val *userdata_val = yyjson_obj_get(data_val, "user_data");
     if (!userdata_val || !yyjson_is_obj(userdata_val)) {
-        return on_error(command_id, peer.id,
+        return on_error(game, command_id, peer.id,
                         ERROR_CANNOT_PARSE_JSON + " Lobby tags missing or not object");
     }
     std::string error = decode_object(userdata_val, new_userdata);
     if (!error.empty()) {
-        return on_error(command_id, peer.id, error);
+        return on_error(game, command_id, peer.id, error);
     }
     for (const auto &userdata_pair : new_userdata) {
         if (std::holds_alternative<std::monostate>(userdata_pair.second.value)) {
@@ -1079,14 +1014,14 @@ void GameThread::on_user_data(GameData &game, std::string command_id, PeerData &
             if (lobby_peer_id == peer.id) {
                 continue;
             }
-            send(lobby_peer_id, notification_others, uWS::OpCode::TEXT);
+            send(game, lobby_peer_id, notification_others, uWS::OpCode::TEXT);
         }
     }
     std::string notification_self = NOTIFICATION_USER_DATA;
     notification_self.replace(notification_self.find("%s"), 2, user_data_string);
     notification_self.replace(notification_self.find("%s"), 2, peer.id);
     notification_self.replace(notification_self.find("%s"), 2, command_id);
-    send(peer.id, notification_self, uWS::OpCode::TEXT);
+    send(game, peer.id, notification_self, uWS::OpCode::TEXT);
 }
 
 void GameThread::on_lobby_ready(GameData &game, std::string command_id, PeerData &peer,
@@ -1094,24 +1029,24 @@ void GameThread::on_lobby_ready(GameData &game, std::string command_id, PeerData
     logger.debug_log("[GameThread] on_lobby_ready ", command_id, " ", peer.id);
     // PRECONDITIONS
     if (peer.lobby_id == "") {
-        return on_error(command_id, peer.id, ERROR_PEER_NOT_IN_A_LOBBY);
+        return on_error(game, command_id, peer.id, ERROR_PEER_NOT_IN_A_LOBBY);
     }
     if (peer.ready) {
-        return on_error(command_id, peer.id, ERROR_PEER_IS_READY);
+        return on_error(game, command_id, peer.id, ERROR_PEER_IS_READY);
     }
     // SCRIPTED CALL
     if (game.enabled_callbacks.find("_on_ready") != game.enabled_callbacks.end()) {
         bool has_error = false;
-        std::vector<AnyElement> args(1);
+        boost::container::vector<AnyElement> args(1);
         args[0] = AnyElement{true};
         auto func_result =
             scripted_function_call(peer.id, peer.lobby_id, game, "_on_ready", true, args, has_error);
         if (std::holds_alternative<std::string>(func_result.value)) {
-            return on_error(command_id, peer.id, std::get<std::string>(func_result.value), false,
+            return on_error(game, command_id, peer.id, std::get<std::string>(func_result.value), false,
                             has_error);
         }
     }
-    set_lobby_ready(game.lobbies[peer.lobby_id], peer, command_id, true);
+    set_lobby_ready(game, game.lobbies[peer.lobby_id], peer, command_id, true);
 }
 
 void GameThread::on_lobby_unready(GameData &game, std::string command_id, PeerData &peer,
@@ -1119,27 +1054,27 @@ void GameThread::on_lobby_unready(GameData &game, std::string command_id, PeerDa
     logger.debug_log("[GameThread] on_lobby_unready ", command_id, " ", peer.id);
     // PRECONDITIONS
     if (peer.lobby_id == "") {
-        return on_error(command_id, peer.id, ERROR_PEER_NOT_IN_A_LOBBY);
+        return on_error(game, command_id, peer.id, ERROR_PEER_NOT_IN_A_LOBBY);
     }
     if (!peer.ready) {
-        return on_error(command_id, peer.id, ERROR_PEER_IS_NOT_READY);
+        return on_error(game, command_id, peer.id, ERROR_PEER_IS_NOT_READY);
     }
     // SCRIPTED CALL
     if (game.enabled_callbacks.find("_on_ready") != game.enabled_callbacks.end()) {
         bool has_error = false;
-        std::vector<AnyElement> args(1);
+        boost::container::vector<AnyElement> args(1);
         args[0] = AnyElement{false};
         auto func_result =
             scripted_function_call(peer.id, peer.lobby_id, game, "_on_ready", true, args, has_error);
         if (std::holds_alternative<std::string>(func_result.value)) {
-            return on_error(command_id, peer.id, std::get<std::string>(func_result.value), false,
+            return on_error(game, command_id, peer.id, std::get<std::string>(func_result.value), false,
                             has_error);
         }
     }
-    set_lobby_ready(game.lobbies[peer.lobby_id], peer, command_id, false);
+    set_lobby_ready(game, game.lobbies[peer.lobby_id], peer, command_id, false);
 }
 
-void GameThread::set_lobby_ready(LobbyData &lobby, PeerData &peer, std::string command_id,
+void GameThread::set_lobby_ready(GameData& game, LobbyData &lobby, PeerData &peer, std::string command_id,
                                  bool ready) {
     // CHANGES
     peer.ready = ready;
@@ -1154,7 +1089,7 @@ void GameThread::set_lobby_ready(LobbyData &lobby, PeerData &peer, std::string c
         if (lobby_peer_id == peer.id && command_id != "") {
             continue;
         }
-        send(lobby_peer_id, notification_others, uWS::OpCode::TEXT);
+        send(game, lobby_peer_id, notification_others, uWS::OpCode::TEXT);
     }
     if (command_id == "") {
         return;
@@ -1165,7 +1100,7 @@ void GameThread::set_lobby_ready(LobbyData &lobby, PeerData &peer, std::string c
     }
     notification_self.replace(notification_self.find("%s"), 2, peer.id);
     notification_self.replace(notification_self.find("%s"), 2, command_id);
-    send(peer.id, notification_self, uWS::OpCode::TEXT);
+    send(game, peer.id, notification_self, uWS::OpCode::TEXT);
 }
 
 void GameThread::on_seal_lobby(GameData &game, std::string command_id, PeerData &peer,
@@ -1173,28 +1108,28 @@ void GameThread::on_seal_lobby(GameData &game, std::string command_id, PeerData 
     logger.debug_log("[GameThread] on_seal_lobby ", command_id, " ", peer.id);
     // PRECONDITIONS
     if (peer.lobby_id == "") {
-        return on_error(command_id, peer.id, ERROR_PEER_NOT_IN_A_LOBBY);
+        return on_error(game, command_id, peer.id, ERROR_PEER_NOT_IN_A_LOBBY);
     }
     auto &lobby = game.lobbies[peer.lobby_id];
     if (lobby.host != peer.id) {
-        return on_error(command_id, peer.id, ERROR_PEER_NOT_HOST);
+        return on_error(game, command_id, peer.id, ERROR_PEER_NOT_HOST);
     }
     if (lobby.sealed) {
-        return on_error(command_id, peer.id, ERROR_LOBBY_SEALED);
+        return on_error(game, command_id, peer.id, ERROR_LOBBY_SEALED);
     }
     // SCRIPTED CALL
     if (game.enabled_callbacks.find("_on_seal") != game.enabled_callbacks.end()) {
         bool has_error = false;
-        std::vector<AnyElement> args(1);
+        boost::container::vector<AnyElement> args(1);
         args[0] = AnyElement{true};
         auto func_result =
             scripted_function_call(peer.id, peer.lobby_id, game, "_on_seal", true, args, has_error);
         if (std::holds_alternative<std::string>(func_result.value)) {
-            return on_error(command_id, peer.id, std::get<std::string>(func_result.value), false,
+            return on_error(game, command_id, peer.id, std::get<std::string>(func_result.value), false,
                             has_error);
         }
     }
-    set_lobby_sealed(lobby, peer.id, command_id, true);
+    set_lobby_sealed(game, lobby, peer.id, command_id, true);
 }
 
 void GameThread::on_unseal_lobby(GameData &game, std::string command_id, PeerData &peer,
@@ -1202,31 +1137,349 @@ void GameThread::on_unseal_lobby(GameData &game, std::string command_id, PeerDat
     logger.debug_log("[GameThread] on_unseal_lobby ", command_id, " ", peer.id);
     // PRECONDITIONS
     if (peer.lobby_id == "") {
-        return on_error(command_id, peer.id, ERROR_PEER_NOT_IN_A_LOBBY);
+        return on_error(game, command_id, peer.id, ERROR_PEER_NOT_IN_A_LOBBY);
     }
     auto &lobby = game.lobbies[peer.lobby_id];
     if (lobby.host != peer.id) {
-        return on_error(command_id, peer.id, ERROR_PEER_NOT_HOST);
+        return on_error(game, command_id, peer.id, ERROR_PEER_NOT_HOST);
     }
     if (!lobby.sealed) {
-        return on_error(command_id, peer.id, ERROR_LOBBY_NOT_SEALED);
+        return on_error(game, command_id, peer.id, ERROR_LOBBY_NOT_SEALED);
     }
     // SCRIPTED CALL
     if (game.enabled_callbacks.find("_on_seal") != game.enabled_callbacks.end()) {
         bool has_error = false;
-        std::vector<AnyElement> args(1);
+        boost::container::vector<AnyElement> args(1);
         args[0] = AnyElement{false};
         auto func_result =
             scripted_function_call(peer.id, peer.lobby_id, game, "_on_seal", true, args, has_error);
         if (std::holds_alternative<std::string>(func_result.value)) {
-            return on_error(command_id, peer.id, std::get<std::string>(func_result.value), false,
+            return on_error(game, command_id, peer.id, std::get<std::string>(func_result.value), false,
                             has_error);
         }
     }
-    set_lobby_sealed(lobby, peer.id, command_id, false);
+    set_lobby_sealed(game, lobby, peer.id, command_id, false);
 }
 
-void GameThread::set_lobby_sealed(LobbyData &lobby, std::string peer_id, std::string command_id,
+void GameThread::on_lobby_data(GameData &game, std::string command_id, PeerData &peer,
+    yyjson_val *data_val) {
+    logger.debug_log("[GameThread] on_lobby_data ", command_id, " ", peer.id);
+    // PRECONDITIONS
+    if (peer.lobby_id == "") {
+        return on_error(game, command_id, peer.id, ERROR_PEER_NOT_IN_A_LOBBY);
+    }
+    auto &lobby = game.lobbies[peer.lobby_id];
+    if (lobby.host != peer.id) {
+        return on_error(game, command_id, peer.id, ERROR_PEER_NOT_HOST);
+    }
+    if (game.lobby_control != "relay") {
+        return on_error(game, command_id, peer.id, ERROR_GAME_NOT_RELAY);
+    }
+    // CHANGES
+    yyjson_val *lobbydata_val = yyjson_obj_get(data_val, "lobby_data");
+    if (!lobbydata_val || !yyjson_is_obj(lobbydata_val)) {
+        return on_error(game, command_id, peer.id,
+                        ERROR_CANNOT_PARSE_JSON + " Lobby data missing or not object");
+    }
+    boost::container::flat_map<std::string, AnyElement> new_lobbydata;
+    std::string error = decode_object(lobbydata_val, new_lobbydata);
+    if (!error.empty()) {
+        return on_error(game, command_id, peer.id, error);
+    }
+    bool is_private = decode_bool_or_default(data_val, "is_private", false);
+    for (const auto &lobbydata_pair : new_lobbydata) {
+        if (std::holds_alternative<std::monostate>(lobbydata_pair.second.value)) {
+            if (is_private) {
+                lobby.private_data_dirty = true;
+                lobby.private_data.erase(lobbydata_pair.first);
+            } else {
+                lobby.public_data_dirty = true;
+                lobby.public_data.erase(lobbydata_pair.first);
+            }
+            continue;
+        }
+        if (is_private) {
+            lobby.private_data_dirty = true;
+            lobby.private_data[lobbydata_pair.first] = lobbydata_pair.second;
+        } else {
+            lobby.public_data_dirty = true;
+            lobby.public_data[lobbydata_pair.first] = lobbydata_pair.second;
+        }
+    }
+    // NOTIFICATION
+    if (lobby.public_data_dirty) {
+        lobby.public_data_dirty = false;
+        // Notify lobby public data update
+        std::string public_data_notification_others = NOTIFICATION_LOBBY_PUBLIC_DATA;
+        public_data_notification_others.replace(public_data_notification_others.find("%s"), 2,
+                                         AnyElement{lobby.public_data}.to_string());
+        public_data_notification_others.replace(public_data_notification_others.find("%s"), 2, EMPTY_STRING);
+        // send to others
+        for (const auto &peer_id : lobby.peer_ids) {
+            if (peer_id == peer.id) {
+                continue;
+            }
+            send(game, peer_id, public_data_notification_others, uWS::OpCode::TEXT);
+        }
+        // send to self
+        std::string public_data_notification_self = NOTIFICATION_LOBBY_PUBLIC_DATA;
+        public_data_notification_self.replace(public_data_notification_self.find("%s"), 2,
+                                         AnyElement{lobby.public_data}.to_string());
+        public_data_notification_self.replace(public_data_notification_self.find("%s"), 2, command_id);
+        send(game, peer.id, public_data_notification_self, uWS::OpCode::TEXT);
+    }
+    if (lobby.private_data_dirty) {
+        lobby.private_data_dirty = false;
+        // Notify lobby private data update, send only to self
+        std::string private_data_notification = NOTIFICATION_LOBBY_PRIVATE_DATA;
+        private_data_notification.replace(private_data_notification.find("%s"), 2,
+                                          AnyElement{lobby.private_data}.to_string());
+        private_data_notification.replace(private_data_notification.find("%s"), 2, command_id);
+        send(game, peer.id, private_data_notification, uWS::OpCode::TEXT);
+    }
+}
+void GameThread::on_data_to(GameData &game, std::string command_id, PeerData &peer,
+    yyjson_val *data_val) {
+    logger.debug_log("[GameThread] on_data_to ", command_id, " ", peer.id);
+    // PRECONDITIONS
+    if (peer.lobby_id == "") {
+        return on_error(game, command_id, peer.id, ERROR_PEER_NOT_IN_A_LOBBY);
+    }
+    auto &lobby = game.lobbies[peer.lobby_id];
+    if (lobby.host != peer.id) {
+        return on_error(game, command_id, peer.id, ERROR_PEER_NOT_HOST);
+    }
+    if (game.lobby_control != "relay") {
+        return on_error(game, command_id, peer.id, ERROR_GAME_NOT_RELAY);
+    }
+    std::string target_peer_id = decode_string_or_default(data_val, "target_peer", "");
+    if (target_peer_id == "" || lobby.peer_ids.find(target_peer_id) == lobby.peer_ids.end()) {
+        return on_error(game, command_id, peer.id, ERROR_PEER_NOT_FOUND);
+    }
+    auto &target_peer = game.peers[target_peer_id];
+    // CHANGES
+    yyjson_val *peerdata_val = yyjson_obj_get(data_val, "peer_data");
+    if (!peerdata_val || !yyjson_is_obj(peerdata_val)) {
+        return on_error(game, command_id, peer.id,
+                        ERROR_CANNOT_PARSE_JSON + " Peer data missing or not object");
+    }
+    boost::container::flat_map<std::string, AnyElement> new_data;
+    std::string error = decode_object(peerdata_val, new_data);
+    if (!error.empty()) {
+        return on_error(game, command_id, peer.id, error);
+    }
+    bool is_private = decode_bool_or_default(data_val, "is_private", false);
+    for (const auto &data_pair : new_data) {
+        if (std::holds_alternative<std::monostate>(data_pair.second.value)) {
+            if (is_private) {
+                target_peer.private_data_dirty = true;
+                target_peer.private_data.erase(data_pair.first);
+            } else {
+                target_peer.public_data_dirty = true;
+                target_peer.public_data.erase(data_pair.first);
+            }
+            continue;
+        }
+        if (is_private) {
+            target_peer.private_data_dirty = true;
+            target_peer.private_data[data_pair.first] = data_pair.second;
+        } else {
+            target_peer.public_data_dirty = true;
+            target_peer.public_data[data_pair.first] = data_pair.second;
+        }
+    }
+    // NOTIFICATION
+    if (target_peer.public_data_dirty) {
+        target_peer.public_data_dirty = false;
+        // Notify peer public data update
+        std::string public_data_notification = NOTIFICATION_PEER_PUBLIC_DATA;
+        public_data_notification.replace(public_data_notification.find("%s"), 2,
+                                            AnyElement{target_peer.public_data}.to_string());
+        public_data_notification.replace(public_data_notification.find("%s"), 2, peer.id);
+        public_data_notification.replace(public_data_notification.find("%s"), 2, target_peer_id);
+        // send to others
+        for (const auto &peer_id : lobby.peer_ids) {
+            send(game, peer_id, public_data_notification, uWS::OpCode::TEXT);
+        }
+    }
+    if (target_peer.private_data_dirty) {
+        target_peer.private_data_dirty = false;
+        // Notify peer private data update, send only to self
+        std::string private_data_notification = NOTIFICATION_PEER_PRIVATE_DATA;
+        private_data_notification.replace(private_data_notification.find("%s"), 2,
+                                            AnyElement{target_peer.private_data}.to_string());
+        private_data_notification.replace(private_data_notification.find("%s"), 2, peer.id);
+        private_data_notification.replace(private_data_notification.find("%s"), 2, target_peer_id);
+        send(game, target_peer_id, private_data_notification, uWS::OpCode::TEXT);
+    }
+    // send to self
+    std::string data_sent_notification = NOTIFICATION_DATA_TO_SENT;
+    data_sent_notification.replace(data_sent_notification.find("%s"), 2, command_id);
+    send(game, peer.id, data_sent_notification, uWS::OpCode::TEXT);
+}
+void GameThread::on_data_to_all(GameData &game, std::string command_id, PeerData &peer,
+    yyjson_val *data_val) {
+    logger.debug_log("[GameThread] on_data_to_all ", command_id, " ", peer.id);
+    // PRECONDITIONS
+    if (peer.lobby_id == "") {
+        return on_error(game, command_id, peer.id, ERROR_PEER_NOT_IN_A_LOBBY);
+    }
+    auto &lobby = game.lobbies[peer.lobby_id];
+    if (lobby.host != peer.id) {
+        return on_error(game, command_id, peer.id, ERROR_PEER_NOT_HOST);
+    }
+    if (game.lobby_control != "relay") {
+        return on_error(game, command_id, peer.id, ERROR_GAME_NOT_RELAY);
+    }
+    // CHANGES
+    yyjson_val *peerdata_val = yyjson_obj_get(data_val, "peer_data");
+    if (!peerdata_val || !yyjson_is_obj(peerdata_val)) {
+        return on_error(game, command_id, peer.id,
+                        ERROR_CANNOT_PARSE_JSON + " Peer data missing or not object");
+    }
+    boost::container::flat_map<std::string, AnyElement> new_data;
+    std::string error = decode_object(peerdata_val, new_data);
+    if (!error.empty()) {
+        return on_error(game, command_id, peer.id, error);
+    }
+    bool is_private = decode_bool_or_default(data_val, "is_private", false);
+    for (auto &peer_id : lobby.peer_ids) {
+        auto &target_peer = game.peers[peer_id];
+
+        for (const auto &data_pair : new_data) {
+            if (std::holds_alternative<std::monostate>(data_pair.second.value)) {
+                if (is_private) {
+                    target_peer.private_data_dirty = true;
+                    target_peer.private_data.erase(data_pair.first);
+                } else {
+                    target_peer.public_data_dirty = true;
+                    target_peer.public_data.erase(data_pair.first);
+                }
+                continue;
+            }
+            if (is_private) {
+                target_peer.private_data_dirty = true;
+                target_peer.private_data[data_pair.first] = data_pair.second;
+            } else {
+                target_peer.public_data_dirty = true;
+                target_peer.public_data[data_pair.first] = data_pair.second;
+            }
+        }
+        // NOTIFICATION
+        if (target_peer.public_data_dirty) {
+            target_peer.public_data_dirty = false;
+            // Notify peer public data update
+            std::string public_data_notification = NOTIFICATION_PEER_PUBLIC_DATA;
+            public_data_notification.replace(public_data_notification.find("%s"), 2,
+                                                AnyElement{target_peer.public_data}.to_string());
+            public_data_notification.replace(public_data_notification.find("%s"), 2, peer.id);
+            public_data_notification.replace(public_data_notification.find("%s"), 2, target_peer.id);
+            // send to others
+            for (const auto &peer_id : lobby.peer_ids) {
+                send(game, peer_id, public_data_notification, uWS::OpCode::TEXT);
+            }
+        }
+        if (target_peer.private_data_dirty) {
+            target_peer.private_data_dirty = false;
+            // Notify peer private data update, send only to self
+            std::string private_data_notification = NOTIFICATION_PEER_PRIVATE_DATA;
+            private_data_notification.replace(private_data_notification.find("%s"), 2,
+                                                AnyElement{target_peer.private_data}.to_string());
+            private_data_notification.replace(private_data_notification.find("%s"), 2, peer.id);
+            private_data_notification.replace(private_data_notification.find("%s"), 2, target_peer.id);
+            send(game, target_peer.id, private_data_notification, uWS::OpCode::TEXT);
+        }
+    }
+    // send to self
+    std::string data_sent_notification = NOTIFICATION_DATA_TO_SENT;
+    data_sent_notification.replace(data_sent_notification.find("%s"), 2, command_id);
+    send(game, peer.id, data_sent_notification, uWS::OpCode::TEXT);
+}
+void GameThread::on_notify_to(GameData &game, std::string command_id, PeerData &peer,
+    yyjson_val *data_val) {
+    logger.debug_log("[GameThread] on_notify_to ", command_id, " ", peer.id);
+    // PRECONDITIONS
+    if (peer.lobby_id == "") {
+        return on_error(game, command_id, peer.id, ERROR_PEER_NOT_IN_A_LOBBY);
+    }
+    auto &lobby = game.lobbies[peer.lobby_id];
+    if (lobby.host != peer.id) {
+        return on_error(game, command_id, peer.id, ERROR_PEER_NOT_HOST);
+    }
+    if (game.lobby_control != "relay") {
+        return on_error(game, command_id, peer.id, ERROR_GAME_NOT_RELAY);
+    }
+    std::string target_peer_id = decode_string_or_default(data_val, "target_peer", "");
+    if (target_peer_id == "" || lobby.peer_ids.find(target_peer_id) == lobby.peer_ids.end()) {
+        return on_error(game, command_id, peer.id, ERROR_PEER_NOT_FOUND);
+    }
+    auto &target_peer = game.peers[target_peer_id];
+    // CHANGES
+    yyjson_val *peerdata_val = yyjson_obj_get(data_val, "peer_data");
+    if (!peerdata_val || !yyjson_is_obj(peerdata_val)) {
+        return on_error(game, command_id, peer.id,
+                        ERROR_CANNOT_PARSE_JSON + " Peer data missing or not object");
+    }
+    boost::container::flat_map<std::string, AnyElement> new_data;
+    std::string error = decode_object(peerdata_val, new_data);
+    if (!error.empty()) {
+        return on_error(game, command_id, peer.id, error);
+    }
+    // NOTIFICATION
+    // Notify peer data update, send only to self
+    std::string private_data_notification = NOTIFICATION_PEER_NOTIFICATION;
+    private_data_notification.replace(private_data_notification.find("%s"), 2, AnyElement{new_data}.to_string());
+    private_data_notification.replace(private_data_notification.find("%s"), 2, target_peer_id);
+    send(game, peer.id, private_data_notification, uWS::OpCode::TEXT);
+    // send to self
+    std::string data_sent_notification = NOTIFICATION_NOTIFY_SENT;
+    data_sent_notification.replace(data_sent_notification.find("%s"), 2, command_id);
+    send(game, peer.id, data_sent_notification, uWS::OpCode::TEXT);
+}
+void GameThread::on_lobby_notify(GameData &game, std::string command_id, PeerData &peer,
+    yyjson_val *data_val) {
+    logger.debug_log("[GameThread] on_lobby_notify ", command_id, " ", peer.id);
+    // PRECONDITIONS
+    if (peer.lobby_id == "") {
+        return on_error(game, command_id, peer.id, ERROR_PEER_NOT_IN_A_LOBBY);
+    }
+    auto &lobby = game.lobbies[peer.lobby_id];
+    if (game.lobby_control != "relay") {
+        return on_error(game, command_id, peer.id, ERROR_GAME_NOT_RELAY);
+    }
+    // CHANGES
+    yyjson_val *peerdata_val = yyjson_obj_get(data_val, "peer_data");
+    if (!peerdata_val || !yyjson_is_obj(peerdata_val)) {
+        return on_error(game, command_id, peer.id,
+                        ERROR_CANNOT_PARSE_JSON + " Peer data missing or not object");
+    }
+    boost::container::flat_map<std::string, AnyElement> new_data;
+    std::string error = decode_object(peerdata_val, new_data);
+    if (!error.empty()) {
+        return on_error(game, command_id, peer.id, error);
+    }
+    // NOTIFICATION
+    // Notify peer notification update
+    std::string peer_notification = NOTIFICATION_PEER_NOTIFICATION;
+    peer_notification.replace(peer_notification.find("%s"), 2,
+                                        AnyElement{new_data}.to_string());
+    peer_notification.replace(peer_notification.find("%s"), 2, peer.id);
+    if (lobby.host == peer.id) {
+        // if host, send to all
+        for (auto &target_peer_id : lobby.peer_ids) {
+            send(game, target_peer_id, peer_notification, uWS::OpCode::TEXT);
+        }
+    } else {
+        // notify host
+        send(game, lobby.host, peer_notification, uWS::OpCode::TEXT);
+    }
+    // Notify self
+    std::string data_sent_notification = NOTIFICATION_NOTIFY_SENT;
+    data_sent_notification.replace(data_sent_notification.find("%s"), 2, command_id);
+    send(game, peer.id, data_sent_notification, uWS::OpCode::TEXT);
+}
+
+void GameThread::set_lobby_sealed(GameData &game, LobbyData &lobby, std::string peer_id, std::string command_id,
                                   bool sealed) {
     // CHANGES
     lobby.sealed = sealed;
@@ -1240,7 +1493,7 @@ void GameThread::set_lobby_sealed(LobbyData &lobby, std::string peer_id, std::st
         if (lobby_peer_id == peer_id && command_id != "") {
             continue;
         }
-        send(lobby_peer_id, notification_others, uWS::OpCode::TEXT);
+        send(game, lobby_peer_id, notification_others, uWS::OpCode::TEXT);
     }
     if (command_id == "") {
         return;
@@ -1250,16 +1503,16 @@ void GameThread::set_lobby_sealed(LobbyData &lobby, std::string peer_id, std::st
         notification_self = NOTIFICATION_LOBBY_SEALED;
     }
     notification_self.replace(notification_self.find("%s"), 2, command_id);
-    send(peer_id, notification_self, uWS::OpCode::TEXT);
+    send(game, peer_id, notification_self, uWS::OpCode::TEXT);
 }
 
 AnyElement GameThread::scripted_function_call(std::string peer_id, std::string &lobby_id, GameData &game,
                                               std::string funcname, bool override,
-                                              std::vector<AnyElement> &args, bool &has_error) {
+                                              boost::container::vector<AnyElement> &args, bool &has_error) {
     if (game.lua.enabled) {
         auto result = game.lua.func_call(funcname, args, peer_id, lobby_id, game.id, has_error);
         // if dictionary with error, put error
-        auto result_dict = std::get_if<std::unordered_map<std::string, AnyElement>>(&result.value);
+        auto result_dict = std::get_if<boost::container::flat_map<std::string, AnyElement>>(&result.value);
         if (result_dict && result_dict->find("error") != result_dict->end()) {
             has_error = true;
             // logical error generates events too
@@ -1290,60 +1543,36 @@ void GameThread::notify_lobby_changes(GameData &game, std::string &lobby_id) {
         auto &peer = game.peers[peer_id];
         if (peer.private_data_dirty) {
             peer.private_data_dirty = false;
-            std::string private_data_notification =
-                "{"
-                "\"command\": \"data_to\","
-                "\"message\": \"Peer private data\","
-                "\"data\": {"
-                "\"peer_data\": %s,"
-                "\"target_peer\": \"%s\","
-                "\"is_private\": true"
-                "}"
-                "}";
+            std::string private_data_notification = NOTIFICATION_PEER_PRIVATE_DATA;
             private_data_notification.replace(private_data_notification.find("%s"), 2,
                                               AnyElement{peer.private_data}.to_string());
+            private_data_notification.replace(private_data_notification.find("%s"), 2, EMPTY_STRING);
             private_data_notification.replace(private_data_notification.find("%s"), 2, peer_id);
             // only send to self
-            send(peer_id, private_data_notification, uWS::OpCode::TEXT);
+            send(game, peer_id, private_data_notification, uWS::OpCode::TEXT);
         }
         if (peer.public_data_dirty) {
             peer.public_data_dirty = false;
             // Notify peer public data update
-            std::string public_data_notification =
-                "{"
-                "\"command\": \"data_to\","
-                "\"message\": \"Peer public data\","
-                "\"data\": {"
-                "\"peer_data\": %s,"
-                "\"target_peer\": \"%s\","
-                "\"is_private\": false"
-                "}"
-                "}";
+            std::string public_data_notification = NOTIFICATION_PEER_PUBLIC_DATA;
             public_data_notification.replace(public_data_notification.find("%s"), 2,
                                              AnyElement{peer.public_data}.to_string());
+            public_data_notification.replace(public_data_notification.find("%s"), 2, EMPTY_STRING);
             public_data_notification.replace(public_data_notification.find("%s"), 2, peer_id);
             for (const auto &lobby_peer_id : lobby.peer_ids) {
-                send(lobby_peer_id, public_data_notification, uWS::OpCode::TEXT);
+                send(game, lobby_peer_id, public_data_notification, uWS::OpCode::TEXT);
             }
         }
     }
 
     if (lobby.tags_dirty) {
         lobby.tags_dirty = false;
-        std::string tags_notification =
-            "{"
-            "\"command\": \"lobby_tags\","
-            "\"message\": \"Tags Set\","
-            "\"data\": {"
-            "\"tags\": %s,"
-            "\"id\": \"%s\""
-            "}"
-            "}";
+        std::string tags_notification = NOTIFICATION_TAGS;
         tags_notification.replace(tags_notification.find("%s"), 2,
                                   AnyElement{lobby.tags}.to_string());
         tags_notification.replace(tags_notification.find("%s"), 2, lobby_id);
         for (auto &peer_id : lobby.peer_ids) {
-            send(peer_id, tags_notification, uWS::OpCode::TEXT);
+            send(game, peer_id, tags_notification, uWS::OpCode::TEXT);
         }
     }
 
@@ -1353,13 +1582,13 @@ void GameThread::notify_lobby_changes(GameData &game, std::string &lobby_id) {
             std::string sealed_notification = NOTIFICATION_LOBBY_SEALED;
             sealed_notification.replace(sealed_notification.find("%s"), 2, EMPTY_STRING);
             for (const auto &peer_id : lobby.peer_ids) {
-                send(peer_id, sealed_notification, uWS::OpCode::TEXT);
+                send(game, peer_id, sealed_notification, uWS::OpCode::TEXT);
             }
         } else {
             std::string unsealed_notification = NOTIFICATION_LOBBY_UNSEALED;
             unsealed_notification.replace(unsealed_notification.find("%s"), 2, EMPTY_STRING);
             for (const auto &peer_id : lobby.peer_ids) {
-                send(peer_id, unsealed_notification, uWS::OpCode::TEXT);
+                send(game, peer_id, unsealed_notification, uWS::OpCode::TEXT);
             }
         }
     }
@@ -1367,38 +1596,32 @@ void GameThread::notify_lobby_changes(GameData &game, std::string &lobby_id) {
     if (lobby.public_data_dirty) {
         lobby.public_data_dirty = false;
         // Notify lobby public data update
-        std::string public_data_notification =
-            "{"
-            "\"command\": \"lobby_data\","
-            "\"message\": \"Lobby Public Data\","
-            "\"data\": {"
-            "\"lobby_data\": %s,"
-            "\"is_private\": false"
-            "}"
-            "}";
+        std::string public_data_notification = NOTIFICATION_LOBBY_PUBLIC_DATA;
         public_data_notification.replace(public_data_notification.find("%s"), 2,
                                          AnyElement{lobby.public_data}.to_string());
+        public_data_notification.replace(public_data_notification.find("%s"), 2, EMPTY_STRING);
         for (const auto &peer_id : lobby.peer_ids) {
-            send(peer_id, public_data_notification, uWS::OpCode::TEXT);
+            send(game, peer_id, public_data_notification, uWS::OpCode::TEXT);
         }
     }
     // DO NOT SEND PRIVATE DATA FOR SCRIPTED LOBBY
-    if (lobby.private_data_dirty && false) {
+    if (lobby.private_data_dirty && game.lobby_control == "relay") {
         lobby.private_data_dirty = false;
         // Notify lobby private data update
-        std::string private_data_notification =
-            "{"
-            "\"command\": \"lobby_data\","
-            "\"message\": \"Lobby Private Data\","
-            "\"data\": {"
-            "\"lobby_data\": %s,"
-            "\"is_private\": false,="
-            "}"
-            "}";
+        std::string private_data_notification = NOTIFICATION_LOBBY_PRIVATE_DATA;
         private_data_notification.replace(private_data_notification.find("%s"), 2,
                                           AnyElement{lobby.private_data}.to_string());
+        private_data_notification.replace(private_data_notification.find("%s"), 2, EMPTY_STRING);
         for (const auto &peer_id : lobby.peer_ids) {
-            send(peer_id, private_data_notification, uWS::OpCode::TEXT);
+            send(game, peer_id, private_data_notification, uWS::OpCode::TEXT);
         }
     }
+}
+
+void GameThread::notify_peer(GameData &game, std::string &lobby_id, std::string peer_id, std::string notification) {
+    auto &lobby = game.lobbies[lobby_id];
+    std::string notification_message = NOTIFICATION_PEER_NOTIFICATION;
+    notification_message.replace(notification_message.find("%s"), 2, notification);
+    notification_message.replace(notification_message.find("%s"), 2, peer_id);
+    send(game, peer_id, notification_message, uWS::OpCode::TEXT);
 }

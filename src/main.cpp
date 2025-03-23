@@ -1,13 +1,25 @@
 #include <readerwriterqueue.h>
 
 #include <thread>
+#include <stddef.h>
 
 #include "App.h"
 #include "INIReader.h"
 #include "game_thread.h"
 #include "websocket_server.h"
+#include "decrypt_pgp.h"
+#include "database.h"
+
+void check_signature() {
+    std::string license_data = "license_id|holder|email|created_on|expires_on";
+    std::string signature_base64 = "<base64-signature>";
+    verify_detached_signature(license_data, signature_base64);
+}
 
 int main(int argc, char *argv[]) {
+    init_gpgme();
+    import_public_key();
+    check_signature();
     INIReader config_reader("config.ini");
     if (config_reader.ParseError() < 0) {
         std::cout << "Cannot open config.ini" << std::endl;
@@ -21,14 +33,18 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    if (config_reader.GetBoolean("database", "enabled", false) == true) {
+        connect_to_db();
+    }
+
     int port = config_reader.GetUnsigned("webserverserver", "port", 8080);
     std::cout << "Starting webserver on " << port << std::endl;
 
-    moodycamel::BlockingReaderWriterQueue<WebSocketMessage> message_queue(1024 * 10);
+    moodycamel::BlockingReaderWriterQueue<WebSocketReceivedMessage> receive_queue(config_reader.GetInteger("webserverserver", "message_queue_length", 250000));
     if (config_reader.GetBoolean("ssl", "enabled", false)) {
         WebSocketServer<false> webserver(
             verbose, config_reader.GetString("webserverserver", "log_folder", "logs"),
-            message_queue);
+            receive_queue, config_reader.GetInteger("webserverserver", "max_messages_per_second", 5));
         uWS::App app =
             uWS::App()
                 .ws<PerSocketData>(
@@ -75,8 +91,10 @@ int main(int argc, char *argv[]) {
         });
         std::thread GameThread_thread = std::thread([&]() {
             GameThread GameThread(verbose, config_reader.GetString("game", "log_folder", "logs"),
-                                  config_reader.Get("game", "scripts_folder", "scripts"), message_queue,
-                                  app.getLoop(), nullptr, &webserver);
+                                  config_reader.Get("game", "scripts_folder", "scripts"),
+                                  receive_queue, app.getLoop(), nullptr, &webserver,
+                                  config_reader.GetInteger("game", "listing_interval", 3000),
+                                  config_reader.GetInteger("game", "max_reconnection_time", 6 * 60 * 1000));
             GameThread.run();
         });
         app.run();
@@ -84,7 +102,7 @@ int main(int argc, char *argv[]) {
     } else {
         WebSocketServer<true> webserver(
             verbose, config_reader.GetString("webserverserver", "log_folder", "logs"),
-            message_queue);
+            receive_queue, config_reader.GetInteger("webserverserver", "max_messages_per_second", 5));
         uWS::SSLApp app =
             uWS::SSLApp(uWS::SocketContextOptions{
                             .key_file_name = config_reader.Get("ssl", "key_filename", "").c_str(),
@@ -134,11 +152,18 @@ int main(int argc, char *argv[]) {
         });
         std::thread GameThread_thread = std::thread([&]() {
             GameThread GameThread(verbose, config_reader.GetString("game", "log_folder", "logs"),
-                                  config_reader.Get("game", "scripts_folder", "scripts"), message_queue,
-                                  app.getLoop(), &webserver, nullptr);
+                                  config_reader.Get("game", "scripts_folder", "scripts"),
+                                  receive_queue, app.getLoop(), &webserver, nullptr,
+                                  config_reader.GetInteger("game", "listing_interval", 3000),
+                                  config_reader.GetInteger("game", "max_reconnection_time", 6 * 60 * 1000));
             GameThread.run();
         });
         app.run();
         GameThread_thread.join();
+    }
+    deinit_gpgme();
+
+    if (config_reader.GetBoolean("database", "enabled", false) == true) {
+        close_connection();
     }
 }

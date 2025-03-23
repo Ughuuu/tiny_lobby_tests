@@ -9,10 +9,13 @@
 	url = https://github.com/microsoft/vcpkg.git
 [submodule "external/LuaJIT"]
 	path = external/LuaJIT
-	url = https://github.com/LuaJIT/LuaJIT.git
+	url = https://github.com/LuaJIT/LuaJIT
 [submodule "external/angelscript"]
 	path = external/angelscript
 	url = https://github.com/codecat/angelscript-mirror
 [submodule "external/yyjson"]
 	path = external/yyjson
 	url = https://github.com/ibireme/yyjson
+[submodule "test/external/LuaJIT"]
+	path = test/external/LuaJIT
+	url = https://github.com/LuaJIT/LuaJIT

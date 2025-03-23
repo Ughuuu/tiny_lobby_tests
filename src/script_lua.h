@@ -17,7 +17,7 @@ class GameThread;
 
 struct LuaWrapperInfo {
     std::string name;
-    int idx = 0;
+    int idx = -1;
 };
 
 struct ScriptLua {
@@ -29,10 +29,10 @@ struct ScriptLua {
     std::string script_entrypoint;
     std::string logs_folder;
     GameThread *game_thread;
-    LuaWrapperInfo lobby_wrapper = {.name = "lobby"};
-    LuaWrapperInfo tags_wrapper = {.name = "tags"};
-    LuaWrapperInfo public_data_wrapper = {.name = "public_data"};
-    LuaWrapperInfo private_data_wrapper = {.name = "private_data"};
+    LuaWrapperInfo lobby_wrapper = {.name = "lobby", .idx = 0};
+    LuaWrapperInfo tags_wrapper = {.name = "tags", .idx = 0};
+    LuaWrapperInfo public_data_wrapper = {.name = "public_data", .idx = 0};
+    LuaWrapperInfo private_data_wrapper = {.name = "private_data", .idx = 0};
     // peers array of 10
     LuaWrapperInfo peers_elements_wrapper[10] = {
         {.name = "peer_object", .idx = 0}, {.name = "peer_object", .idx = 1},
@@ -65,7 +65,7 @@ struct ScriptLua {
 
    public:
     bool enabled = false;
-    AnyElement func_call(std::string &func_name, std::vector<AnyElement> &args,
+    AnyElement func_call(std::string &func_name, boost::container::vector<AnyElement> &args,
         std::string &peer_id,
                          std::string &lobby_id, std::string &game_id, bool &has_error);
     void open();

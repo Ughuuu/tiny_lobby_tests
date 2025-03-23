@@ -7,8 +7,8 @@
 static AnyElement decode_luavalue(lua_State *L, int idx);
 
 static AnyElement decode_luatable(lua_State *L, int idx) {
-    std::unordered_map<std::string, AnyElement> result_dict;
-    std::vector<AnyElement> result_array;
+    boost::container::flat_map<std::string, AnyElement> result_dict;
+    boost::container::vector<AnyElement> result_array;
     if (!lua_istable(L, idx)) {
         return AnyElement{std::monostate{}};
     }
@@ -24,7 +24,6 @@ static AnyElement decode_luatable(lua_State *L, int idx) {
             std::string key = lua_tostring(L, -1);
             if (key.size() == 0) {
                 luaL_error(L, "empty key");
-                lua_settop(L, 0);
                 return AnyElement{std::monostate{}};
             }
             if (key[0] >= '0' && key[0] <= '9' && !is_dict) {
@@ -39,7 +38,6 @@ static AnyElement decode_luatable(lua_State *L, int idx) {
             lua_pop(L, 1);
         } else {
             luaL_error(L, "invalid key type");
-            lua_settop(L, 0);
             return AnyElement{std::monostate{}};
         }
         lua_pop(L, 1);
@@ -63,6 +61,7 @@ static AnyElement decode_luavalue(lua_State *L, int idx) {
             return AnyElement{lua_tostring(L, idx)};
         case LUA_TTABLE:
             return decode_luatable(L, lua_gettop(L));
+            //return decode_luatable(L, idx);
         default:
             return AnyElement{std::monostate{}};
     }
@@ -70,7 +69,7 @@ static AnyElement decode_luavalue(lua_State *L, int idx) {
 
 static void push_lua_value(lua_State *L, const AnyElement &value);
 
-static void push_table(lua_State *L, const std::vector<AnyElement> &array) {
+static void push_table(lua_State *L, const boost::container::vector<AnyElement> &array) {
     lua_createtable(L, array.size(), 0);
     for (size_t i = 0; i < array.size(); ++i) {
         lua_pushinteger(L, i + 1);
@@ -79,7 +78,7 @@ static void push_table(lua_State *L, const std::vector<AnyElement> &array) {
     }
 }
 
-static void push_table(lua_State *L, const std::unordered_map<std::string, AnyElement> &table) {
+static void push_table(lua_State *L, const boost::container::flat_map<std::string, AnyElement> &table) {
     lua_createtable(L, table.size(), 0);
     for (const auto &pair : table) {
         lua_pushstring(L, pair.first.c_str());
@@ -101,12 +100,10 @@ static void push_lua_value(lua_State *L, const AnyElement &value) {
             } else if constexpr (std::is_same_v<T, double>) {
                 lua_pushnumber(L, v);
             } else if constexpr (std::is_same_v<T, std::string>) {
-                // Use string view to avoid copying string contents.
-                std::string_view str_view(v);
-                lua_pushlstring(L, str_view.data(), str_view.size());
-            } else if constexpr (std::is_same_v<T, std::vector<AnyElement>>) {
+                lua_pushlstring(L, v.c_str(), v.size());
+            } else if constexpr (std::is_same_v<T, boost::container::vector<AnyElement>>) {
                 push_table(L, v);
-            } else if constexpr (std::is_same_v<T, std::unordered_map<std::string, AnyElement>>) {
+            } else if constexpr (std::is_same_v<T, boost::container::flat_map<std::string, AnyElement>>) {
                 push_table(L, v);
             } else {
                 lua_pushnil(L);
@@ -116,13 +113,17 @@ static void push_lua_value(lua_State *L, const AnyElement &value) {
 }
 
 static int start_timer(lua_State *L) {
+    if (lua_gettop(L) < 2) {
+        luaL_error(L, "Expected at least 2 arguments.");
+        return 0;
+    }
     const char *timer_id = luaL_checkstring(L, 1);
     int duration = luaL_checkinteger(L, 2);
     if (duration < 1 || duration > 300) {
         luaL_error(L, "Timer duration must be between 1 second and 5 minutes.");
         return 0;
     }
-    std::vector<AnyElement> args;
+    boost::container::vector<AnyElement> args;
     // Get the additional parameters sent with the timer
     for (int i = 3; i <= lua_gettop(L); ++i) {
         args.push_back(decode_luavalue(L, i));
@@ -159,6 +160,10 @@ static int start_timer(lua_State *L) {
 }
 
 static int stop_timer(lua_State *L) {
+    if (lua_gettop(L) < 1) {
+        luaL_error(L, "Expected 1 argument.");
+        return 0;
+    }
     const char *timer_id = luaL_checkstring(L, 1);
     lua_getfield(L, LUA_REGISTRYINDEX, "game_id");
     std::string game_id = lua_tostring(L, -1);
@@ -178,6 +183,30 @@ static int stop_timer(lua_State *L) {
     return 0;
 }
 
+static int notify(lua_State *L) {
+    if (lua_gettop(L) < 2) {
+        luaL_error(L, "Expected 2 arguments.");
+        return 0;
+    }
+    const char *peer_id = luaL_checkstring(L, 1);
+    auto notification_object = decode_luavalue(L, 2);
+    lua_getfield(L, LUA_REGISTRYINDEX, "game_id");
+    std::string game_id = lua_tostring(L, -1);
+    lua_pop(L, 1);
+
+    lua_getfield(L, LUA_REGISTRYINDEX, "lobby_id");
+    std::string lobby_id = lua_tostring(L, -1);
+    lua_pop(L, 1);
+
+    lua_getfield(L, LUA_REGISTRYINDEX, "game_thread");
+    GameThread *game_thread = static_cast<GameThread *>(lua_touserdata(L, -1));
+    lua_pop(L, 1);
+
+    auto &game = game_thread->games[game_id];
+    game_thread->notify_peer(game, lobby_id, peer_id, notification_object.to_string());
+    return 0;
+}
+
 static int get_order_of_element(const std::set<std::string> &ordered_set, const std::string &key) {
     auto it = ordered_set.find(key);
     if (it != ordered_set.end()) {
@@ -186,7 +215,7 @@ static int get_order_of_element(const std::set<std::string> &ordered_set, const 
     return -1;
 }
 
-static std::string get_element_at_index(const std::set<std::string> &ordered_set, int index) {
+static std::string get_element_at_index(const boost::container::flat_set<std::string> &ordered_set, int index) {
     if (index < 0 || index >= ordered_set.size()) {
         return "";  // Invalid index
     }
@@ -229,19 +258,19 @@ static int lobby_newindex(lua_State *L) {
         }
     } else if (info->name == "tags") {
         auto new_tag = decode_luavalue(L, 3);
-        if (new_tag != lobby.tags[key]) {
+        if (lobby.tags_dirty || new_tag != lobby.tags[key]) {
             lobby.tags[key] = new_tag;
             lobby.tags_dirty = true;
         }
     } else if (info->name == "public_data") {
         auto new_public_data = decode_luavalue(L, 3);
-        if (new_public_data != lobby.public_data[key]) {
+        if (lobby.public_data_dirty || new_public_data != lobby.public_data[key]) {
             lobby.public_data[key] = new_public_data;
             lobby.public_data_dirty = true;
         }
     } else if (info->name == "private_data") {
         auto new_private_data = decode_luavalue(L, 3);
-        if (new_private_data != lobby.private_data[key]) {
+        if (lobby.private_data_dirty || new_private_data != lobby.private_data[key]) {
             lobby.private_data[key] = new_private_data;
             lobby.private_data_dirty = true;
         }
@@ -249,7 +278,7 @@ static int lobby_newindex(lua_State *L) {
         auto peer_id = get_element_at_index(lobby.peer_ids, info->idx);
         auto &peer = game.peers[peer_id];
         auto new_public_data = decode_luavalue(L, 3);
-        if (new_public_data != peer.public_data[key]) {
+        if (peer.public_data_dirty || new_public_data != peer.public_data[key]) {
             peer.public_data[key] = new_public_data;
             peer.public_data_dirty = true;
         }
@@ -257,7 +286,7 @@ static int lobby_newindex(lua_State *L) {
         auto peer_id = get_element_at_index(lobby.peer_ids, info->idx);
         auto &peer = game.peers[peer_id];
         auto new_private_data = decode_luavalue(L, 3);
-        if (new_private_data != peer.private_data[key]) {
+        if (peer.private_data_dirty || new_private_data != peer.private_data[key]) {
             peer.private_data[key] = new_private_data;
             peer.private_data_dirty = true;
         }
@@ -412,7 +441,7 @@ static int lobby_index(lua_State *L) {
 }
 
 int get_lobby(lua_State* L) {
-    lua_getfield(L, LUA_REGISTRYINDEX, "lobby");
+    lua_getfield(L, LUA_REGISTRYINDEX, "lobby_global");
     return 1;
 }
 
@@ -428,11 +457,16 @@ void luaopen_lobby(lua_State* L) {
     lua_pushcfunction(L, stop_timer);
     lua_setfield(L, -2, "stop_timer");
 
+    lua_pushcfunction(L, notify);
+    lua_setfield(L, -2, "notify");
+
     lua_getglobal(L, "package");
     lua_getfield(L, -1, "loaded");
     lua_pushstring(L, "lobby");
     lua_pushvalue(L, -4);
     lua_settable(L, -3);
+
+    lua_pop(L, 3);
 }
 
 void ScriptLua::set_lua_metatables() {
@@ -475,7 +509,7 @@ void ScriptLua::set_lua_metatables() {
     lua_pushlightuserdata(L, &lobby_wrapper);
     luaL_getmetatable(L, "SharedMetatable");
     lua_setmetatable(L, -2);
-    lua_setfield(L, LUA_REGISTRYINDEX, "lobby");
+    lua_setfield(L, LUA_REGISTRYINDEX, "lobby_global");
     luaopen_lobby(L);
 }
 
@@ -542,7 +576,7 @@ void ScriptLua::open() {
     enabled = true;
 }
 
-AnyElement ScriptLua::func_call(std::string &func_name, std::vector<AnyElement> &args,
+AnyElement ScriptLua::func_call(std::string &func_name, boost::container::vector<AnyElement> &args,
                                 std::string &peer_id,
                                 std::string &lobby_id, std::string &game_id, bool &has_error) {
     if (!enabled) {
@@ -554,6 +588,9 @@ AnyElement ScriptLua::func_call(std::string &func_name, std::vector<AnyElement> 
     }
     if (!enabled) {
         return AnyElement{"Lua script is not enabled"};
+    }
+    if (L == nullptr) {
+        return AnyElement{"Lua state is nullptr"};
     }
 
     lua_pushstring(L, peer_id.c_str());

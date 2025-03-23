@@ -1,8 +1,9 @@
 #pragma once
 #include <string>
-#include <unordered_map>
+#include <boost/container/flat_map.hpp>
+#include <boost/container/flat_set.hpp>
 #include <variant>
-#include <vector>
+#include <boost/container/vector.hpp>
 
 #include "yyjson.h"
 
@@ -12,7 +13,7 @@ struct AnyElement;
 
 using VariantElement =
     std::variant<std::monostate, bool, int64_t, double, std::string,
-                 std::unordered_map<std::string, AnyElement>, std::vector<AnyElement>>;
+    boost::container::flat_map<std::string, AnyElement>, boost::container::vector<AnyElement>>;
 
 struct AnyElement {
     VariantElement value;
@@ -28,18 +29,18 @@ struct AnyElement {
             return yyjson_mut_real(doc, std::get<double>(elem.value));
         } else if (std::holds_alternative<std::string>(elem.value)) {
             return yyjson_mut_str(doc, std::get<std::string>(elem.value).c_str());
-        } else if (std::holds_alternative<std::unordered_map<std::string, AnyElement>>(
+        } else if (std::holds_alternative<boost::container::flat_map<std::string, AnyElement>>(
                        elem.value)) {
             yyjson_mut_val *obj = yyjson_mut_obj(doc);
-            const auto &obj_map = std::get<std::unordered_map<std::string, AnyElement>>(elem.value);
+            const auto &obj_map = std::get<boost::container::flat_map<std::string, AnyElement>>(elem.value);
             for (const auto &pair : obj_map) {
                 yyjson_mut_val *value_val = to_yyjson(doc, pair.second);
                 yyjson_mut_obj_add_val(doc, obj, pair.first.c_str(), value_val);
             }
             return obj;
-        } else if (std::holds_alternative<std::vector<AnyElement>>(elem.value)) {
+        } else if (std::holds_alternative<boost::container::vector<AnyElement>>(elem.value)) {
             yyjson_mut_val *arr = yyjson_mut_arr(doc);
-            const auto &arr_vec = std::get<std::vector<AnyElement>>(elem.value);
+            const auto &arr_vec = std::get<boost::container::vector<AnyElement>>(elem.value);
             for (const auto &item : arr_vec) {
                 yyjson_mut_val *value_val = to_yyjson(doc, item);
                 yyjson_mut_arr_append(arr, value_val);
@@ -83,12 +84,12 @@ static bool operator==(const AnyElement &lhs, const AnyElement &rhs) {
         return std::get<double>(lhs.value) == std::get<double>(rhs.value);
     } else if (std::holds_alternative<std::string>(lhs.value)) {
         return std::get<std::string>(lhs.value) == std::get<std::string>(rhs.value);
-    } else if (std::holds_alternative<std::unordered_map<std::string, AnyElement>>(lhs.value)) {
-        return std::get<std::unordered_map<std::string, AnyElement>>(lhs.value) == 
-               std::get<std::unordered_map<std::string, AnyElement>>(rhs.value);
-    } else if (std::holds_alternative<std::vector<AnyElement>>(lhs.value)) {
-        return std::get<std::vector<AnyElement>>(lhs.value) == 
-               std::get<std::vector<AnyElement>>(rhs.value);
+    } else if (std::holds_alternative<boost::container::flat_map<std::string, AnyElement>>(lhs.value)) {
+        return std::get<boost::container::flat_map<std::string, AnyElement>>(lhs.value) == 
+               std::get<boost::container::flat_map<std::string, AnyElement>>(rhs.value);
+    } else if (std::holds_alternative<boost::container::vector<AnyElement>>(lhs.value)) {
+        return std::get<boost::container::vector<AnyElement>>(lhs.value) == 
+               std::get<boost::container::vector<AnyElement>>(rhs.value);
     }
 
     return false;
@@ -102,4 +103,5 @@ std::string decode_string_or_default(yyjson_val *object, std::string key,
 int decode_int_or_default(yyjson_val *object, std::string key, int default_value);
 std::string decode_array(yyjson_val *array, AnyElement &element);
 std::string decode_value(yyjson_val *value, AnyElement &element);
-std::string decode_object(yyjson_val *object, std::unordered_map<std::string, AnyElement> &dict);
+std::string decode_object(yyjson_val *object, boost::container::flat_map<std::string, AnyElement> &dict);
+bool decode_bool_or_default(yyjson_val *object, std::string key, bool default_value);

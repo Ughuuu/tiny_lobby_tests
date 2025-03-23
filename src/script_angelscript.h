@@ -75,7 +75,7 @@ class ScriptAngelScript {
         }
     }
 
-    AnyElement func_call(std::string &func_name, std::vector<AnyElement> &args) {
+    AnyElement func_call(std::string &func_name, boost::container::vector<AnyElement> &args) {
         if (!enabled) {
             return AnyElement{"AngelScript is not enabled"};
         }

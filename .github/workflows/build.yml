@@ -29,9 +29,13 @@ jobs:
         run: ./check_format.sh
 
   build-linux:
-    name: Build on Linux (Ubuntu x64)
+    name: Build on Linux (Ubuntu ${{ matrix.arch }})
     needs: lint
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # arch: [x64, arm64]
+        arch: [x64]
 
     steps:
       - name: Checkout code
@@ -39,26 +43,30 @@ jobs:
         with:
           fetch-depth: 0
           submodules: recursive
+      
+      - name: Create Public Key
+        run: |
+          echo "${{ secrets.GITHUB_PUBLIC_KEY }}" > public.key
 
       - name: Print versions
         run: |
           cmake --version
           clang --version
 
-      - name: Install dependencies
+      - name: Install dependencies ${{ matrix.arch }}
         run: |
           sudo apt update
           sudo apt install -y software-properties-common autoconf 
-          ./install-linux.sh
+          ./install-linux-${{ matrix.arch }}.sh
 
       - name: Build Release
         run: |
-          ./build_release.sh
+          ./build_release-${{ matrix.arch }}.sh
 
       - name: Archive build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: lobby_server-linux-x64
+          name: lobby_server-linux-${{ matrix.arch }}
           path: build/lobby_server
           if-no-files-found: error
 
@@ -76,6 +84,10 @@ jobs:
         with:
           fetch-depth: 0
           submodules: recursive
+      
+      - name: Create Public Key
+        run: |
+          echo "${{ secrets.GITHUB_PUBLIC_KEY }}" > public.key
 
       - name: Print versions
         run: |
@@ -109,6 +121,10 @@ jobs:
         with:
           fetch-depth: 0
           submodules: recursive
+      
+      - name: Create Public Key
+        run: |
+          echo "${{ secrets.GITHUB_PUBLIC_KEY }}" > public.key
 
       - name: Install dependencies
         shell: pwsh

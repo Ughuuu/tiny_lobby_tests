@@ -4,7 +4,14 @@ Set-Location -Path "external\vcpkg"
 .\bootstrap-vcpkg.bat
 .\vcpkg install boost-uuid:x64-windows
 .\vcpkg install inih:x64-windows
-.\vcpkg install luajit:x64-windows
 .\vcpkg install libpqxx:x64-windows
+.\vcpkg install gpgme:x64-windows
+.\vcpkg install cpp-httplib:x64-windows
+.\vcpkg install boost-container:x64-windows
 .\vcpkg integrate install
+Set-Location -Path "..\.."
+# Install luajit
+Set-Location -Path "external\luajit"
+mingw32-make
+mingw32-make install
 Set-Location -Path "..\.."
