@@ -117,7 +117,7 @@ static int start_timer(lua_State *L) {
         luaL_error(L, "Expected at least 2 arguments.");
         return 0;
     }
-    const char *timer_id = luaL_checkstring(L, 1);
+    std::string timer_id = luaL_checkstring(L, 1);
     int duration = luaL_checkinteger(L, 2);
     if (duration < 1 || duration > 300) {
         luaL_error(L, "Timer duration must be between 1 second and 5 minutes.");

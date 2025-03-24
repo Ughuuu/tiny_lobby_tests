@@ -5,12 +5,12 @@ const { error } = require('console');
 
 // Configuration
 const serverUrl = 'ws://localhost:8080/connect'; // Your WebSocket server URL
-const numClients = 10000;  // Number of WebSocket clients to simulate
+const numClients = 5000;  // Number of WebSocket clients to simulate
 let stopAfter = 0; // Number of messages each client will send. Set to 0 for infinite
 let messageInterval = 1;  // Interval in milliseconds between messages
 const max_time = 15000; // 15 s
 //let usecase = "max_sent"
-let usecase = "max_single_chat"
+let usecase = "max_echo"
 switch (usecase) {
     case "max_echo":
         // send as many messages as possible

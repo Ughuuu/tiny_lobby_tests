@@ -29,13 +29,14 @@ jobs:
         run: ./check_format.sh
 
   build-linux:
-    name: Build on Linux (Ubuntu ${{ matrix.arch }})
+    name: Build on Linux (${{ matrix.arch }} ${{ matrix.type }})
     needs: lint
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         # arch: [x64, arm64]
         arch: [x64]
+        type: [debug, release]
 
     steps:
       - name: Checkout code
@@ -43,6 +44,17 @@ jobs:
         with:
           fetch-depth: 0
           submodules: recursive
+      
+      - name: Cache vcpkg dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/vcpkg
+            external/vcpkg/installed
+          key: vcpkg-${{ runner.os }}-${{ matrix.arch }}-${{ matrix.arch }}
+          restore-keys: |
+            vcpkg-${{ runner.os }}-${{ matrix.arch }}-${{ matrix.arch }}
+            vcpkg-${{ runner.os }}-
       
       - name: Create Public Key
         run: |
@@ -61,14 +73,73 @@ jobs:
 
       - name: Build Release
         run: |
-          ./build_release-${{ matrix.arch }}.sh
+          ./build_${{ matrix.type }}-${{ matrix.arch }}.sh
 
       - name: Archive build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: lobby_server-linux-${{ matrix.arch }}
+          name: lobby_server-linux-${{ matrix.arch }}-${{ matrix.type }}
           path: build/lobby_server
           if-no-files-found: error
+
+  test:
+    name: Test Code (Ubuntu)
+    runs-on: ubuntu-22.04
+    needs: build-linux
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Download Linux build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: lobby_server-linux-x64-release
+          path: build
+      
+      - name: Clone Old Lobby Server
+        uses: actions/checkout@v4
+        with:
+          repository: blazium-engine/blazium-lobby
+          path: old-lobby
+          token: ${{ secrets.GH_PAT }}
+      
+      # Set up Go environment
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.21  # Specify the Go version you are using
+
+      # Install dependencies
+      - name: Install Dependencies
+        working-directory: old-lobby
+        run: go mod tidy
+
+      # Run the app and tests in the same step
+      - name: Run App and Tests
+        working-directory: old-lobby
+        run: |
+          # Start the app in the background
+          cd ..
+          cp build/lobby_server .
+          ls
+          chmod +x lobby_server
+          ./lobby_server &> app.log &
+          sleep 10
+          cd old-lobby
+          go test -timeout 200s -tags=auth ./... -v
+          go test -timeout 200s -tags=lobby ./... -v
+        env:
+          # For the concurrent test
+          BLAZIUM_RATE_LIMIT: 1000
+      
+      # Always print server logs
+      - name: Print Server Logs
+        if: always()
+        run: |
+          cat app.log
+          cat logs/game.txt
+          cat logs/websocket.txt
 
   build-macos:
     name: Build on macOS (${{ matrix.arch }})
@@ -84,6 +155,17 @@ jobs:
         with:
           fetch-depth: 0
           submodules: recursive
+      
+      - name: Cache vcpkg dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/vcpkg
+            external/vcpkg/installed
+          key: vcpkg-${{ runner.os }}-${{ matrix.arch }}
+          restore-keys: |
+            vcpkg-${{ runner.os }}-${{ matrix.arch }}
+            vcpkg-${{ runner.os }}-
       
       - name: Create Public Key
         run: |
@@ -111,7 +193,6 @@ jobs:
 
   build-windows:
     name: Build on Windows (x64)
-    if: false
     needs: lint
     runs-on: windows-latest
 
@@ -121,7 +202,20 @@ jobs:
         with:
           fetch-depth: 0
           submodules: recursive
+
+      - uses: ilammy/msvc-dev-cmd@v1.4.1
       
+      - name: Cache vcpkg dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/vcpkg
+            external/vcpkg/installed
+          key: vcpkg-${{ runner.os }}-${{ matrix.arch }}
+          restore-keys: |
+            vcpkg-${{ runner.os }}-${{ matrix.arch }}
+            vcpkg-${{ runner.os }}-
+
       - name: Create Public Key
         run: |
           echo "${{ secrets.GITHUB_PUBLIC_KEY }}" > public.key
@@ -141,18 +235,19 @@ jobs:
       - name: Build Release
         shell: pwsh
         run: |
-          .\build_release.ps1
+          # Comment this out so we have a passing build, for cache
+          # .\build_release.ps1
 
-      - name: Archive build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: lobby_server-windows-x64
-          path: build/lobby_server*
-          if-no-files-found: error
+      #- name: Archive build artifacts
+      #  uses: actions/upload-artifact@v4
+      #  with:
+      #    name: lobby_server-windows-x64
+      #    path: build/lobby_server*
+      #    if-no-files-found: error
   
   docker-build:
     name: Build Docker Image (Linux)
-    needs: build-linux
+    needs: [build-linux, test]
     runs-on: ubuntu-latest
 
     steps:
@@ -168,7 +263,7 @@ jobs:
       - name: Download Linux build artifact
         uses: actions/download-artifact@v4
         with:
-          name: lobby_server-linux-x64
+          name: lobby_server-linux-x64-release
           path: build/      
 
       - name: List contents of build directory

@@ -1,4 +1,8 @@
 Write-Output "Downloading deps using vcpkg"
+# Install luajit
+Set-Location -Path "external\luajit\src"
+cmd /c msvcbuild.bat
+Set-Location -Path "..\..\.."
 # Install packages using vcpkg
 Set-Location -Path "external\vcpkg"
 .\bootstrap-vcpkg.bat
@@ -9,9 +13,4 @@ Set-Location -Path "external\vcpkg"
 .\vcpkg install cpp-httplib:x64-windows
 .\vcpkg install boost-container:x64-windows
 .\vcpkg integrate install
-Set-Location -Path "..\.."
-# Install luajit
-Set-Location -Path "external\luajit"
-mingw32-make
-mingw32-make install
 Set-Location -Path "..\.."

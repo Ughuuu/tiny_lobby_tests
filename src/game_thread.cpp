@@ -150,8 +150,8 @@ void GameThread::run() {
             handle_disconnects(now);
         }
         if (now - last_listing > listing_interval) {
-            std::cout << now << " , " << messages_received << " , " << messages_sent << " , "
-                      << receive_queue.size_approx() << std::endl;
+            //std::cout << now << " , " << messages_received << " , " << messages_sent << " , "
+            //    << receive_queue.size_approx() << std::endl;
             messages_received = 0;
             messages_sent = 0;
             last_listing = now;

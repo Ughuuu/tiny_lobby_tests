@@ -5,7 +5,6 @@ local api = {}
 
 function api.start_game()
     local l = lobby.get()
-    local ord = helper.peers_ordered(l)
     if l.peers[l.calling_peer_id].id ~= l.host then
         return { error = "You are not the host" }
     end

@@ -6,7 +6,6 @@ local api = {}
 
 function api.start_game()
     local l = lobby.get()
-    local ord = helper.peers_ordered(l)
     if l.peers[l.calling_peer_id].id ~= l.host then
         return { error = "You are not the host" }
     end
@@ -83,12 +82,6 @@ function api.set_initial_data(l)
         {0, 0, 0},
     }
     l.public_data["board"] = board
-    print(board)
-    print(board[1])
-    print(board[1][1])
-    print(l.public_data["board"])
-    print(l.public_data["board"][1])
-    print(l.public_data["board"][1][1])
     l = turn.increment_dealer(l)
     l.public_data["turn_idx"] = -1
     l = turn.increment_turn(l)
