@@ -6,7 +6,8 @@ cd external/vcpkg
 ./vcpkg install boost-uuid --triplet arm64-osx
 ./vcpkg install inih --triplet arm64-osx
 ./vcpkg install libpqxx --triplet arm64-osx
-./vcpkg install gpgme --triplet arm64-osx
+./vcpkg install botan --triplet arm64-osx
+./vcpkg install json-c --triplet arm64-osx
 ./vcpkg install cpp-httplib --triplet arm64-osx
 ./vcpkg install boost-container --triplet arm64-osx
 ./vcpkg list
@@ -17,3 +18,5 @@ cd external/LuaJIT
 make MACOSX_DEPLOYMENT_TARGET=10.15
 sudo make install
 cd ../..
+# Install rnp
+./install-rnp.sh

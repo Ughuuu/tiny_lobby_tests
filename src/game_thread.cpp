@@ -247,6 +247,18 @@ void GameThread::handle_timers(int64_t last_listing) {
         for (auto &timer_data : game.second.timer_data) {
             if (timer_data.second.end_time < last_listing) {
                 bool has_error = false;
+                 // lobby got destroyed
+                 if (game.second.lobbies.find(timer_data.second.lobby_id) == game.second.lobbies.end()) {
+                    on_error(game.second, EMPTY_STRING, timer_data.second.peer_id, ERROR_LOBBY_NOT_FOUND, true);
+                    game.second.timer_data.erase(timer_data.first);
+                    continue;
+                }
+                // peer got destroyed
+                if (game.second.peers.find(timer_data.second.peer_id) == game.second.peers.end()) {
+                    on_error(game.second, EMPTY_STRING, timer_data.second.peer_id, ERROR_PEER_NOT_FOUND, true);
+                    game.second.timer_data.erase(timer_data.first);
+                    continue;
+                }
                 auto result = scripted_function_call(timer_data.second.peer_id, timer_data.second.lobby_id, game.second,
                                                      timer_data.second.id, true,
                                                      timer_data.second.args, has_error);
@@ -375,7 +387,7 @@ void GameThread::handle_disconnects(int64_t now) {
         for (auto &peer : game_data.disconnected_peers) {
             auto &peer_obj = game_data.peers[peer.first];
             // peer no longer in lobby
-            if (peer_obj.lobby_id == EMPTY_STRING) {
+            if (peer_obj.lobby_id == EMPTY_STRING || game_data.lobbies.find(peer_obj.lobby_id) == game_data.lobbies.end()) {
                 peer_obj.leave_lobby();
                 to_erase.insert(peer.first);
                 continue;

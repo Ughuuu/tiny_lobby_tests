@@ -9,7 +9,8 @@ Set-Location -Path "external\vcpkg"
 .\vcpkg install boost-uuid:x64-windows
 .\vcpkg install inih:x64-windows
 .\vcpkg install libpqxx:x64-windows
-.\vcpkg install gpgme:x64-windows
+.\vcpkg install botan:x64-windows
+.\vcpkg install json-c:x64-windows
 .\vcpkg install cpp-httplib:x64-windows
 .\vcpkg install boost-container:x64-windows
 .\vcpkg integrate install

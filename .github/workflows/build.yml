@@ -33,6 +33,7 @@ jobs:
     needs: lint
     runs-on: ubuntu-22.04
     strategy:
+      fail-fast: false
       matrix:
         # arch: [x64, arm64]
         arch: [x64]
@@ -143,6 +144,7 @@ jobs:
 
   build-macos:
     name: Build on macOS (${{ matrix.arch }})
+    if: false
     needs: lint
     strategy:
       matrix:
@@ -157,7 +159,7 @@ jobs:
           submodules: recursive
       
       - name: Cache vcpkg dependencies
-        uses: actions/cache@v3
+        uses: actions/restore@v4
         with:
           path: |
             ~/.cache/vcpkg
@@ -180,6 +182,17 @@ jobs:
         run: |
           ./install-macos-${{ matrix.arch }}.sh
 
+      - name: Cache vcpkg dependencies
+        uses: actions/save@v4
+        with:
+          path: |
+            ~/.cache/vcpkg
+            external/vcpkg/installed
+          key: vcpkg-${{ runner.os }}-${{ matrix.arch }}
+          restore-keys: |
+            vcpkg-${{ runner.os }}-${{ matrix.arch }}
+            vcpkg-${{ runner.os }}-
+  
       - name: Build (macOS ${{ matrix.arch }})
         run: |
           ./build_release_macos-${{ matrix.arch }}.sh
@@ -193,6 +206,7 @@ jobs:
 
   build-windows:
     name: Build on Windows (x64)
+    if: false
     needs: lint
     runs-on: windows-latest
 

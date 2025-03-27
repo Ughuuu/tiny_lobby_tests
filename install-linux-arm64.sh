@@ -8,7 +8,8 @@ cd external/vcpkg
 ./vcpkg install boost-uuid --triplet arm64-linux
 ./vcpkg install inih --triplet arm64-linux
 ./vcpkg install libpqxx --triplet arm64-linux
-./vcpkg install gpgme --triplet arm64-linux
+./vcpkg install botan --triplet arm64-linux
+./vcpkg install json-c --triplet arm64-linux
 ./vcpkg install cpp-httplib --triplet arm64-linux
 ./vcpkg install boost-container --triplet arm64-linux
 ./vcpkg integrate install

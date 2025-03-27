@@ -17,7 +17,7 @@ void check_signature() {
 }
 
 int main(int argc, char *argv[]) {
-    init_gpgme();
+    init_rnp();
     import_public_key();
     check_signature();
     INIReader config_reader("config.ini");
@@ -161,8 +161,7 @@ int main(int argc, char *argv[]) {
         app.run();
         GameThread_thread.join();
     }
-    deinit_gpgme();
-
+    deinit_rnp();
     if (config_reader.GetBoolean("database", "enabled", false) == true) {
         close_connection();
     }

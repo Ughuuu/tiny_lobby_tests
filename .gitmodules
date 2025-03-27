@@ -1,9 +1,6 @@
 [submodule "external/uWebSockets"]
 	path = external/uWebSockets
 	url = https://github.com/uNetworking/uWebSockets
-[submodule "external/uuid_v4"]
-	path = external/uuid_v4
-	url = https://github.com/crashoz/uuid_v4
 [submodule "external/vcpkg"]
 	path = external/vcpkg
 	url = https://github.com/microsoft/vcpkg.git
@@ -13,9 +10,9 @@
 [submodule "external/angelscript"]
 	path = external/angelscript
 	url = https://github.com/codecat/angelscript-mirror
-[submodule "external/yyjson"]
-	path = external/yyjson
-	url = https://github.com/ibireme/yyjson
 [submodule "test/external/LuaJIT"]
 	path = test/external/LuaJIT
 	url = https://github.com/LuaJIT/LuaJIT
+[submodule "external/rnp"]
+	path = external/rnp
+	url = https://github.com/rnpgp/rnp

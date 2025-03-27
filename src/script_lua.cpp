@@ -164,7 +164,7 @@ static int stop_timer(lua_State *L) {
         luaL_error(L, "Expected 1 argument.");
         return 0;
     }
-    const char *timer_id = luaL_checkstring(L, 1);
+    std::string timer_id = luaL_checkstring(L, 1);
     lua_getfield(L, LUA_REGISTRYINDEX, "game_id");
     std::string game_id = lua_tostring(L, -1);
     lua_pop(L, 1);

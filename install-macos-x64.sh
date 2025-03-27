@@ -10,7 +10,8 @@ cd external/vcpkg
 ./vcpkg install boost-uuid --triplet x64-osx
 ./vcpkg install inih --triplet x64-osx
 ./vcpkg install libpqxx --triplet x64-osx
-./vcpkg install gpgme --triplet x64-osx
+./vcpkg install botan --triplet x64-osx
+./vcpkg install json-c --triplet x64-osx
 ./vcpkg install cpp-httplib --triplet x64-osx
 ./vcpkg install boost-container --triplet x64-osx
 ./vcpkg list
@@ -18,7 +19,8 @@ cd external/vcpkg
 cd ../..
 # Install luajit
 cd external/LuaJIT
-#make MACOSX_DEPLOYMENT_TARGET=10.15 TARGET=x86_64
 make MACOSX_DEPLOYMENT_TARGET=10.15 CC="gcc -m64 -arch x86_64"
 sudo make install
 cd ../..
+# Install rnp
+./install-rnp.sh

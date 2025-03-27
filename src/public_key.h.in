@@ -2,5 +2,4 @@
 #include <string>
 
 const std::string public_key = R"(
-@PUBLIC_KEY@
-)";
+@PUBLIC_KEY@)";

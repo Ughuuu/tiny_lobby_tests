@@ -1,94 +1,118 @@
 #include "decrypt_pgp.h"
-#include "public_key.h"
 #include <iostream>
-#include <cstring>
+#include <vector>
+#include "public_key.h"
 
-gpgme_ctx_t ctx;
+rnp_ffi_t ffi = nullptr;
 
-void init_gpgme() {
-    if (strcmp(GPGME_VERSION, gpgme_check_version(NULL)) != 0) {
-        std::cerr << "GPGME library version mismatch!" << std::endl;
+void init_rnp() {
+    std::cout << "RNP backend: " << rnp_backend_string() << " version: " << rnp_backend_version() << std::endl;
+    if (rnp_ffi_create(&ffi, "GPG", "GPG")) {
+        std::cerr << "Failed to initialize RNP." << std::endl;
+        exit(0);
+    }
+}
+
+void deinit_rnp() {
+    if (ffi) {
+        rnp_ffi_destroy(ffi);
+        ffi = nullptr;
+        std::cout << "RNP is not initialized." << std::endl;
         exit(1);
     }
-    gpgme_error_t err = gpgme_new(&ctx);
-    if (err != GPG_ERR_NO_ERROR) {
-        std::cerr << "Failed to initialize GPGME context." << gpgme_strerror(err) << std::endl;
-        exit(1);
-    }
 }
-
-void deinit_gpgme() {
-    gpgme_release(ctx);
-}
-
-void import_public_key() {
-    // Create GPGME data object
-    gpgme_data_t data;
-    gpgme_error_t err = gpgme_data_new_from_mem(&data, public_key.c_str(), public_key.length(), 0);
-    if (err != GPG_ERR_NO_ERROR) {
-        std::cerr << "Failed to create GPGME data object from key file." << gpgme_strerror(err) << std::endl;
-        return;
+bool import_public_key() {
+    if (!ffi) {
+        std::cerr << "RNP is not initialized." << std::endl;
+        return false;
     }
 
-    // Import the key into the keyring
-    err = gpgme_op_import(ctx, data);
-    if (err != GPG_ERR_NO_ERROR) {
-        std::cerr << "Failed to import public key." << gpgme_strerror(err) << std::endl;
-        return;
+    rnp_input_t input = nullptr;
+    if (rnp_input_from_memory(&input, reinterpret_cast<const uint8_t*>(public_key.data()), public_key.size(), false)) {
+        std::cerr << "Failed to create input stream." << std::endl;
+        return false;
+    }
+    //int result = rnp_load_keys(ffi, "GPG", input, RNP_LOAD_SAVE_PUBLIC_KEYS);
+    int result = rnp_import_keys(ffi, input, RNP_LOAD_SAVE_PUBLIC_KEYS, nullptr);
+    rnp_input_destroy(input);
+
+    if (result != 0) {
+        std::cerr << "Failed to import public key. Error code: " << result << std::endl;
+        return false;
     }
 
-    // Clean up the data object
-    gpgme_data_release(data);
-    std::cout << "Public key imported successfully." << gpgme_strerror(err) << std::endl;
-}
-
-gpgme_key_t get_public_key(const std::string& key_id) {
-    gpgme_key_t key;
-    gpgme_error_t err = gpgme_get_key(ctx, key_id.c_str(), &key, 0);
-    if (err != GPG_ERR_NO_ERROR) {
-        std::cerr << "Failed to retrieve public key." << gpgme_strerror(err) << std::endl;
-        return nullptr;
-    }
-    return key;
+    std::cout << "Public key imported successfully." << std::endl;
+    return true;
 }
 
 bool verify_detached_signature(const std::string& data, const std::string& signature) {
-    // Create GPGME data objects for message and signature
-    gpgme_data_t in, sig;
-    gpgme_error_t err;
-
-    // Create data object from the original message
-    err = gpgme_data_new_from_mem(&in, data.c_str(), data.length(), 0);
-    if (err != GPG_ERR_NO_ERROR) {
-        std::cerr << "Failed to create input data object." << gpgme_strerror(err) << std::endl;
+    if (!ffi) {
+        std::cerr << "RNP is not initialized." << std::endl;
         return false;
     }
 
-    // Create data object from the base64-decoded signature
-    std::string decoded_signature;
-    if (signature.empty()) {
-        std::cerr << "Signature is empty." << gpgme_strerror(err) << std::endl;
+    rnp_input_t data_input = nullptr, sig_input = nullptr;
+    rnp_op_verify_t verify = nullptr;
+    // Create input streams for data and signature
+    if (rnp_input_from_memory(&data_input, reinterpret_cast<const uint8_t*>(data.data()), data.size(), false) ||
+        rnp_input_from_memory(&sig_input, reinterpret_cast<const uint8_t*>(signature.data()), signature.size(), false)) {
+        std::cerr << "Failed to create input streams." << std::endl;
         return false;
     }
 
-    // Decode base64 signature (if necessary)
-    decoded_signature = signature; // Here, use base64 decode if necessary
-    err = gpgme_data_new_from_mem(&sig, decoded_signature.c_str(), decoded_signature.length(), 0);
-    if (err != GPG_ERR_NO_ERROR) {
-        std::cerr << "Failed to create signature data object." << gpgme_strerror(err) << std::endl;
+    // Create verification operation
+    if (rnp_op_verify_detached_create(&verify, ffi, data_input, sig_input)) {
+        std::cerr << "Failed to create verification operation." << std::endl;
+        rnp_input_destroy(data_input);
+        rnp_input_destroy(sig_input);
         return false;
     }
 
-    // Verify the signature
-    err = gpgme_op_verify(ctx, sig, in, nullptr);
-    if (err != GPG_ERR_NO_ERROR) {
-        std::cerr << "Signature verification failed." << gpgme_strerror(err) << std::endl;
+    // Execute verification
+    if (rnp_op_verify_execute(verify)) {
+        std::cerr << "Signature verification failed." << std::endl;
+        rnp_op_verify_destroy(verify);
+        rnp_input_destroy(data_input);
+        rnp_input_destroy(sig_input);
         return false;
     }
 
-    // Clean up data objects
-    gpgme_data_release(in);
-    gpgme_data_release(sig);
+    // Retrieve verification results
+    size_t sig_count = 0;
+    rnp_op_verify_get_signature_count(verify, &sig_count);
+    if (sig_count == 0) {
+        std::cerr << "No signatures found." << std::endl;
+        rnp_op_verify_destroy(verify);
+        rnp_input_destroy(data_input);
+        rnp_input_destroy(sig_input);
+        return false;
+    }
 
+    // Iterate over each signature and check if it's valid
+    for (size_t i = 0; i < sig_count; i++) {
+        rnp_op_verify_signature_t sig = nullptr;
+        if (rnp_op_verify_get_signature_at(verify, i, &sig) == 0) {
+            std::cerr << "Failed to retrieve signature." << std::endl;
+            rnp_op_verify_destroy(verify);
+            rnp_input_destroy(data_input);
+            rnp_input_destroy(sig_input);
+            return false;
+        }
+
+        if (rnp_op_verify_signature_get_status(sig) != 0) {
+            std::cerr << "Failed to retrieve signature status." << std::endl;
+            rnp_op_verify_destroy(verify);
+            rnp_input_destroy(data_input);
+            rnp_input_destroy(sig_input);
+            return false;
+        }
+    }
+
+    // Cleanup
+    rnp_op_verify_destroy(verify);
+    rnp_input_destroy(data_input);
+    rnp_input_destroy(sig_input);
+
+    std::cout << "Signature verification successful." << std::endl;
     return true;
 }

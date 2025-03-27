@@ -1,0 +1,10 @@
+services:
+  lobby_server:
+    build: .
+    container_name: lobby_server
+    platform: linux/amd64
+    ports:
+      - "8080:8080"
+    stdin_open: true
+    tty: true
+    #restart: unless-stopped
