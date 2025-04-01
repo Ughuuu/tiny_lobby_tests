@@ -4,23 +4,24 @@ const path = require('path');
 const { error } = require('console');
 
 // Configuration
-const serverUrl = 'ws://localhost:8080/connect'; // Your WebSocket server URL
-const numClients = 5000;  // Number of WebSocket clients to simulate
+// const serverUrl = 'ws://localhost:8080/connect'; // Your WebSocket server URL
+const serverUrl = 'wss://lobby.blazium.app/connect'; // Your WebSocket server URL
+const numClients = 2000;  // Number of WebSocket clients to simulate
 let stopAfter = 0; // Number of messages each client will send. Set to 0 for infinite
 let messageInterval = 1;  // Interval in milliseconds between messages
-const max_time = 15000; // 15 s
+const max_time = 30000; // 30 s
 //let usecase = "max_sent"
 let usecase = "max_echo"
 switch (usecase) {
     case "max_echo":
         // send as many messages as possible
         stopAfter = 15000
-        messageInterval = 1
+        messageInterval = 20
         break;
     case "max_single_chat":
         // send as many messages as possible
         stopAfter = 15000
-        messageInterval = 1
+        messageInterval = 20
         break;
     case "jrpg":
         // simulate a JRPG game
@@ -71,12 +72,12 @@ function startClient(clientId) {
     });
 
     ws.on('close', (code, reason) => {
-        console.log(code, " ", reason)
+        console.log(code, " ", reason.toString())
         clientCount--;
     });
 
     ws.on('error', (error) => {
-        console.log(JSON.parse(error.message))
+        console.log(error)
         clientErrors++;
     });
     return ws

@@ -90,10 +90,10 @@ class GameThread {
                           bool sealed);
     void set_lobby_ready(GameData &game, LobbyData &lobby, PeerData &peer, std::string command_id, bool ready);
 
-    void remove_peer_from_lobby(GameData &game, LobbyData &lobby, PeerData &peer,
-                                const std::string &command_id);
+    void remove_peer_from_lobby(GameData &game, LobbyData &lobby, std::string &peer_id,
+                                const std::string &command_id, bool kicked = false);
 
-    AnyElement scripted_function_call(std::string peer_id, std::string &lobby_id, GameData &game, std::string funcname,
+    AnyElement scripted_function_call(std::string peer_id, std::string lobby_id, GameData &game, std::string funcname,
                                       bool override, boost::container::vector<AnyElement> &args,
                                       bool &has_error);
 

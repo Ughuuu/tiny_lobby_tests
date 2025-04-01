@@ -1,6 +1,7 @@
 #include "script_lua.h"
 
 #include <filesystem>
+#include <variant>
 
 #include "game_thread.h"
 
@@ -33,7 +34,11 @@ static AnyElement decode_luatable(lua_State *L, int idx) {
                     result_array.push_back(decode_luavalue(L, -1));
                 }
             } else {
-                result_dict.emplace(key, decode_luavalue(L, -2));
+                auto value_decoded = decode_luavalue(L, -2);
+                // do not put nil values in dictionary
+                if (!std::holds_alternative<std::monostate>(value_decoded.value)) {
+                    result_dict.emplace(key, value_decoded);
+                }
             }
             lua_pop(L, 1);
         } else {
@@ -55,13 +60,17 @@ static AnyElement decode_luavalue(lua_State *L, int idx) {
             return AnyElement{std::monostate{}};
         case LUA_TBOOLEAN:
             return AnyElement{bool(lua_toboolean(L, idx))};
-        case LUA_TNUMBER:
-            return AnyElement{lua_tonumber(L, idx)};
+        case LUA_TNUMBER: {
+            double n = lua_tonumber(L, idx);
+            if (n == (int64_t)n) {
+                return AnyElement{(int64_t)n};
+            }
+            return AnyElement{n};
+        }
         case LUA_TSTRING:
             return AnyElement{lua_tostring(L, idx)};
         case LUA_TTABLE:
             return decode_luatable(L, lua_gettop(L));
-            //return decode_luatable(L, idx);
         default:
             return AnyElement{std::monostate{}};
     }
@@ -146,8 +155,7 @@ static int start_timer(lua_State *L) {
     lua_pop(L, 1);
 
     auto &game = game_thread->games[game_id];
-    auto &lobby = game.lobbies[lobby_id];
-    game.timer_data.emplace(timer_id, TimerData{
+    game.timer_data.insert_or_assign(timer_id, TimerData{
                                           .id = timer_id,
                                           .lobby_id = lobby_id,
                                           .game_id = game_id,
@@ -178,7 +186,6 @@ static int stop_timer(lua_State *L) {
     lua_pop(L, 1);
 
     auto &game = game_thread->games[game_id];
-    auto &lobby = game.lobbies[lobby_id];
     game.timer_data.erase(timer_id);
     return 0;
 }

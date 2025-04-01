@@ -3,14 +3,14 @@ local api = require("api")
 
 -- Callable Function
 start_game = api.start_game
-place_piece = api.place_piece
+set_piece = api.set_piece
 
 -- Private Function
 _on_timer_restart_game = api.on_timer_restart_game
 
 -- Callback functions
 local callbacks = require("callbacks")
-_on_create = function() return callbacks.on_create(2, 10) end
+_on_create = function() return callbacks.on_create(2, 2) end
 _on_join = callbacks.on_join
 _on_chat = callbacks.on_chat
 _on_tags = callbacks.on_tags

@@ -21,8 +21,7 @@ end
 function callbacks.on_left()
     local l = lobby.get()
     if l.public_data["game_state"] == "setup" then return nil end
-    
-    if not l.peers[l.public_data["dealer"]] then
+    if l.peers[l.public_data["dealer"]] == nil then
         api.end_game("lost")
     end
 end

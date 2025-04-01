@@ -17,10 +17,10 @@ COPY ./scripts /app/scripts
 COPY ./config.ini /app/config.ini
 
 RUN chmod +x /app/lobby_server
+RUN mkdir /app/logs
 
 RUN useradd -m -s /bin/bash lobbyuser
 USER lobbyuser
 
 EXPOSE 8080
-
 CMD ["./lobby_server"]

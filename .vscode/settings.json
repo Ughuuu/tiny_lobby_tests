@@ -89,6 +89,7 @@
         "filesystem": "cpp",
         "random": "cpp",
         "ranges": "cpp",
-        "csignal": "cpp"
+        "csignal": "cpp",
+        "*.inc": "cpp"
     }
 }

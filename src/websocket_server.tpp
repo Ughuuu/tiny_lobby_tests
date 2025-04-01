@@ -26,6 +26,12 @@ static inline std::string trim(const std::string& s) {
 
 template <bool SSL>
 void WebSocketServer<SSL>::on_upgrade(uWS::HttpResponse<SSL> *res,uWS::HttpRequest *req, struct us_socket_context_t *context) {
+    if (connected_users > max_users) {
+        logger.error_log("[WebSocketServer] error: too many users");
+        res->writeStatus("400 Bad Request")->write("Too many users.");
+        res->end();
+        return;
+    }
     std::string protocol(req->getHeader("sec-websocket-protocol"));
     std::stringstream ss(protocol);
     boost::container::vector<std::string> protocols_split;
@@ -74,6 +80,11 @@ void WebSocketServer<SSL>::on_open(uWS::WebSocket<SSL, true, PerSocketData> *ws)
             return;
         }
         auto &old_id = old_reconnection.peer_id;
+        if (connection_data.find(old_id) == connection_data.end()) {
+            reconnections.erase(data->reconnection_token);
+            send(data->id, std::string("Reconnect Peer ID Mismatch"), uWS::OpCode::CLOSE);
+            return;
+        }
         auto &old_connection_data = connection_data[old_id];
         // game id doesn't match, close new connection
         if (old_connection_data.game_id != data->game_id) {
@@ -98,6 +109,7 @@ void WebSocketServer<SSL>::on_open(uWS::WebSocket<SSL, true, PerSocketData> *ws)
         .reconnection_token = data->reconnection_token,
         .ws = ws,
     });
+    connected_users++;
     if (!receive_queue.enqueue(WebSocketReceivedMessage {
         .id = data->id,
         .event = WebSocketEvent::OPEN,
@@ -133,16 +145,19 @@ void WebSocketServer<SSL>::on_message(uWS::WebSocket<SSL, true, PerSocketData> *
         .reconnection_token = data->reconnection_token
     })) {
         logger.error_log("[WebSocketServer] on_message error out of memory: ", data->uid, " ", data->id, " ", data->game_id, " ", message, " ", opCode);
-        send(data->id, "Out of memory", uWS::OpCode::CLOSE);
+        send(data->id, "Too many queued messages", uWS::OpCode::CLOSE);
     }
 }
 template <bool SSL>
 void WebSocketServer<SSL>::on_close(uWS::WebSocket<SSL, true, PerSocketData> *ws, const std::string_view &message, int opCode) {
     PerSocketData* data = ws->getUserData();
     // delete websocket only if reconnection_token matches
-    if (data->reconnection_token == connection_data[data->id].reconnection_token) {
-        connection_data[data->id].ws = nullptr;
-}
+    if (connection_data.find(data->id) != connection_data.end()) {
+        if (data->reconnection_token == connection_data[data->id].reconnection_token) {
+            connection_data[data->id].ws = nullptr;
+        }
+    }
+    connected_users--;
     logger.debug_log("[WebSocketServer] on_close: ", data->uid, " ", data->id, " ", data->game_id, " ", message , " ", opCode);
     receive_queue.enqueue(WebSocketReceivedMessage {
         .id = data->id,
@@ -160,13 +175,29 @@ void WebSocketServer<SSL>::send(std::string id, const std::string &message, uWS:
         if (it->second.ws != nullptr) {
             PerSocketData* data = it->second.ws->getUserData();
             logger.debug_log("[WebSocketServer] on_send: ", data->uid, " ", data->id, " ", data->game_id, " ", message, " ", opCode);
-            it->second.ws->send(message, opCode);
             if (opCode == uWS::OpCode::CLOSE) {
+                it->second.ws->end(1002, message);
                 it->second.ws = nullptr;
+            } else {
+                it->second.ws->send(message, opCode);
             }
         } else {
             logger.debug_log("[WebSocketServer] on_send failed, ws empty: ", id, " ", message, " ", opCode);
         }
+    }
+}
+
+template <bool SSL>
+void WebSocketServer<SSL>::clear_users(boost::container::flat_set<std::string> users_to_clean) {
+    for (auto &user_id : users_to_clean) {
+        send(user_id, std::string("Failed to reconnect"), uWS::OpCode::CLOSE);
+        // user didn't reconnect, delete user
+        if (connection_data.find(user_id) == connection_data.end()) {
+            continue;
+        }
+        auto &connection = connection_data[user_id];
+        reconnections.erase(connection.reconnection_token);
+        connection_data.erase(user_id);
     }
 }
 

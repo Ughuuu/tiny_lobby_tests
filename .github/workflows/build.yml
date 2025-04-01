@@ -37,7 +37,7 @@ jobs:
       matrix:
         # arch: [x64, arm64]
         arch: [x64]
-        type: [debug, release]
+        type: [release] #[debug, release]
 
     steps:
       - name: Checkout code
@@ -47,19 +47,16 @@ jobs:
           submodules: recursive
       
       - name: Cache vcpkg dependencies
-        uses: actions/cache@v3
+        uses: actions/cache/restore@v4
         with:
           path: |
             ~/.cache/vcpkg
             external/vcpkg/installed
-          key: vcpkg-${{ runner.os }}-${{ matrix.arch }}-${{ matrix.arch }}
-          restore-keys: |
-            vcpkg-${{ runner.os }}-${{ matrix.arch }}-${{ matrix.arch }}
-            vcpkg-${{ runner.os }}-
+          key: vcpkg-${{ runner.os }}-${{ matrix.arch }}-${{ matrix.type }}
       
       - name: Create Public Key
         run: |
-          echo "${{ secrets.GITHUB_PUBLIC_KEY }}" > public.key
+          echo "${{ secrets.PUBLIC_KEY }}" > public.key
 
       - name: Print versions
         run: |
@@ -71,6 +68,14 @@ jobs:
           sudo apt update
           sudo apt install -y software-properties-common autoconf 
           ./install-linux-${{ matrix.arch }}.sh
+
+      - name: Cache vcpkg dependencies
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.cache/vcpkg
+            external/vcpkg/installed
+          key: vcpkg-${{ runner.os }}-${{ matrix.arch }}-${{ matrix.type }}
 
       - name: Build Release
         run: |
@@ -116,6 +121,12 @@ jobs:
         working-directory: old-lobby
         run: go mod tidy
 
+      # Disable batching for tests
+      - name: Disable batching
+        shell: bash
+        run: |
+          sed -i 's/sendrate=100/sendrate=0/g' scripts/echo/config.ini
+
       # Run the app and tests in the same step
       - name: Run App and Tests
         working-directory: old-lobby
@@ -130,9 +141,6 @@ jobs:
           cd old-lobby
           go test -timeout 200s -tags=auth ./... -v
           go test -timeout 200s -tags=lobby ./... -v
-        env:
-          # For the concurrent test
-          BLAZIUM_RATE_LIMIT: 1000
       
       # Always print server logs
       - name: Print Server Logs
@@ -144,11 +152,12 @@ jobs:
 
   build-macos:
     name: Build on macOS (${{ matrix.arch }})
-    if: false
     needs: lint
     strategy:
+      fail-fast: false
       matrix:
-        arch: [x64, arm64]
+        #arch: [x64, arm64]
+        arch: [arm64]
     runs-on: macos-latest
 
     steps:
@@ -159,19 +168,16 @@ jobs:
           submodules: recursive
       
       - name: Cache vcpkg dependencies
-        uses: actions/restore@v4
+        uses: actions/cache/restore@v4
         with:
           path: |
             ~/.cache/vcpkg
             external/vcpkg/installed
           key: vcpkg-${{ runner.os }}-${{ matrix.arch }}
-          restore-keys: |
-            vcpkg-${{ runner.os }}-${{ matrix.arch }}
-            vcpkg-${{ runner.os }}-
       
       - name: Create Public Key
         run: |
-          echo "${{ secrets.GITHUB_PUBLIC_KEY }}" > public.key
+          echo "${{ secrets.PUBLIC_KEY }}" > public.key
 
       - name: Print versions
         run: |
@@ -183,15 +189,12 @@ jobs:
           ./install-macos-${{ matrix.arch }}.sh
 
       - name: Cache vcpkg dependencies
-        uses: actions/save@v4
+        uses: actions/cache/save@v4
         with:
           path: |
             ~/.cache/vcpkg
             external/vcpkg/installed
           key: vcpkg-${{ runner.os }}-${{ matrix.arch }}
-          restore-keys: |
-            vcpkg-${{ runner.os }}-${{ matrix.arch }}
-            vcpkg-${{ runner.os }}-
   
       - name: Build (macOS ${{ matrix.arch }})
         run: |
@@ -226,13 +229,10 @@ jobs:
             ~/.cache/vcpkg
             external/vcpkg/installed
           key: vcpkg-${{ runner.os }}-${{ matrix.arch }}
-          restore-keys: |
-            vcpkg-${{ runner.os }}-${{ matrix.arch }}
-            vcpkg-${{ runner.os }}-
 
       - name: Create Public Key
         run: |
-          echo "${{ secrets.GITHUB_PUBLIC_KEY }}" > public.key
+          echo "${{ secrets.PUBLIC_KEY }}" > public.key
 
       - name: Install dependencies
         shell: pwsh
@@ -263,10 +263,21 @@ jobs:
     name: Build Docker Image (Linux)
     needs: [build-linux, test]
     runs-on: ubuntu-latest
+    env:
+      DOCKER_REGISTRY: registry.digitalocean.com
+      REGISTRY_PATH: blazium-registry
+      DOCKER_NAME: lobby_server
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.DOCKER_REGISTRY }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -287,9 +298,9 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          push: false
+          push: true
           build-args: |
             GITHUB_SHA=${{ github.sha }}
           tags: |
-            lobby-service:latest
-            lobby-service:${{ github.sha }}
+            ${{ env.DOCKER_REGISTRY }}/${{ env.REGISTRY_PATH }}/${{ env.DOCKER_NAME }}:latest
+            ${{ env.DOCKER_REGISTRY }}/${{ env.REGISTRY_PATH }}/${{ env.DOCKER_NAME }}:${{ github.sha }}  

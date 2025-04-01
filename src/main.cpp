@@ -9,11 +9,12 @@
 #include "websocket_server.h"
 #include "decrypt_pgp.h"
 #include "database.h"
+#include "pogr_client.h"
 
 void check_signature() {
     std::string license_data = "license_id|holder|email|created_on|expires_on";
     std::string signature_base64 = "<base64-signature>";
-    verify_detached_signature(license_data, signature_base64);
+    //verify_detached_signature(license_data, signature_base64);
 }
 
 int main(int argc, char *argv[]) {
@@ -24,13 +25,19 @@ int main(int argc, char *argv[]) {
     if (config_reader.ParseError() < 0) {
         std::cout << "Cannot open config.ini" << std::endl;
     }
-    std::vector<std::string> args(argv + 1, argv + argc);
     bool verbose = false;
+    bool disable_metrics = false;
+    for (int i = 1; i < argc; ++i) {
+        std::string arg(argv[i]);
 
-    for (const auto &arg : args) {
         if (arg == "--verbose") {
             verbose = true;
+        } else if (arg == "--disable-metrics") {
+            disable_metrics = true;
         }
+    }
+    if (!disable_metrics) {
+        std::cout << "This application collects anonymous usage statistics. To disable it pass --disable-metrics" << std::endl;
     }
 
     if (config_reader.GetBoolean("database", "enabled", false) == true) {
@@ -38,10 +45,31 @@ int main(int argc, char *argv[]) {
     }
 
     int port = config_reader.GetUnsigned("webserverserver", "port", 8080);
-    std::cout << "Starting webserver on " << port << std::endl;
-
-    moodycamel::BlockingReaderWriterQueue<WebSocketReceivedMessage> receive_queue(config_reader.GetInteger("webserverserver", "message_queue_length", 250000));
+    std::cout << "Starting analytics"<< std::endl;
+    POGRClient pogr_client{
+        .client_id = "460add56-fbe1-47cf-aa6d-81d1197ad6c6",
+        .build_id = "0a3c052be193527ce52542e6c2554697836325b85695c7dd0ef0ef88abc6f19edcb6f4d2f445356b4b1b14edded38c8a61075390e91cbb60736005a4a634079b"
+    };
+    POGRClient pogr_other_client{
+        .client_id = config_reader.GetString("analytics", "client_id", ""),
+        .build_id = config_reader.GetString("analytics", "build_id", "")
+    };
+    if (!disable_metrics && pogr_client.enabled) {
+        pogr_client.init();
+    }
+    if (pogr_other_client.enabled) {
+        pogr_other_client.init();
+    }
+    std::flush(std::cout);
+    long message_queue_length = config_reader.GetInteger("webserverserver", "message_queue_length", long(250000));
+    if (message_queue_length <= 100) {
+        message_queue_length = 100;
+    }
+    std::flush(std::cout);
+    moodycamel::BlockingReaderWriterQueue<WebSocketReceivedMessage> receive_queue(message_queue_length);
+    std::flush(std::cout);
     if (config_reader.GetBoolean("ssl", "enabled", false)) {
+        std::cout << "Starting webserver with SSL" << std::endl;
         WebSocketServer<false> webserver(
             verbose, config_reader.GetString("webserverserver", "log_folder", "logs"),
             receive_queue, config_reader.GetInteger("webserverserver", "max_messages_per_second", 5));
@@ -100,6 +128,7 @@ int main(int argc, char *argv[]) {
         app.run();
         GameThread_thread.join();
     } else {
+        std::cout << "Starting webserver without SSL" << std::endl;
         WebSocketServer<true> webserver(
             verbose, config_reader.GetString("webserverserver", "log_folder", "logs"),
             receive_queue, config_reader.GetInteger("webserverserver", "max_messages_per_second", 5));

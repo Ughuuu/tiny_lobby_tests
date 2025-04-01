@@ -1,6 +1,6 @@
 local lobby = require("lobby")
 local turn = require("turn")
-
+local os = require("os")
 local api = {}
 
 function api.start_game()
@@ -11,7 +11,7 @@ function api.start_game()
     if l.public_data["game_state"] ~= "setup" then
         return { error = "Game already started" }
     end
-    lobby.start_timer("_on_timer_question_expired", 3)
+    lobby.start_timer("_on_timer_question_expired", 7)
     l = api.set_initial_data(l)
 end
 
@@ -21,9 +21,10 @@ function api.set_initial_data(l)
         l.peers[k].private_data["answer"] = -1
     end
     l.public_data["game_state"] = "playing"
+    l.public_data["turn_timestamp"] = os.time(os.date("*t"))
     l.public_data["correct_answer"] = -1
-    l = turn.increment_dealer(l)
-    l = api.update_question(l)
+    l = turn.increment_dealer(l, 1)
+    l = api.update_question(l, 1)
     return l
 end
 
@@ -46,8 +47,7 @@ function api.guess_answer(answer_id)
 end
 
 function api.update_question(l)
-    l = turn.increment_turn(l)
-    print(l.public_data["turn_idx"])
+    l = turn.increment_turn(l, 1)
     local questions = {
         "What is the capital of France?", 
         "What is the capital of Germany?", 
@@ -73,11 +73,10 @@ function api.update_question(l)
         {"Buenos Aires", "Paris", "London", "Berlin"}
     }
     local correct_answers = {0, 2, 1, 0, 2, 0, 0, 0, 0, 0}
-    
-    l.public_data["question"] = questions[l.public_data["turn_idx"]]
-    l.public_data["answers"] = answers[l.public_data["turn_idx"]]
+    l.public_data["question"] = questions[l.public_data["turn_idx"] + 1]
+    l.public_data["answers"] = answers[l.public_data["turn_idx"] + 1]
     l.public_data["correct_answer"] = -1
-    l.private_data["correct_answer"] = correct_answers[l.public_data["turn_idx"]]
+    l.private_data["correct_answer"] = correct_answers[l.public_data["turn_idx"] + 1]
     return l
 end
 
@@ -97,24 +96,27 @@ function api.on_timer_question_reset()
     end
     if is_over then
         l.public_data["game_state"] = "over"
-        lobby.save(l)
-        return lobby.start_timer("_on_timer_restart_game", 2)
+        return lobby.start_timer("_on_timer_restart_game", 3)
     end
     l.public_data["game_state"] = "playing"
+    l.public_data["turn_timestamp"] = os.time(os.date("*t"))
     l = api.update_question(l)
-    return lobby.start_timer("_on_timer_question_expired", 3)
+    
+    return lobby.start_timer("_on_timer_question_expired", 7)
 end
 
 function api.on_timer_question_expired()
     local l = lobby.get()
+    
     for k, _ in pairs(l.peers) do
         if l.peers[k].private_data["answer"] == l.private_data["correct_answer"] then
             l.peers[k].public_data["points"] = l.peers[k].public_data["points"] + 1
         end
     end
-    l.public_data["game_state"] = "quesiton_over"
+    l.public_data["game_state"] = "question_over"
     l.public_data["correct_answer"] = l.private_data["correct_answer"]
-    return lobby.start_timer("_on_timer_question_reset", 1)
+
+    return lobby.start_timer("_on_timer_question_reset", 3)
 end
 
 return api

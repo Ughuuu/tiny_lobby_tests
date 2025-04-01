@@ -42,11 +42,13 @@ function api.set_word(word)
     if err then return err end
 
     local dealerID = l.public_data["dealer"]
-    if dealerID ~= l.calling_peer_id then return "Only the dealer can set the word." end
-    if l.private_data["words"][word] then return "Word was already used." end
+    if dealerID ~= l.calling_peer_id then return { error = "Only the dealer can set the word." } end
+    if l.private_data["words"][word] then return { error = "Word was already used." } end
 
     l.peers[dealerID].private_data["word"] = word
-    l.private_data["words"][word] = true
+    words = l.private_data["words"]
+    words[word] = true
+    l.private_data["words"] = words
     l.public_data["game_state"] = "playing"
     l.public_data["guessed"] = ""
 
@@ -150,8 +152,12 @@ function api.set_initial_data(l)
     l.public_data["health"] = 6
     l.public_data["guessed"] = ""
     l.public_data["pressed"] = {}
-    l = turn.increment_dealer(l)
-    l = turn.increment_turn(l)
+    -- If the dealer left, revert the turn
+    if l.public_data["dealer"] ~= nil and l.peers[l.public_data["dealer"]] == nil then
+        l = turn.increment_dealer(l, -1)
+    end
+    l = turn.increment_dealer(l, 1)
+    l = turn.increment_turn(l, 1)
     for k, _ in pairs(l.peers) do
         l.peers[k].public_data["points"] = 0
     end

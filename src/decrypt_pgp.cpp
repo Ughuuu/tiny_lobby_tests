@@ -32,12 +32,11 @@ bool import_public_key() {
         std::cerr << "Failed to create input stream." << std::endl;
         return false;
     }
-    //int result = rnp_load_keys(ffi, "GPG", input, RNP_LOAD_SAVE_PUBLIC_KEYS);
     int result = rnp_import_keys(ffi, input, RNP_LOAD_SAVE_PUBLIC_KEYS, nullptr);
     rnp_input_destroy(input);
 
     if (result != 0) {
-        std::cerr << "Failed to import public key. Error code: " << result << std::endl;
+        std::cerr << "Failed to import public key. Error code: " << rnp_result_to_string(result) << std::endl;
         return false;
     }
 

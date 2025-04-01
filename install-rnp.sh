@@ -6,6 +6,7 @@ cd rnp-build
 
 # Run CMake
 cmake -DCMAKE_INSTALL_PREFIX=../build-static \
+    -DCMAKE_BUILD_TYPE=Release \
     -DBUILD_SHARED_LIBS=OFF \
     -DCMAKE_TOOLCHAIN_FILE=../../vcpkg/scripts/buildsystems/vcpkg.cmake \
     -DBUILD_TESTING=OFF \

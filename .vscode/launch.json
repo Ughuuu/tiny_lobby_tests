@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/lobby_server",
             "args": [
-                //"--verbose"
+                "--verbose"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

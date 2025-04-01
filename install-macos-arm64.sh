@@ -8,7 +8,8 @@ cd external/vcpkg
 ./vcpkg install libpqxx --triplet arm64-osx
 ./vcpkg install botan --triplet arm64-osx
 ./vcpkg install json-c --triplet arm64-osx
-./vcpkg install cpp-httplib --triplet arm64-osx
+./vcpkg install openssl --triplet arm64-osx
+./vcpkg install "cpp-httplib[openssl]" --triplet arm64-osx
 ./vcpkg install boost-container --triplet arm64-osx
 ./vcpkg list
 ./vcpkg integrate install

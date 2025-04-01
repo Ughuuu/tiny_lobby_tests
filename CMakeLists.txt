@@ -41,7 +41,10 @@ FetchContent_MakeAvailable(yyjson)
 
 find_package(unofficial-inih CONFIG REQUIRED)
 find_package(libpqxx CONFIG REQUIRED)
+set(CPPHTTPLIB_OPENSSL_SUPPORT ON)
 find_package(httplib CONFIG REQUIRED)
+set(OPENSSL_USE_STATIC_LIBS TRUE)
+find_package(OpenSSL REQUIRED)
 
 # LuaJIT
 
@@ -102,7 +105,13 @@ configure_file(
 )
 
 add_executable(lobby_server ${SOURCES})
-target_link_libraries(lobby_server PRIVATE Boost::uuid Boost::container uWebSockets angelscript readerwriterqueue unofficial::inih::inireader yyjson ${LUAJIT_LIBRARIES} libpqxx::pqxx httplib::httplib rnp Botan::Botan-static json-c::json-c)
+target_link_libraries(lobby_server PRIVATE Boost::uuid Boost::container uWebSockets angelscript readerwriterqueue unofficial::inih::inireader yyjson ${LUAJIT_LIBRARIES} libpqxx::pqxx OpenSSL::SSL OpenSSL::Crypto httplib::httplib rnp Botan::Botan-static json-c::json-c)
+
+find_library(ATOMIC_LIB atomic)
+if (ATOMIC_LIB)
+    target_link_libraries(lobby_server PRIVATE ${ATOMIC_LIB})
+endif()
+
 target_include_directories(lobby_server PRIVATE
   "external/angelscript/sdk/angelscript/include"
   "external/angelscript/sdk/add_on"

@@ -10,7 +10,8 @@ cd external/vcpkg
 ./vcpkg install libpqxx
 ./vcpkg install botan
 ./vcpkg install json-c
-./vcpkg install cpp-httplib
+./vcpkg install openssl
+./vcpkg install "cpp-httplib[openssl]"
 ./vcpkg install boost-container
 ./vcpkg integrate install
 ls external/vcpkg/installed/x64-linux/include

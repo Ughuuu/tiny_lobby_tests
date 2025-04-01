@@ -10,7 +10,8 @@ cd external/vcpkg
 ./vcpkg install libpqxx --triplet arm64-linux
 ./vcpkg install botan --triplet arm64-linux
 ./vcpkg install json-c --triplet arm64-linux
-./vcpkg install cpp-httplib --triplet arm64-linux
+./vcpkg install openssl --triplet arm64-linux
+./vcpkg install "cpp-httplib[openssl]" --triplet arm64-linux
 ./vcpkg install boost-container --triplet arm64-linux
 ./vcpkg integrate install
 ls external/vcpkg/installed/arm64-linux/include

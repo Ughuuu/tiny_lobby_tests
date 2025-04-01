@@ -11,7 +11,8 @@ Set-Location -Path "external\vcpkg"
 .\vcpkg install libpqxx:x64-windows
 .\vcpkg install botan:x64-windows
 .\vcpkg install json-c:x64-windows
-.\vcpkg install cpp-httplib:x64-windows
+.\vcpkg install openssl
+.\vcpkg install "cpp-httplib[openssl]:x64-windows"
 .\vcpkg install boost-container:x64-windows
 .\vcpkg integrate install
 Set-Location -Path "..\.."
