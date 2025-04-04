@@ -1,7 +1,6 @@
-local helper = require("helper")
 local turn = require("turn")
 local lobby = require("lobby")
-
+local system = require("system")
 local api = {}
 
 function api.start_game()
@@ -16,6 +15,7 @@ function api.start_game()
         l.peers[k].public_data["total_points"] = 0
     end
     l = api.set_initial_data(l)
+    return
 end
 
 function api.check_winner(board)
@@ -112,11 +112,13 @@ function api.set_piece(placementTileX, placementTileY)
     end
 
     l = turn.increment_turn(l, 1)
+    return
 end
 
 function api.set_initial_data(l)
+    l.public_data["turn_timestamp"] = system.get_time()
     l.public_data["game_state"] = "playing"
-    board = {
+    local board = {
         { 0, 0, 0, 0, 0 },
         { 0, 0, 0, 0, 0 },
         { 0, 0, 0, 0, 0 },

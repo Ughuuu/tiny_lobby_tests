@@ -1,9 +1,9 @@
 #pragma once
-#include <string>
 #include <boost/container/flat_map.hpp>
 #include <boost/container/flat_set.hpp>
-#include <variant>
 #include <boost/container/vector.hpp>
+#include <string>
+#include <variant>
 
 #include "yyjson.h"
 
@@ -11,9 +11,9 @@
 
 struct AnyElement;
 
-using VariantElement =
-    std::variant<std::monostate, bool, int64_t, double, std::string,
-    boost::container::flat_map<std::string, AnyElement>, boost::container::vector<AnyElement>>;
+using VariantElement = std::variant<std::monostate, bool, int64_t, double, std::string,
+                                    boost::container::flat_map<std::string, AnyElement>,
+                                    boost::container::vector<AnyElement>>;
 
 struct AnyElement {
     VariantElement value;
@@ -32,7 +32,8 @@ struct AnyElement {
         } else if (std::holds_alternative<boost::container::flat_map<std::string, AnyElement>>(
                        elem.value)) {
             yyjson_mut_val *obj = yyjson_mut_obj(doc);
-            const auto &obj_map = std::get<boost::container::flat_map<std::string, AnyElement>>(elem.value);
+            const auto &obj_map =
+                std::get<boost::container::flat_map<std::string, AnyElement>>(elem.value);
             for (const auto &pair : obj_map) {
                 yyjson_mut_val *value_val = to_yyjson(doc, pair.second);
                 yyjson_mut_obj_add_val(doc, obj, pair.first.c_str(), value_val);
@@ -84,24 +85,24 @@ static bool operator==(const AnyElement &lhs, const AnyElement &rhs) {
         return std::get<double>(lhs.value) == std::get<double>(rhs.value);
     } else if (std::holds_alternative<std::string>(lhs.value)) {
         return std::get<std::string>(lhs.value) == std::get<std::string>(rhs.value);
-    } else if (std::holds_alternative<boost::container::flat_map<std::string, AnyElement>>(lhs.value)) {
-        return std::get<boost::container::flat_map<std::string, AnyElement>>(lhs.value) == 
+    } else if (std::holds_alternative<boost::container::flat_map<std::string, AnyElement>>(
+                   lhs.value)) {
+        return std::get<boost::container::flat_map<std::string, AnyElement>>(lhs.value) ==
                std::get<boost::container::flat_map<std::string, AnyElement>>(rhs.value);
     } else if (std::holds_alternative<boost::container::vector<AnyElement>>(lhs.value)) {
-        return std::get<boost::container::vector<AnyElement>>(lhs.value) == 
+        return std::get<boost::container::vector<AnyElement>>(lhs.value) ==
                std::get<boost::container::vector<AnyElement>>(rhs.value);
     }
 
     return false;
 }
-static bool operator!=(const AnyElement &lhs, const AnyElement &rhs) {
-    return !(lhs == rhs);
-}
+static bool operator!=(const AnyElement &lhs, const AnyElement &rhs) { return !(lhs == rhs); }
 
 std::string decode_string_or_default(yyjson_val *object, std::string key,
                                      std::string default_value);
 int decode_int_or_default(yyjson_val *object, std::string key, int default_value);
 std::string decode_array(yyjson_val *array, AnyElement &element);
 std::string decode_value(yyjson_val *value, AnyElement &element);
-std::string decode_object(yyjson_val *object, boost::container::flat_map<std::string, AnyElement> &dict);
+std::string decode_object(yyjson_val *object,
+                          boost::container::flat_map<std::string, AnyElement> &dict);
 bool decode_bool_or_default(yyjson_val *object, std::string key, bool default_value);

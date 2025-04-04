@@ -46,15 +46,8 @@ find_package(httplib CONFIG REQUIRED)
 set(OPENSSL_USE_STATIC_LIBS TRUE)
 find_package(OpenSSL REQUIRED)
 
-# LuaJIT
-
-# Path to LuaJIT
-set(LUAJIT_INCLUDE_DIR "/usr/local/include/luajit-2.1")
-set(LUAJIT_LIB_DIR "/usr/local/lib")
-set(LUAJIT_LIBRARIES "/usr/local/lib/libluajit-5.1.a")
-
-# Add LuaJIT include directory
-include_directories(${LUAJIT_INCLUDE_DIR})
+# Luau
+find_package(unofficial-luau CONFIG REQUIRED)
 
 # Angelscript
 add_compile_options(-Wno-deprecated-declarations)
@@ -105,7 +98,27 @@ configure_file(
 )
 
 add_executable(lobby_server ${SOURCES})
-target_link_libraries(lobby_server PRIVATE Boost::uuid Boost::container uWebSockets angelscript readerwriterqueue unofficial::inih::inireader yyjson ${LUAJIT_LIBRARIES} libpqxx::pqxx OpenSSL::SSL OpenSSL::Crypto httplib::httplib rnp Botan::Botan-static json-c::json-c)
+target_link_libraries(lobby_server PRIVATE
+  Boost::uuid
+  Boost::container
+  uWebSockets
+  angelscript
+  readerwriterqueue
+  unofficial::inih::inireader
+  yyjson
+  unofficial::luau::Luau.Compiler
+  unofficial::luau::Luau.Config
+  unofficial::luau::Luau.VM
+  unofficial::luau::Luau.Ast
+  unofficial::luau::Luau.EqSat
+  unofficial::luau::Luau.Common
+  libpqxx::pqxx
+  OpenSSL::SSL
+  OpenSSL::Crypto
+  httplib::httplib
+  rnp
+  Botan::Botan-static
+  json-c::json-c)
 
 find_library(ATOMIC_LIB atomic)
 if (ATOMIC_LIB)

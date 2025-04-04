@@ -13,13 +13,9 @@ cd external/vcpkg
 ./vcpkg install openssl
 ./vcpkg install "cpp-httplib[openssl]"
 ./vcpkg install boost-container
+./vcpkg install luau
 ./vcpkg integrate install
 ls external/vcpkg/installed/x64-linux/include
 cd ../..
 # Install rnp
 ./install-rnp.sh
-# Install luajit
-cd external/LuaJIT
-make
-sudo make install
-cd ../..

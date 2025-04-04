@@ -1,9 +1,9 @@
 #pragma once
+#include <boost/container/flat_map.hpp>
+#include <boost/container/flat_set.hpp>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
-#include <boost/container/flat_map.hpp>
-#include <boost/container/flat_set.hpp>
 
 #include "any_type.h"
 #include "peer_data.h"

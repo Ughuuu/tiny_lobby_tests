@@ -1,8 +1,4 @@
 Write-Output "Downloading deps using vcpkg"
-# Install luajit
-Set-Location -Path "external\luajit\src"
-cmd /c msvcbuild.bat
-Set-Location -Path "..\..\.."
 # Install packages using vcpkg
 Set-Location -Path "external\vcpkg"
 .\bootstrap-vcpkg.bat
@@ -14,5 +10,6 @@ Set-Location -Path "external\vcpkg"
 .\vcpkg install openssl
 .\vcpkg install "cpp-httplib[openssl]:x64-windows"
 .\vcpkg install boost-container:x64-windows
+.\vcpkg install luau:x64-windows
 .\vcpkg integrate install
 Set-Location -Path "..\.."

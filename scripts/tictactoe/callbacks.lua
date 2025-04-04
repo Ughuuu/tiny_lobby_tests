@@ -1,7 +1,6 @@
 -- Load modules
 local turn = require("turn")
 local api = require("api")
-local helper = require("helper")
 local lobby = require("lobby")
 
 local callbacks = {}
@@ -15,23 +14,23 @@ function callbacks.on_create(minPlayers, maxPlayers)
 
     l.tags["max_points"] = l.tags["max_points"] or 0
     l.public_data["game_state"] = "setup"
-    return nil
+    return
 end
 
 function callbacks.on_left()
     local l = lobby.get()
-    if l.public_data["game_state"] == "setup" then return nil end
+    if l.public_data["game_state"] == "setup" then return end
     
     if not l.peers[l.public_data["dealer"]] then
         api.end_game("lost")
     end
 end
 
-function callbacks.on_join() return nil end
-function callbacks.on_chat(message) return nil end
+function callbacks.on_join() return end
+function callbacks.on_chat(message) return end
 function callbacks.on_tags(tags) return turn.validate_game_state_is("setup") end
-function callbacks.on_kick() return nil end
+function callbacks.on_kick() return end
 function callbacks.on_ready(ready) return turn.validate_game_state_is("setup") end
-function callbacks.on_seal(seal) return nil end
+function callbacks.on_seal(seal) return end
 
 return callbacks

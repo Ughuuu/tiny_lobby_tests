@@ -1,9 +1,9 @@
 #pragma once
-#include <string>
-#include <unordered_set>
 #include <boost/container/flat_map.hpp>
 #include <boost/container/flat_set.hpp>
 #include <boost/container/vector.hpp>
+#include <string>
+#include <unordered_set>
 
 #include "lobby_data.h"
 #include "peer_data.h"
@@ -22,7 +22,6 @@ struct TimerData {
 struct GameData {
     int64_t last_send_time = 0;
     int64_t last_tick_time = 0;
-    int game_now = 0;
     std::string id;
     std::string entrypoint;
     std::string lobby_control = "peer";

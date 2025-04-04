@@ -13,11 +13,7 @@ cd external/vcpkg
 ./vcpkg install openssl --triplet arm64-linux
 ./vcpkg install "cpp-httplib[openssl]" --triplet arm64-linux
 ./vcpkg install boost-container --triplet arm64-linux
+./vcpkg install luau --triplet arm64-linux
 ./vcpkg integrate install
 ls external/vcpkg/installed/arm64-linux/include
-cd ../..
-# Install luajit
-cd external/LuaJIT
-make
-sudo make install CC="gcc -m64 -arch arm64"
 cd ../..

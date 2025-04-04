@@ -1,12 +1,15 @@
 #include "decrypt_pgp.h"
+
 #include <iostream>
 #include <vector>
+
 #include "public_key.h"
 
 rnp_ffi_t ffi = nullptr;
 
 void init_rnp() {
-    std::cout << "RNP backend: " << rnp_backend_string() << " version: " << rnp_backend_version() << std::endl;
+    std::cout << "RNP backend: " << rnp_backend_string() << " version: " << rnp_backend_version()
+              << std::endl;
     if (rnp_ffi_create(&ffi, "GPG", "GPG")) {
         std::cerr << "Failed to initialize RNP." << std::endl;
         exit(0);
@@ -28,7 +31,8 @@ bool import_public_key() {
     }
 
     rnp_input_t input = nullptr;
-    if (rnp_input_from_memory(&input, reinterpret_cast<const uint8_t*>(public_key.data()), public_key.size(), false)) {
+    if (rnp_input_from_memory(&input, reinterpret_cast<const uint8_t*>(public_key.data()),
+                              public_key.size(), false)) {
         std::cerr << "Failed to create input stream." << std::endl;
         return false;
     }
@@ -36,7 +40,8 @@ bool import_public_key() {
     rnp_input_destroy(input);
 
     if (result != 0) {
-        std::cerr << "Failed to import public key. Error code: " << rnp_result_to_string(result) << std::endl;
+        std::cerr << "Failed to import public key. Error code: " << rnp_result_to_string(result)
+                  << std::endl;
         return false;
     }
 
@@ -53,8 +58,10 @@ bool verify_detached_signature(const std::string& data, const std::string& signa
     rnp_input_t data_input = nullptr, sig_input = nullptr;
     rnp_op_verify_t verify = nullptr;
     // Create input streams for data and signature
-    if (rnp_input_from_memory(&data_input, reinterpret_cast<const uint8_t*>(data.data()), data.size(), false) ||
-        rnp_input_from_memory(&sig_input, reinterpret_cast<const uint8_t*>(signature.data()), signature.size(), false)) {
+    if (rnp_input_from_memory(&data_input, reinterpret_cast<const uint8_t*>(data.data()),
+                              data.size(), false) ||
+        rnp_input_from_memory(&sig_input, reinterpret_cast<const uint8_t*>(signature.data()),
+                              signature.size(), false)) {
         std::cerr << "Failed to create input streams." << std::endl;
         return false;
     }

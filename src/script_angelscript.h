@@ -1,11 +1,11 @@
 #pragma once
 #include <angelscript.h>
 
-#include "server_logger.h"
 #include "INIReader.h"
 #include "scriptarray/scriptarray.h"
 #include "scriptdictionary/scriptdictionary.h"
 #include "scriptstdstring/scriptstdstring.h"
+#include "server_logger.h"
 
 class ScriptAngelScript {
     bool enabled = false;

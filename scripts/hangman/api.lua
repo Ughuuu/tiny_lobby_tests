@@ -1,6 +1,6 @@
 local turn = require("turn")
-local helper = require("helper")
 local lobby = require("lobby")
+local system = require("system")
 local api = {}
 
 function api.start_game()
@@ -17,6 +17,7 @@ function api.start_game()
     end
     l.private_data["words"] = {}
     l = api.set_initial_data(l)
+    return
 end
 
 function api.set_word(word)
@@ -46,9 +47,10 @@ function api.set_word(word)
     if l.private_data["words"][word] then return { error = "Word was already used." } end
 
     l.peers[dealerID].private_data["word"] = word
-    words = l.private_data["words"]
+    local words = l.private_data["words"]
     words[word] = true
     l.private_data["words"] = words
+    l.public_data["turn_timestamp"] = system.get_time()
     l.public_data["game_state"] = "playing"
     l.public_data["guessed"] = ""
 
@@ -56,6 +58,7 @@ function api.set_word(word)
         local letter = word:sub(i, i)
         l.public_data["guessed"] = l.public_data["guessed"] .. (letter == ' ' and ' ' or '_')
     end
+    return
 end
 
 function api.guess_letter(letter)
@@ -107,6 +110,7 @@ function api.guess_letter(letter)
         lobby.start_timer("_on_timer_restart_game", 1)
         api.end_game("won")
     end
+    return
 end
 
 function api.skip()
@@ -114,6 +118,7 @@ function api.skip()
     if l.public_data["dealer"] ~= l.calling_peer_id then return { error = "Only dealer can skip." } end
     if l.public_data["game_state"] ~= "setting_word" then return { error = "Word is already set." } end
     api.end_game("lost")
+    return
 end
 
 function api.end_game(newState)
@@ -148,6 +153,7 @@ function api.on_timer_restart_game()
 end
 
 function api.set_initial_data(l)
+    l.public_data["turn_timestamp"] = system.get_time()
     l.public_data["game_state"] = "setting_word"
     l.public_data["health"] = 6
     l.public_data["guessed"] = ""
@@ -168,6 +174,13 @@ end
 function api.on_timer_word_timeout(dealerID)
     local l = lobby.get()
     if l.public_data["game_state"] == "setting_word" or l.public_data["dealer"] == dealerID then
+        api.end_game("lost")
+    end
+end
+
+function api.on_timer_guess_timeout(dealerID)
+    local l = lobby.get()
+    if l.public_data["game_state"] == "playing" then
         api.end_game("lost")
     end
 end

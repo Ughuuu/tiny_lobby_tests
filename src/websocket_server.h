@@ -1,10 +1,10 @@
 #pragma once
 #include <readerwriterqueue.h>
 
+#include <boost/container/flat_set.hpp>
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
-#include <boost/container/flat_set.hpp>
 
 #include "App.h"
 #include "server_logger.h"
@@ -64,11 +64,11 @@ class WebSocketServer {
                     uWS::OpCode opCode);
     void on_close(uWS::WebSocket<SSL, true, PerSocketData> *ws, const std::string_view &message,
                   int opCode);
-                
+
     void send(std::string id, const std::string &message, uWS::OpCode opCode = uWS::OpCode::TEXT);
     void clear_users(boost::container::flat_set<std::string> users_to_clean);
 
-/*************  ✨ Codeium Command ⭐  *************/
+    /*************  ✨ Codeium Command ⭐  *************/
     /**
      * @brief Construct a new WebSocketServer object
      *
@@ -77,7 +77,7 @@ class WebSocketServer {
      * @param receive_queue Queue where received messages will be stored
      * @param max_messages_per_second Maximum number of messages per second
      */
-/******  06c90573-aca3-4305-99d6-2cad47e55444  *******/
+    /******  06c90573-aca3-4305-99d6-2cad47e55444  *******/
     WebSocketServer(bool verbose, std::string log_folder,
                     moodycamel::BlockingReaderWriterQueue<WebSocketReceivedMessage> &receive_queue,
                     int max_messages_per_second);

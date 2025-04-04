@@ -202,7 +202,7 @@ std::string NOTIFICATION_LOBBY_LIST =
     "\"id\": \"%s\""
     "}"
     "}";
-std::string NOTIFICATION_LOBBY_PUBLIC_DATA = 
+std::string NOTIFICATION_LOBBY_PUBLIC_DATA =
     "{"
     "\"command\": \"lobby_data\","
     "\"message\": \"Lobby Public Data\","
@@ -260,12 +260,12 @@ std::string NOTIFICATION_DATA_TO_SENT =
     "\"data\": {"
     "\"id\": \"%s\""
     "}"
-"}";
+    "}";
 std::string NOTIFICATION_NOTIFY_SENT =
-"{"
-"\"command\": \"notify_to_sent\","
-"\"message\": \"Notify to sent\","
-"\"data\": {"
-"\"id\": \"%s\""
-"}"
-"}";
+    "{"
+    "\"command\": \"notify_to_sent\","
+    "\"message\": \"Notify to sent\","
+    "\"data\": {"
+    "\"id\": \"%s\""
+    "}"
+    "}";

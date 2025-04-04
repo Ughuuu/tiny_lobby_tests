@@ -27,6 +27,13 @@ jobs:
 
       - name: Check formatting in src directory
         run: ./check_format.sh
+      
+      - name: Download luau-analyze
+        run: |
+          wget https://github.com/luau-lang/luau/releases/download/0.667/luau-ubuntu.zip
+          unzip luau-ubuntu.zip
+          chmod +x luau-analyze
+          ./luau-analyze scripts/**/*.lua
 
   build-linux:
     name: Build on Linux (${{ matrix.arch }} ${{ matrix.type }})

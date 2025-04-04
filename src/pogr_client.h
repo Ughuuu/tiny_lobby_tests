@@ -27,25 +27,25 @@ struct POGRClient {
             yyjson_val *root = yyjson_doc_get_root(doc);
             if (!root || !yyjson_is_obj(root)) {
                 yyjson_doc_free(doc);
-                std::cout << "Error: root not found "  << body << std::endl;
+                std::cout << "Error: root not found " << body << std::endl;
                 return;
             }
             yyjson_val *payload = yyjson_obj_get(root, "payload");
             if (!payload) {
                 yyjson_doc_free(doc);
-                std::cout << "Error: payload not found "  << body << std::endl;
+                std::cout << "Error: payload not found " << body << std::endl;
                 return;
             }
             yyjson_val *session_id_val = yyjson_obj_get(payload, "session_id");
             if (!session_id_val) {
                 yyjson_doc_free(doc);
-                std::cout << "Error: session_id not found "  << body << std::endl;
+                std::cout << "Error: session_id not found " << body << std::endl;
                 return;
             }
             const char *session_id_str = yyjson_get_str(session_id_val);
             if (!session_id_str) {
                 yyjson_doc_free(doc);
-                std::cout << "Error: session_id not found "  << body << std::endl;
+                std::cout << "Error: session_id not found " << body << std::endl;
                 return;
             }
             session_id = std::string(session_id_str);

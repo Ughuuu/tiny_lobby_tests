@@ -15,13 +15,9 @@ cd external/vcpkg
 ./vcpkg install openssl --triplet x64-osx
 ./vcpkg install "cpp-httplib[openssl]" --triplet x64-osx
 ./vcpkg install boost-container --triplet x64-osx
+./vcpkg install luau --triplet x64-osx
 ./vcpkg list
 ./vcpkg integrate install
-cd ../..
-# Install luajit
-cd external/LuaJIT
-make MACOSX_DEPLOYMENT_TARGET=10.15 CC="gcc -m64 -arch x86_64"
-sudo make install
 cd ../..
 # Install rnp
 ./install-rnp.sh

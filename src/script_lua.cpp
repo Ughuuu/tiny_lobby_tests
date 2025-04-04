@@ -4,6 +4,8 @@
 #include <variant>
 
 #include "game_thread.h"
+#include "luacode.h"
+#include "lualib.h"
 
 static AnyElement decode_luavalue(lua_State *L, int idx);
 
@@ -87,7 +89,8 @@ static void push_table(lua_State *L, const boost::container::vector<AnyElement> 
     }
 }
 
-static void push_table(lua_State *L, const boost::container::flat_map<std::string, AnyElement> &table) {
+static void push_table(lua_State *L,
+                       const boost::container::flat_map<std::string, AnyElement> &table) {
     lua_createtable(L, table.size(), 0);
     for (const auto &pair : table) {
         lua_pushstring(L, pair.first.c_str());
@@ -112,7 +115,8 @@ static void push_lua_value(lua_State *L, const AnyElement &value) {
                 lua_pushlstring(L, v.c_str(), v.size());
             } else if constexpr (std::is_same_v<T, boost::container::vector<AnyElement>>) {
                 push_table(L, v);
-            } else if constexpr (std::is_same_v<T, boost::container::flat_map<std::string, AnyElement>>) {
+            } else if constexpr (std::is_same_v<
+                                     T, boost::container::flat_map<std::string, AnyElement>>) {
                 push_table(L, v);
             } else {
                 lua_pushnil(L);
@@ -155,14 +159,15 @@ static int start_timer(lua_State *L) {
     lua_pop(L, 1);
 
     auto &game = game_thread->games[game_id];
-    game.timer_data.insert_or_assign(timer_id, TimerData{
-                                          .id = timer_id,
-                                          .lobby_id = lobby_id,
-                                          .game_id = game_id,
-                                          .peer_id = peer_id,
-                                          .end_time = duration * 1000 + get_time_now(),
-                                          .args = args,
-                                      });
+    game.timer_data.insert_or_assign(timer_id,
+                                     TimerData{
+                                         .id = timer_id,
+                                         .lobby_id = lobby_id,
+                                         .game_id = game_id,
+                                         .peer_id = peer_id,
+                                         .end_time = duration * 1000 + game_thread->get_time(),
+                                         .args = args,
+                                     });
 
     return 0;
 }
@@ -214,6 +219,36 @@ static int notify(lua_State *L) {
     return 0;
 }
 
+static int broadcast_chat(lua_State *L) {
+    if (lua_gettop(L) < 1) {
+        luaL_error(L, "Expected 1 arguments.");
+        return 0;
+    }
+    std::string message = luaL_checkstring(L, 1);
+    lua_getfield(L, LUA_REGISTRYINDEX, "game_id");
+    std::string game_id = lua_tostring(L, -1);
+    lua_pop(L, 1);
+
+    lua_getfield(L, LUA_REGISTRYINDEX, "lobby_id");
+    std::string lobby_id = lua_tostring(L, -1);
+    lua_pop(L, 1);
+
+    lua_getfield(L, LUA_REGISTRYINDEX, "game_thread");
+    GameThread *game_thread = static_cast<GameThread *>(lua_touserdata(L, -1));
+    lua_pop(L, 1);
+
+    auto &game = game_thread->games[game_id];
+    game_thread->send_message(game, lobby_id, message);
+    return 0;
+}
+
+static int get_time(lua_State *L) {
+    lua_getfield(L, LUA_REGISTRYINDEX, "game_thread");
+    GameThread *game_thread = static_cast<GameThread *>(lua_touserdata(L, -1));
+    lua_pushinteger(L, game_thread->get_time());
+    return 1;
+}
+
 static int get_order_of_element(const std::set<std::string> &ordered_set, const std::string &key) {
     auto it = ordered_set.find(key);
     if (it != ordered_set.end()) {
@@ -222,7 +257,8 @@ static int get_order_of_element(const std::set<std::string> &ordered_set, const 
     return -1;
 }
 
-static std::string get_element_at_index(const boost::container::flat_set<std::string> &ordered_set, int index) {
+static std::string get_element_at_index(const boost::container::flat_set<std::string> &ordered_set,
+                                        int index) {
     if (index < 0 || index >= ordered_set.size()) {
         return "";  // Invalid index
     }
@@ -447,33 +483,162 @@ static int lobby_index(lua_State *L) {
     return 0;
 }
 
-int get_lobby(lua_State* L) {
+int get_lobby(lua_State *L) {
     lua_getfield(L, LUA_REGISTRYINDEX, "lobby_global");
     return 1;
 }
 
-void luaopen_lobby(lua_State* L) {
+static int lua_require(lua_State *L) {
+    std::string modname = luaL_checkstring(L, 1);
+
+    lua_getfield(L, LUA_REGISTRYINDEX, "base_path");
+    std::string base_path = lua_tostring(L, -1);
+    lua_pop(L, 1);
+
+    if (std::string(modname).find("..") != std::string::npos) {
+        lua_pushfstring(L, "require: cannot use ..");
+        lua_error(L);
+    }
+
+    std::string resolvedPath = base_path + "/" + modname + ".lua";
+
+    // Use absolute resolved path as the cache key
+    lua_getfield(L, LUA_REGISTRYINDEX, "_MODULES");
+    // lobby and system package
+    if (modname == "lobby") {
+        lua_getfield(L, -1, "lobby");
+    } else if (modname == "system") {
+        lua_getfield(L, -1, "system");
+    } else {
+        lua_getfield(L, -1, resolvedPath.c_str());
+    }
+    if (!lua_isnil(L, -1)) {
+        return 1;  // Already cached
+    }
+    lua_pop(L, 1);  // Pop nil
+
+    // Read the file contents
+    std::ifstream file(resolvedPath);
+    if (!file.is_open()) {
+        lua_pushfstring(L, "require: cannot open file '%s'", resolvedPath.c_str());
+        lua_error(L);
+    }
+
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    std::string source = buffer.str();
+
+    // Compile and load the module
+
+    std::string chunkname = "@" + std::string(resolvedPath);
+    size_t bytecodeSize = 0;
+    char *bytecode = luau_compile(source.c_str(), source.size(), NULL, &bytecodeSize);
+
+    if (luau_load(L, resolvedPath.c_str(), bytecode, bytecodeSize, 0) != 0) {
+        const char *err = lua_tostring(L, -1);
+        luaL_error(L, "require: failed to load module '%s': %s", resolvedPath.c_str(),
+                   err ? err : "unknown error");
+    }
+
+    // Execute the module
+    if (lua_pcall(L, 0, 1, 0) != LUA_OK) {
+        const char *err = lua_tostring(L, -1);
+        luaL_error(L, "require: failed to run module '%s': %s", resolvedPath.c_str(),
+                   err ? err : "unknown error");
+    }
+
+    // Validate return type
+    if (!lua_istable(L, -1) && !lua_isfunction(L, -1)) {
+        lua_pushfstring(L, "require: module '%s' must return a table or function",
+                        resolvedPath.c_str());
+        lua_error(L);
+    }
+
+    // Store in _MODULES
+    lua_pushvalue(L, -1);
+    lua_setfield(L, -3, resolvedPath.c_str());
+
+    return 1;
+}
+
+void setupState(lua_State *L) {
+    luaL_openlibs(L);
+
+    static const luaL_Reg funcs[] = {
+        {"require", lua_require},
+        {NULL, NULL},
+    };
+
+    lua_pushvalue(L, LUA_GLOBALSINDEX);
+    luaL_register(L, NULL, funcs);
+    lua_pop(L, 1);
+
+    luaL_sandbox(L);
+}
+
+bool runFile(lua_State *L, std::string name) {
+    std::ifstream file(name);
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    std::string source = buffer.str();
+
+    std::string chunkname = "@" + std::string(name);
+    size_t bytecodeSize = 0;
+    char *bytecode = luau_compile(source.c_str(), source.size(), NULL, &bytecodeSize);
+    int status = luau_load(L, chunkname.c_str(), bytecode, bytecodeSize, 0);
+    free(bytecode);
+
+    if (status != LUA_OK) {
+        std::cerr << "Load error: " << lua_tostring(L, -1) << "\n";
+        return false;
+    } else {
+        // Run the loaded chunk
+        if (lua_pcall(L, 0, 1, 0) != LUA_OK) {
+            std::cerr << "Runtime error: " << lua_tostring(L, -1) << "\n";
+            return false;
+        }
+        // Store the module in registry
+        lua_setfield(L, LUA_REGISTRYINDEX, "main");
+    }
+    return true;
+}
+
+void luaopen_lobby(lua_State *L) {
     lua_newtable(L);
 
-    lua_pushcfunction(L, get_lobby);
+    lua_pushcfunction(L, get_lobby, "get_lobby");
     lua_setfield(L, -2, "get");
 
-    lua_pushcfunction(L, start_timer);
+    lua_pushcfunction(L, start_timer, "start_timer");
     lua_setfield(L, -2, "start_timer");
 
-    lua_pushcfunction(L, stop_timer);
+    lua_pushcfunction(L, stop_timer, "stop_timer");
     lua_setfield(L, -2, "stop_timer");
 
-    lua_pushcfunction(L, notify);
+    lua_pushcfunction(L, notify, "notify");
     lua_setfield(L, -2, "notify");
 
-    lua_getglobal(L, "package");
-    lua_getfield(L, -1, "loaded");
-    lua_pushstring(L, "lobby");
-    lua_pushvalue(L, -4);
-    lua_settable(L, -3);
+    lua_pushcfunction(L, broadcast_chat, "broadcast_chat");
+    lua_setfield(L, -2, "broadcast_chat");
 
-    lua_pop(L, 3);
+    luaL_findtable(L, LUA_REGISTRYINDEX, "_MODULES", 1);
+    lua_pushstring(L, "lobby");
+    lua_pushvalue(L, -3);
+    lua_settable(L, -3);
+    lua_pop(L, 2);
+}
+
+void luaopen_system(lua_State *L) {
+    lua_newtable(L);
+
+    lua_pushcfunction(L, get_time, "get_time");
+    lua_setfield(L, -2, "get_time");
+
+    luaL_findtable(L, LUA_REGISTRYINDEX, "_MODULES", 1);
+    lua_pushstring(L, "system");
+    lua_pushvalue(L, -3);
+    lua_settable(L, -3);
+    lua_pop(L, 2);
 }
 
 void ScriptLua::set_lua_metatables() {
@@ -485,10 +650,10 @@ void ScriptLua::set_lua_metatables() {
     luaL_newmetatable(L, "SharedMetatable");
 
     lua_pushstring(L, "__index");
-    lua_pushcfunction(L, lobby_index);
+    lua_pushcfunction(L, lobby_index, "lobby_index");
     lua_settable(L, -3);
     lua_pushstring(L, "__newindex");
-    lua_pushcfunction(L, lobby_newindex);
+    lua_pushcfunction(L, lobby_newindex, "lobby_newindex");
     lua_settable(L, -3);
     lua_pop(L, 1);
 
@@ -518,45 +683,7 @@ void ScriptLua::set_lua_metatables() {
     lua_setmetatable(L, -2);
     lua_setfield(L, LUA_REGISTRYINDEX, "lobby_global");
     luaopen_lobby(L);
-}
-
-int lua_print_to_file(lua_State *L) {
-    lua_getfield(L, LUA_REGISTRYINDEX, "logs_path");
-    std::string logs_path = lua_tostring(L, -1);
-    lua_pop(L, 1);
-    std::ofstream outfile(logs_path, std::ios_base::app);
-    if (!outfile.is_open()) {
-        luaL_error(L, "Failed to open output file");
-        return 0;
-    }
-
-    int n = lua_gettop(L);  // Number of arguments
-    for (int i = 1; i <= n; ++i) {
-        if (i > 1) {
-            outfile << "\t";  // Add tab between arguments
-        }
-
-        // Check argument type and convert it to string
-        if (lua_isstring(L, i)) {
-            outfile << lua_tostring(L, i);
-        } else if (lua_isnumber(L, i)) {
-            outfile << lua_tonumber(L, i);
-        } else {
-            outfile << lua_tostring(L, i);
-        }
-    }
-
-    outfile << "\n";  // New line after printing all arguments
-
-    // Close the file
-    outfile.close();
-
-    return 0;  // Return nothing to Lua
-}
-
-static void setup_print_redirect(lua_State *L) {
-    lua_pushcfunction(L, lua_print_to_file);
-    lua_setglobal(L, "print");
+    luaopen_system(L);
 }
 
 void ScriptLua::open() {
@@ -565,27 +692,30 @@ void ScriptLua::open() {
         return;
     }
     L = luaL_newstate();
+    std::string base_path = scripts_folder + "/" + folder_name;
+    lua_pushstring(L, base_path.c_str());
+    lua_setfield(L, LUA_REGISTRYINDEX, "base_path");
+
     if (!L) {
         enabled = false;
         return;
     }
-    INIReader config_reader(scripts_folder + "/" + folder_name + "/config.ini");
+    INIReader config_reader(base_path + "/config.ini");
     autoreload = config_reader.GetBoolean("script", "autoreload", false);
-    luaL_openlibs(L);
-
+    setupState(L);
     set_lua_metatables();
-
-    // setup_print_redirect(L);
-    luaL_dostring(
-        L, ("package.path = \"" + scripts_folder + "/" + folder_name + "/?.lua;\" .. package.path")
-               .c_str());
-    luaL_dofile(L, (scripts_folder + "/" + folder_name + "/" + script_entrypoint).c_str());
+    bool success = runFile(L, (base_path + "/" + script_entrypoint).c_str());
+    if (!success) {
+        enabled = true;
+        // enable with error
+        return;
+    }
     enabled = true;
 }
 
 AnyElement ScriptLua::func_call(std::string &func_name, boost::container::vector<AnyElement> &args,
-                                std::string &peer_id,
-                                std::string &lobby_id, std::string &game_id, bool &has_error) {
+                                std::string &peer_id, std::string &lobby_id, std::string &game_id,
+                                bool &has_error) {
     if (!enabled) {
         return AnyElement{"Lua script is not enabled"};
     }
@@ -609,7 +739,15 @@ AnyElement ScriptLua::func_call(std::string &func_name, boost::container::vector
     lua_pushstring(L, game_id.c_str());
     lua_setfield(L, LUA_REGISTRYINDEX, "game_id");
 
-    lua_getglobal(L, func_name.c_str());
+    lua_getfield(L, LUA_REGISTRYINDEX, "main");
+    if (!lua_istable(L, -1)) {
+        return AnyElement{"Main is not a table. "};
+    }
+    int ret = lua_getfield(L, -1, func_name.c_str());
+    if (ret != LUA_TFUNCTION) {
+        has_error = true;
+        return AnyElement{"Function not found. " + func_name};
+    }
 
     // Push arguments onto the Lua stack
     for (int i = 0; i < args.size(); i++) {

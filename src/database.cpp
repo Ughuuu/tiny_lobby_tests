@@ -1,5 +1,7 @@
 #include "database.h"
+
 #include <iostream>
+
 #include "INIReader.h"
 
 pqxx::connection *connection;
@@ -41,7 +43,8 @@ void connect_to_db() {
             std::cerr << "Database port not found in config.ini" << std::endl;
             exit(1);
         }
-        std::string conn_str = "dbname=" + database + " user=" + user + " password=" + password + " host=" + host + " port=" + port;
+        std::string conn_str = "dbname=" + database + " user=" + user + " password=" + password +
+                               " host=" + host + " port=" + port;
         connection = new pqxx::connection(conn_str);
         if (connection->is_open()) {
             std::cout << "Connected to database: " << connection->dbname() << std::endl;
@@ -61,7 +64,8 @@ void execute_query(std::string query) {
     pqxx::work work(*connection);
     pqxx::result result = work.exec("SELECT id, name FROM employees;");
     for (auto row : result) {
-        std::cout << "ID: " << row[0].as<int>() << " Name: " << row[1].as<std::string>() << std::endl;
+        std::cout << "ID: " << row[0].as<int>() << " Name: " << row[1].as<std::string>()
+                  << std::endl;
     }
     work.commit();
 }

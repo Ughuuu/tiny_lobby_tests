@@ -1,5 +1,6 @@
 #pragma once
 #include <rnp/rnp.h>
+
 #include <string>
 
 void init_rnp();

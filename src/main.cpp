@@ -1,20 +1,20 @@
 #include <readerwriterqueue.h>
+#include <stddef.h>
 
 #include <thread>
-#include <stddef.h>
 
 #include "App.h"
 #include "INIReader.h"
-#include "game_thread.h"
-#include "websocket_server.h"
-#include "decrypt_pgp.h"
 #include "database.h"
+#include "decrypt_pgp.h"
+#include "game_thread.h"
 #include "pogr_client.h"
+#include "websocket_server.h"
 
 void check_signature() {
     std::string license_data = "license_id|holder|email|created_on|expires_on";
     std::string signature_base64 = "<base64-signature>";
-    //verify_detached_signature(license_data, signature_base64);
+    // verify_detached_signature(license_data, signature_base64);
 }
 
 int main(int argc, char *argv[]) {
@@ -37,7 +37,9 @@ int main(int argc, char *argv[]) {
         }
     }
     if (!disable_metrics) {
-        std::cout << "This application collects anonymous usage statistics. To disable it pass --disable-metrics" << std::endl;
+        std::cout << "This application collects anonymous usage statistics. To disable it pass "
+                     "--disable-metrics"
+                  << std::endl;
     }
 
     if (config_reader.GetBoolean("database", "enabled", false) == true) {
@@ -45,15 +47,13 @@ int main(int argc, char *argv[]) {
     }
 
     int port = config_reader.GetUnsigned("webserverserver", "port", 8080);
-    std::cout << "Starting analytics"<< std::endl;
-    POGRClient pogr_client{
-        .client_id = "460add56-fbe1-47cf-aa6d-81d1197ad6c6",
-        .build_id = "0a3c052be193527ce52542e6c2554697836325b85695c7dd0ef0ef88abc6f19edcb6f4d2f445356b4b1b14edded38c8a61075390e91cbb60736005a4a634079b"
-    };
-    POGRClient pogr_other_client{
-        .client_id = config_reader.GetString("analytics", "client_id", ""),
-        .build_id = config_reader.GetString("analytics", "build_id", "")
-    };
+    std::cout << "Starting analytics" << std::endl;
+    POGRClient pogr_client{.client_id = "460add56-fbe1-47cf-aa6d-81d1197ad6c6",
+                           .build_id =
+                               "0a3c052be193527ce52542e6c2554697836325b85695c7dd0ef0ef88abc6f19edcb"
+                               "6f4d2f445356b4b1b14edded38c8a61075390e91cbb60736005a4a634079b"};
+    POGRClient pogr_other_client{.client_id = config_reader.GetString("analytics", "client_id", ""),
+                                 .build_id = config_reader.GetString("analytics", "build_id", "")};
     if (!disable_metrics && pogr_client.enabled) {
         pogr_client.init();
     }
@@ -61,18 +61,21 @@ int main(int argc, char *argv[]) {
         pogr_other_client.init();
     }
     std::flush(std::cout);
-    long message_queue_length = config_reader.GetInteger("webserverserver", "message_queue_length", long(250000));
+    long message_queue_length =
+        config_reader.GetInteger("webserverserver", "message_queue_length", long(250000));
     if (message_queue_length <= 100) {
         message_queue_length = 100;
     }
     std::flush(std::cout);
-    moodycamel::BlockingReaderWriterQueue<WebSocketReceivedMessage> receive_queue(message_queue_length);
+    moodycamel::BlockingReaderWriterQueue<WebSocketReceivedMessage> receive_queue(
+        message_queue_length);
     std::flush(std::cout);
     if (config_reader.GetBoolean("ssl", "enabled", false)) {
         std::cout << "Starting webserver with SSL" << std::endl;
         WebSocketServer<false> webserver(
             verbose, config_reader.GetString("webserverserver", "log_folder", "logs"),
-            receive_queue, config_reader.GetInteger("webserverserver", "max_messages_per_second", 5));
+            receive_queue,
+            config_reader.GetInteger("webserverserver", "max_messages_per_second", 5));
         uWS::App app =
             uWS::App()
                 .ws<PerSocketData>(
@@ -114,15 +117,14 @@ int main(int argc, char *argv[]) {
                         std::cout << "Failed to listen on port" << port << std::endl;
                     }
                 });
-        app.get("/health", [](auto *res, auto *req) {
-            res->writeStatus("200 OK")->end("OK");
-        });
+        app.get("/health", [](auto *res, auto *req) { res->writeStatus("200 OK")->end("OK"); });
         std::thread GameThread_thread = std::thread([&]() {
-            GameThread GameThread(verbose, config_reader.GetString("game", "log_folder", "logs"),
-                                  config_reader.Get("game", "scripts_folder", "scripts"),
-                                  receive_queue, app.getLoop(), nullptr, &webserver,
-                                  config_reader.GetInteger("game", "listing_interval", 3000),
-                                  config_reader.GetInteger("game", "max_reconnection_time", 6 * 60 * 1000));
+            GameThread GameThread(
+                verbose, config_reader.GetString("game", "log_folder", "logs"),
+                config_reader.Get("game", "scripts_folder", "scripts"), receive_queue,
+                app.getLoop(), nullptr, &webserver,
+                config_reader.GetInteger("game", "listing_interval", 3000),
+                config_reader.GetInteger("game", "max_reconnection_time", 6 * 60 * 1000));
             GameThread.run();
         });
         app.run();
@@ -131,7 +133,8 @@ int main(int argc, char *argv[]) {
         std::cout << "Starting webserver without SSL" << std::endl;
         WebSocketServer<true> webserver(
             verbose, config_reader.GetString("webserverserver", "log_folder", "logs"),
-            receive_queue, config_reader.GetInteger("webserverserver", "max_messages_per_second", 5));
+            receive_queue,
+            config_reader.GetInteger("webserverserver", "max_messages_per_second", 5));
         uWS::SSLApp app =
             uWS::SSLApp(uWS::SocketContextOptions{
                             .key_file_name = config_reader.Get("ssl", "key_filename", "").c_str(),
@@ -176,15 +179,14 @@ int main(int argc, char *argv[]) {
                         std::cout << "Failed to listen on port" << port << std::endl;
                     }
                 });
-        app.get("/health", [](auto *res, auto *req) {
-            res->writeStatus("200 OK")->end("OK");
-        });
+        app.get("/health", [](auto *res, auto *req) { res->writeStatus("200 OK")->end("OK"); });
         std::thread GameThread_thread = std::thread([&]() {
-            GameThread GameThread(verbose, config_reader.GetString("game", "log_folder", "logs"),
-                                  config_reader.Get("game", "scripts_folder", "scripts"),
-                                  receive_queue, app.getLoop(), &webserver, nullptr,
-                                  config_reader.GetInteger("game", "listing_interval", 3000),
-                                  config_reader.GetInteger("game", "max_reconnection_time", 6 * 60 * 1000));
+            GameThread GameThread(
+                verbose, config_reader.GetString("game", "log_folder", "logs"),
+                config_reader.Get("game", "scripts_folder", "scripts"), receive_queue,
+                app.getLoop(), &webserver, nullptr,
+                config_reader.GetInteger("game", "listing_interval", 3000),
+                config_reader.GetInteger("game", "max_reconnection_time", 6 * 60 * 1000));
             GameThread.run();
         });
         app.run();

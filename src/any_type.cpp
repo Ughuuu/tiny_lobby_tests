@@ -103,7 +103,8 @@ std::string decode_value(yyjson_val *value, AnyElement &element) {
     return EMPTY_STRING;
 }
 
-std::string decode_object(yyjson_val *object, boost::container::flat_map<std::string, AnyElement> &dict) {
+std::string decode_object(yyjson_val *object,
+                          boost::container::flat_map<std::string, AnyElement> &dict) {
     if (!object || yyjson_get_type(object) != YYJSON_TYPE_OBJ) {
         return EMPTY_STRING;
     }

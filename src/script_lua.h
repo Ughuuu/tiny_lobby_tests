@@ -1,9 +1,4 @@
 #pragma once
-extern "C" {
-#include "lauxlib.h"
-#include "lua.h"
-#include "lualib.h"
-}
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,6 +6,7 @@ extern "C" {
 
 #include "INIReader.h"
 #include "any_type.h"
+#include "lua.h"
 #include "server_logger.h"
 
 class GameThread;
@@ -66,8 +62,8 @@ struct ScriptLua {
    public:
     bool enabled = false;
     AnyElement func_call(std::string &func_name, boost::container::vector<AnyElement> &args,
-        std::string &peer_id,
-                         std::string &lobby_id, std::string &game_id, bool &has_error);
+                         std::string &peer_id, std::string &lobby_id, std::string &game_id,
+                         bool &has_error);
     void open();
     void close();
     void set_lua_metatables();
