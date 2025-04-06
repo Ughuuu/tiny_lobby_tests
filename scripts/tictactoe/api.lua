@@ -19,9 +19,9 @@ function api.start_game()
 end
 
 function api.check_winner(board)
-    local size = 5
+    local size = 3
 
-    -- Check rows for 5 consecutive marks
+    -- Check rows for 3 consecutive marks
     for row = 1, size do
         for col = 1, size - 2 do
             if board[row][col] ~= 0 and
@@ -32,7 +32,7 @@ function api.check_winner(board)
         end
     end
 
-    -- Check columns for 5 consecutive marks
+    -- Check columns for 3 consecutive marks
     for col = 1, size do
         for row = 1, size - 2 do
             if board[row][col] ~= 0 and
@@ -74,7 +74,7 @@ function api.set_piece(placementTileX, placementTileY)
     end
     placementTileX = placementTileX + 1
     placementTileY = placementTileY + 1
-    if placementTileX < 1 or placementTileX > 5 or placementTileY < 1 or placementTileY > 5 then
+    if placementTileX < 1 or placementTileX > 3 or placementTileY < 1 or placementTileY > 3 then
         return { error = "Placement Tile X and Y index must be a from 0 to 3." }
     end
     local l = lobby.get()
@@ -99,8 +99,8 @@ function api.set_piece(placementTileX, placementTileY)
 
     -- Check draw
     local is_draw = true
-    for i = 1, 5 do
-        for j = 1, 5 do
+    for i = 1, 3 do
+        for j = 1, 3 do
             if board[i][j] == 0 then
                 is_draw = false
             end
@@ -118,12 +118,10 @@ end
 function api.set_initial_data(l)
     l.public_data["turn_timestamp"] = system.get_time()
     l.public_data["game_state"] = "playing"
-    local board = {
-        { 0, 0, 0, 0, 0 },
-        { 0, 0, 0, 0, 0 },
-        { 0, 0, 0, 0, 0 },
-        { 0, 0, 0, 0, 0 },
-        { 0, 0, 0, 0, 0 },
+    board = {
+        { 0, 0, 0 },
+        { 0, 0, 0 },
+        { 0, 0, 0 },
     }
     l.public_data["board"] = board
     l = turn.increment_dealer(l, 1)
