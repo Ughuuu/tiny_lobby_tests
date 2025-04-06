@@ -68,16 +68,6 @@ class WebSocketServer {
     void send(std::string id, const std::string &message, uWS::OpCode opCode = uWS::OpCode::TEXT);
     void clear_users(boost::container::flat_set<std::string> users_to_clean);
 
-    /*************  ✨ Codeium Command ⭐  *************/
-    /**
-     * @brief Construct a new WebSocketServer object
-     *
-     * @param verbose Verbosity flag for logging
-     * @param log_folder Folder where logs will be stored
-     * @param receive_queue Queue where received messages will be stored
-     * @param max_messages_per_second Maximum number of messages per second
-     */
-    /******  06c90573-aca3-4305-99d6-2cad47e55444  *******/
     WebSocketServer(bool verbose, std::string log_folder,
                     moodycamel::BlockingReaderWriterQueue<WebSocketReceivedMessage> &receive_queue,
                     int max_messages_per_second);

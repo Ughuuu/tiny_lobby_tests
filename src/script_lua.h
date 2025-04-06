@@ -19,7 +19,6 @@ struct LuaWrapperInfo {
 struct ScriptLua {
     lua_State *L;
     bool autoreload;
-    std::string script_language;
     std::string scripts_folder;
     std::string folder_name;
     std::string script_entrypoint;
@@ -64,7 +63,7 @@ struct ScriptLua {
     AnyElement func_call(std::string &func_name, boost::container::vector<AnyElement> &args,
                          std::string &peer_id, std::string &lobby_id, std::string &game_id,
                          bool &has_error);
-    void open();
+    boost::container::flat_set<std::string> open();
     void close();
     void set_lua_metatables();
 };

@@ -1,6 +1,3 @@
-export VCPKG_FORCE_SYSTEM_BINARIES=1
-export VCPKG_DEFAULT_TRIPLET=x64-osx
-export CMAKE_OSX_ARCHITECTURES="x86_64"
 # Install deps
 brew install zlib autoconf automake libtool
 arch -x86_64 brew install zlib autoconf automake libtool
@@ -16,8 +13,9 @@ cd external/vcpkg
 ./vcpkg install "cpp-httplib[openssl]" --triplet x64-osx
 ./vcpkg install boost-container --triplet x64-osx
 ./vcpkg install luau --triplet x64-osx
+./vcpkg install zlib --triplet x64-osx
 ./vcpkg list
 ./vcpkg integrate install
 cd ../..
 # Install rnp
-./install-rnp.sh
+./install-rnp-macos-x64.sh

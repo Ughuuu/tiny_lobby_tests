@@ -4,9 +4,6 @@
 [submodule "external/vcpkg"]
 	path = external/vcpkg
 	url = https://github.com/microsoft/vcpkg.git
-[submodule "external/angelscript"]
-	path = external/angelscript
-	url = https://github.com/codecat/angelscript-mirror
 [submodule "external/rnp"]
 	path = external/rnp
 	url = https://github.com/rnpgp/rnp

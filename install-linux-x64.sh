@@ -14,8 +14,9 @@ cd external/vcpkg
 ./vcpkg install "cpp-httplib[openssl]"
 ./vcpkg install boost-container
 ./vcpkg install luau
+./vcpkg install zlib
 ./vcpkg integrate install
 ls external/vcpkg/installed/x64-linux/include
 cd ../..
 # Install rnp
-./install-rnp.sh
+./install-rnp-x64.sh

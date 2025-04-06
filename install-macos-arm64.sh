@@ -1,4 +1,5 @@
 # Install deps
+brew install zlib autoconf automake libtool
 arch -arm64 brew install zlib autoconf automake libtool
 # Install packages
 cd external/vcpkg
@@ -12,8 +13,9 @@ cd external/vcpkg
 ./vcpkg install "cpp-httplib[openssl]" --triplet arm64-osx
 ./vcpkg install boost-container --triplet arm64-osx
 ./vcpkg install luau --triplet arm64-osx
+./vcpkg install zlib --triplet arm64-osx
 ./vcpkg list
 ./vcpkg integrate install
 cd ../..
 # Install rnp
-./install-rnp.sh
+./install-rnp-macos-arm64.sh

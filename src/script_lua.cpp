@@ -576,7 +576,7 @@ void setupState(lua_State *L) {
     luaL_sandbox(L);
 }
 
-bool runFile(lua_State *L, std::string name) {
+boost::container::flat_set<std::string> runFile(lua_State *L, std::string name) {
     std::ifstream file(name);
     std::stringstream buffer;
     buffer << file.rdbuf();
@@ -587,20 +587,36 @@ bool runFile(lua_State *L, std::string name) {
     char *bytecode = luau_compile(source.c_str(), source.size(), NULL, &bytecodeSize);
     int status = luau_load(L, chunkname.c_str(), bytecode, bytecodeSize, 0);
     free(bytecode);
+    boost::container::flat_set<std::string> enabled_functions;
 
     if (status != LUA_OK) {
         std::cerr << "Load error: " << lua_tostring(L, -1) << "\n";
-        return false;
+        return enabled_functions;
     } else {
         // Run the loaded chunk
         if (lua_pcall(L, 0, 1, 0) != LUA_OK) {
             std::cerr << "Runtime error: " << lua_tostring(L, -1) << "\n";
-            return false;
+            return enabled_functions;
         }
-        // Store the module in registry
+        if (!lua_istable(L, -1)) {
+            std::cerr << "Script must return a table " << name << "\n";
+            return enabled_functions;
+        }
+
+        std::vector<std::string> expected_functions = {"_on_create", "_on_join", "_on_chat",
+                                                       "_on_tags",   "_on_kick", "_on_ready",
+                                                       "_on_seal",   "_on_left"};
+
+        for (const auto &func_name : expected_functions) {
+            lua_getfield(L, -1, func_name.c_str());
+            if (lua_isfunction(L, -1)) {
+                enabled_functions.insert(func_name);
+            }
+            lua_pop(L, 1);
+        }
         lua_setfield(L, LUA_REGISTRYINDEX, "main");
     }
-    return true;
+    return enabled_functions;
 }
 
 void luaopen_lobby(lua_State *L) {
@@ -686,10 +702,11 @@ void ScriptLua::set_lua_metatables() {
     luaopen_system(L);
 }
 
-void ScriptLua::open() {
-    if (script_language != "lua") {
-        enabled = false;
-        return;
+boost::container::flat_set<std::string> ScriptLua::open() {
+    boost::container::flat_set<std::string> empty_set;
+    // do not open if folder_name is empty
+    if (folder_name.empty()) {
+        return empty_set;
     }
     L = luaL_newstate();
     std::string base_path = scripts_folder + "/" + folder_name;
@@ -698,19 +715,14 @@ void ScriptLua::open() {
 
     if (!L) {
         enabled = false;
-        return;
+        return empty_set;
     }
     INIReader config_reader(base_path + "/config.ini");
     autoreload = config_reader.GetBoolean("script", "autoreload", false);
     setupState(L);
     set_lua_metatables();
-    bool success = runFile(L, (base_path + "/" + script_entrypoint).c_str());
-    if (!success) {
-        enabled = true;
-        // enable with error
-        return;
-    }
     enabled = true;
+    return runFile(L, (base_path + "/" + script_entrypoint).c_str());
 }
 
 AnyElement ScriptLua::func_call(std::string &func_name, boost::container::vector<AnyElement> &args,

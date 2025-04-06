@@ -3,7 +3,8 @@ name: Build
 on:
   workflow_dispatch:
   push:
-    branches: ["*"]
+    branches:
+      - main
   pull_request:
     branches: ["*"]
 
@@ -42,8 +43,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # arch: [x64, arm64]
-        arch: [x64]
+        arch: [x64, arm64]
         type: [release] #[debug, release]
 
     steps:
@@ -128,12 +128,6 @@ jobs:
         working-directory: old-lobby
         run: go mod tidy
 
-      # Disable batching for tests
-      - name: Disable batching
-        shell: bash
-        run: |
-          sed -i 's/sendrate=100/sendrate=0/g' scripts/echo/config.ini
-
       # Run the app and tests in the same step
       - name: Run App and Tests
         working-directory: old-lobby
@@ -160,13 +154,12 @@ jobs:
   build-macos:
     name: Build on macOS (${{ matrix.arch }})
     needs: lint
+    runs-on: macos-latest
+
     strategy:
       fail-fast: false
       matrix:
-        #arch: [x64, arm64]
-        arch: [arm64]
-    runs-on: macos-latest
-
+        arch: [x64, arm64]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -191,7 +184,7 @@ jobs:
           cmake --version
           clang --version
 
-      - name: Install dependencies (macOS ${{ matrix.arch }})
+      - name: Install dependencies (macOS)
         run: |
           ./install-macos-${{ matrix.arch }}.sh
 
@@ -203,7 +196,7 @@ jobs:
             external/vcpkg/installed
           key: vcpkg-${{ runner.os }}-${{ matrix.arch }}
   
-      - name: Build (macOS ${{ matrix.arch }})
+      - name: Build (macOS)
         run: |
           ./build_release_macos-${{ matrix.arch }}.sh
 
@@ -230,12 +223,12 @@ jobs:
       - uses: ilammy/msvc-dev-cmd@v1.4.1
       
       - name: Cache vcpkg dependencies
-        uses: actions/cache@v3
+        uses: actions/cache/restore@v4
         with:
           path: |
             ~/.cache/vcpkg
             external/vcpkg/installed
-          key: vcpkg-${{ runner.os }}-${{ matrix.arch }}
+          key: vcpkg-${{ runner.os }}
 
       - name: Create Public Key
         run: |
@@ -244,31 +237,33 @@ jobs:
       - name: Install dependencies
         shell: pwsh
         run: |
-          .\install-windows.ps1
+          .\install.ps1
 
-      - name: Install pkg-config
-        run: choco install pkgconfiglite
-
-      - name: Set PKG_CONFIG_PATH
-        run: |
-          echo "PKG_CONFIG_PATH=C:\tools\pkgconfiglite" >> $env:GITHUB_ENV
+      - name: Cache vcpkg dependencies
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.cache/vcpkg
+            external/vcpkg/installed
+          key: vcpkg-${{ runner.os }}
 
       - name: Build Release
         shell: pwsh
         run: |
-          # Comment this out so we have a passing build, for cache
-          # .\build_release.ps1
+          Comment this out so we have a passing build, for cache
+          .\build_release.ps1
 
-      #- name: Archive build artifacts
-      #  uses: actions/upload-artifact@v4
-      #  with:
-      #    name: lobby_server-windows-x64
-      #    path: build/lobby_server*
-      #    if-no-files-found: error
+      - name: Archive build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: lobby_server-windows-x64
+          path: build/lobby_server*
+          if-no-files-found: error
   
   docker-build:
     name: Build Docker Image (Linux)
     needs: [build-linux, test]
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     env:
       DOCKER_REGISTRY: registry.digitalocean.com

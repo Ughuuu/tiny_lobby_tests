@@ -16,12 +16,7 @@ function callbacks.on_create(minPlayers, maxPlayers)
     return
 end
 
-function callbacks.on_left() return end
-function callbacks.on_join() return end
-function callbacks.on_chat(message) return end
 function callbacks.on_tags(tags) return turn.validate_game_state_is("setup") end
-function callbacks.on_kick() return end
 function callbacks.on_ready(ready) return turn.validate_game_state_is("setup") end
-function callbacks.on_seal(seal) return end
 
 return callbacks

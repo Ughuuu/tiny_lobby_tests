@@ -45,31 +45,40 @@ int main(int argc, char *argv[]) {
     if (config_reader.GetBoolean("database", "enabled", false) == true) {
         connect_to_db();
     }
-
+    std::string license_id =
+        config_reader.GetString("license", "id", "00000000-0000-0000-0000-000000000000");
+    if (license_id.empty()) {
+        std::cerr << "License ID not found in config.ini" << std::endl;
+        exit(1);
+    }
     int port = config_reader.GetUnsigned("webserverserver", "port", 8080);
     std::cout << "Starting analytics" << std::endl;
-    POGRClient pogr_client{.client_id = "460add56-fbe1-47cf-aa6d-81d1197ad6c6",
+    moodycamel::BlockingReaderWriterQueue<AnalyticsEvent> analytics_queue(10000);
+    POGRClient pogr_client{.analytics_queue = analytics_queue,
+                           .client_id = "460add56-fbe1-47cf-aa6d-81d1197ad6c6",
                            .build_id =
                                "0a3c052be193527ce52542e6c2554697836325b85695c7dd0ef0ef88abc6f19edcb"
-                               "6f4d2f445356b4b1b14edded38c8a61075390e91cbb60736005a4a634079b"};
-    POGRClient pogr_other_client{.client_id = config_reader.GetString("analytics", "client_id", ""),
-                                 .build_id = config_reader.GetString("analytics", "build_id", "")};
-    if (!disable_metrics && pogr_client.enabled) {
+                               "6f4d2f445356b4b1b14edded38c8a61075390e91cbb60736005a4a634079b",
+                           .association_id = license_id};
+    pogr_client.enabled = !disable_metrics;
+    if (pogr_client.enabled) {
         pogr_client.init();
+        pogr_client.data(boost::container::flat_map<std::string, AnyElement>{
+            {"os", AnyElement{POGRClient::get_os_name()}},
+            {"arch", AnyElement{POGRClient::get_arch_name()}}});
+        pogr_client.event("init",
+                          boost::container::flat_map<std::string, AnyElement>{
+                              {"os", AnyElement{POGRClient::get_os_name()}},
+                              {"arch", AnyElement{POGRClient::get_arch_name()}}},
+                          "server_started", "server_started", "server", "created");
     }
-    if (pogr_other_client.enabled) {
-        pogr_other_client.init();
-    }
-    std::flush(std::cout);
     long message_queue_length =
         config_reader.GetInteger("webserverserver", "message_queue_length", long(250000));
     if (message_queue_length <= 100) {
         message_queue_length = 100;
     }
-    std::flush(std::cout);
     moodycamel::BlockingReaderWriterQueue<WebSocketReceivedMessage> receive_queue(
         message_queue_length);
-    std::flush(std::cout);
     if (config_reader.GetBoolean("ssl", "enabled", false)) {
         std::cout << "Starting webserver with SSL" << std::endl;
         WebSocketServer<false> webserver(
@@ -120,15 +129,17 @@ int main(int argc, char *argv[]) {
         app.get("/health", [](auto *res, auto *req) { res->writeStatus("200 OK")->end("OK"); });
         std::thread GameThread_thread = std::thread([&]() {
             GameThread GameThread(
-                verbose, config_reader.GetString("game", "log_folder", "logs"),
-                config_reader.Get("game", "scripts_folder", "scripts"), receive_queue,
-                app.getLoop(), nullptr, &webserver,
-                config_reader.GetInteger("game", "listing_interval", 3000),
-                config_reader.GetInteger("game", "max_reconnection_time", 6 * 60 * 1000));
+                verbose, config_reader.GetString("games", "log_folder", "logs"),
+                config_reader.Get("games", "scripts_folder", "scripts"), analytics_queue,
+                receive_queue, app.getLoop(), nullptr, &webserver,
+                config_reader.GetInteger("games", "listing_interval", 3000),
+                config_reader.GetInteger("games", "max_reconnection_time", 6 * 60 * 1000));
             GameThread.run();
         });
+        std::thread AnalyticsThread_thread = std::thread([&]() { pogr_client.run(); });
         app.run();
         GameThread_thread.join();
+        AnalyticsThread_thread.join();
     } else {
         std::cout << "Starting webserver without SSL" << std::endl;
         WebSocketServer<true> webserver(
@@ -182,15 +193,17 @@ int main(int argc, char *argv[]) {
         app.get("/health", [](auto *res, auto *req) { res->writeStatus("200 OK")->end("OK"); });
         std::thread GameThread_thread = std::thread([&]() {
             GameThread GameThread(
-                verbose, config_reader.GetString("game", "log_folder", "logs"),
-                config_reader.Get("game", "scripts_folder", "scripts"), receive_queue,
-                app.getLoop(), &webserver, nullptr,
-                config_reader.GetInteger("game", "listing_interval", 3000),
-                config_reader.GetInteger("game", "max_reconnection_time", 6 * 60 * 1000));
+                verbose, config_reader.GetString("games", "log_folder", "logs"),
+                config_reader.Get("games", "scripts_folder", "scripts"), analytics_queue,
+                receive_queue, app.getLoop(), &webserver, nullptr,
+                config_reader.GetInteger("games", "listing_interval", 3000),
+                config_reader.GetInteger("games", "max_reconnection_time", 6 * 60 * 1000));
             GameThread.run();
         });
+        std::thread AnalyticsThread_thread = std::thread([&]() { pogr_client.run(); });
         app.run();
         GameThread_thread.join();
+        AnalyticsThread_thread.join();
     }
     deinit_rnp();
     if (config_reader.GetBoolean("database", "enabled", false) == true) {

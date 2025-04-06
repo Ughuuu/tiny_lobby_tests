@@ -9,6 +9,7 @@
 
 GameThread::GameThread(
     bool verbose, std::string log_folder, std::string scripts_folder,
+    moodycamel::BlockingReaderWriterQueue<AnalyticsEvent> &analytics_queue,
     moodycamel::BlockingReaderWriterQueue<WebSocketReceivedMessage> &receive_queue, uWS::Loop *loop,
     WebSocketServer<true> *webserver, WebSocketServer<false> *webserver_no_ssl,
     int listing_interval, int max_recconection_time)
@@ -16,6 +17,7 @@ GameThread::GameThread(
       max_reconnection_time(max_recconection_time),
       logger(verbose, log_folder + "/game.txt"),
       scripts_folder(scripts_folder),
+      analytics_queue(analytics_queue),
       receive_queue(receive_queue),
       loop(loop),
       webserver_ssl(webserver),
@@ -23,91 +25,61 @@ GameThread::GameThread(
       logs_folder(log_folder) {
     logger.debug_log("[GameThread] on_start");
 }
+std::vector<std::string> extract_bracketed_headers(const std::string &filename) {
+    std::vector<std::string> results;
+    std::ifstream file(filename);
+    std::string line;
+    std::regex bracket_regex(R"(\[([^\]]+)\])");
+
+    while (std::getline(file, line)) {
+        std::smatch match;
+        if (std::regex_search(line, match, bracket_regex)) {
+            results.push_back(match[1].str());
+        }
+    }
+
+    return results;
+}
 
 void GameThread::load_games() {
     check_interval = 100;
     logger.debug_log("[GameThread] on_load_games");
-    if (!std::filesystem::exists(scripts_folder)) {
-        logger.error_log("[GameThread] Cannot open " + scripts_folder);
+    if (!std::filesystem::exists("games.ini")) {
+        logger.error_log("[GameThread] Cannot open games.ini file");
         return;
     }
-    for (const auto &entry : std::filesystem::directory_iterator(scripts_folder)) {
-        if (entry.is_directory()) {
-            std::string folder_name = entry.path().filename().string();
-            logger.debug_log("[GameThread] on_load_game ", folder_name);
-            INIReader config_reader(scripts_folder + "/" + folder_name + "/config.ini");
-            if (config_reader.ParseError() < 0) {
-                logger.debug_log("[GameThread] Cannot open " + scripts_folder + "/" + folder_name +
-                                 "/config.ini");
-            }
-            std::string script_language = config_reader.Get("game", "language", "lua");
-            if (script_language != "lua" && script_language != "angelscript") {
-                logger.error_log("[GameThread] Unknown script language: " + script_language);
-                continue;
-            }
-            std::string script_entrypoint = config_reader.Get("game", "entrypoint", "");
-            if (script_language == "lua" && script_entrypoint == "") {
-                script_entrypoint = "main.lua";
-            }
-            if (script_language == "angelscript" && script_entrypoint == "") {
-                script_entrypoint = "main.as";
-            }
-            boost::container::flat_set<std::string> enabled_callbacks;
-            if (config_reader.GetBoolean("script", "callback_on_create", false)) {
-                enabled_callbacks.insert("_on_create");
-            }
-            if (config_reader.GetBoolean("script", "callback_on_join", false)) {
-                enabled_callbacks.insert("_on_join");
-            }
-            if (config_reader.GetBoolean("script", "callback_on_chat", false)) {
-                enabled_callbacks.insert("_on_chat");
-            }
-            if (config_reader.GetBoolean("script", "callback_on_tags", false)) {
-                enabled_callbacks.insert("_on_tags");
-            }
-            if (config_reader.GetBoolean("script", "callback_on_kick", false)) {
-                enabled_callbacks.insert("_on_kick");
-            }
-            if (config_reader.GetBoolean("script", "callback_on_ready", false)) {
-                enabled_callbacks.insert("_on_ready");
-            }
-            if (config_reader.GetBoolean("script", "callback_on_seal", false)) {
-                enabled_callbacks.insert("_on_seal");
-            }
-            if (config_reader.GetBoolean("script", "callback_on_left", false)) {
-                enabled_callbacks.insert("_on_left");
-            }
-            int tickrate = config_reader.GetInteger("game", "tickrate", 0);
-            if (tickrate < 16) {
-                tickrate = 0;
-            }
-            check_interval = std::min(check_interval, tickrate);
-            if (check_interval < 16) {
-                check_interval = 100;
-            }
-            int sendrate = config_reader.GetInteger("game", "sendrate", 0);
-            games.emplace(
-                folder_name,
-                GameData{
-                    .id = folder_name,
-                    .entrypoint = script_entrypoint,
-                    .lobby_control = config_reader.Get("game", "lobby_control", "scripted"),
-                    .tick_rate = tickrate,
-                    .send_rate = sendrate,
-                    .enabled_callbacks = enabled_callbacks,
-                    .lua =
-                        ScriptLua{
-                            .script_language = script_language,
-                            .scripts_folder = scripts_folder,
-                            .folder_name = folder_name,
-                            .script_entrypoint = script_entrypoint,
-                            .logs_folder = logs_folder,
-                            .game_thread = this,
-                        },
-                    //.angelscript = ScriptAngelScript(script_language, scripts_folder,
-                    // folder_name, script_entrypoint, logger, config_reader)
-                });
+    // TODO use .Sections once inih 59 is available
+    auto sections = extract_bracketed_headers("games.ini");
+    INIReader config_reader("games.ini");
+    for (const auto &section : sections) {
+        std::string folder_name = config_reader.GetString(section, "folder", "");
+        logger.debug_log("[GameThread] on_load_game ", folder_name);
+        std::string script_entrypoint = "main.lua";
+        int tickrate = config_reader.GetInteger(section, "tickrate", 0);
+        if (tickrate < 16) {
+            tickrate = 0;
         }
+        check_interval = std::min(check_interval, tickrate);
+        if (check_interval < 16) {
+            check_interval = 100;
+        }
+        int sendrate = config_reader.GetInteger(section, "sendrate", 50);
+        games.emplace(section,
+                      GameData{
+                          .id = section,
+                          .entrypoint = script_entrypoint,
+                          .lobby_control = config_reader.Get(section, "lobby_control", "scripted"),
+                          .tick_rate = tickrate,
+                          .send_rate = sendrate,
+                          .lua =
+                              ScriptLua{
+                                  .scripts_folder = scripts_folder,
+                                  .folder_name = folder_name,
+                                  .script_entrypoint = script_entrypoint,
+                                  .logs_folder = logs_folder,
+                                  .game_thread = this,
+                              },
+                      });
     }
     for (auto &game : games) {
         game.second.open();
@@ -720,6 +692,19 @@ void GameThread::on_create_lobby(GameData &game, std::string command_id, PeerDat
     notification.replace(notification.find("%s"), 2, game.peers_to_string(small_uuid));
     notification.replace(notification.find("%s"), 2, command_id);
     send(game, peer.id, notification, uWS::OpCode::TEXT);
+    // STATISTICS
+    analytics_queue.enqueue(AnalyticsEvent{
+        .event = "lobby_created",
+        .event_data =
+            boost::container::flat_map<std::string, AnyElement>{
+                {"max_players", AnyElement{game.lobbies[small_uuid].max_players}},
+                {"game_id", AnyElement{game.lobbies[small_uuid].game_id}},
+                {"has_password", AnyElement{!game.lobbies[small_uuid].password.empty()}}},
+        .event_flag = "created",
+        .event_key = "lobby_created",
+        .event_type = "lobby",
+        .sub_event = "",
+    });
 }
 
 bool GameThread::on_join_lobby(GameData &game, std::string command_id, PeerData &peer,
@@ -1563,17 +1548,6 @@ AnyElement GameThread::scripted_function_call(std::string peer_id, std::string l
         notify_lobby_changes(game, lobby_id);
         return result;
     }
-    /*
-    if (game.angelscript.engine != nullptr) {
-        asIScriptContext *ctx = game.angelscript.engine->CreateContext();
-        ctx->Prepare(game.angelscript.func);
-        ctx->Execute();
-        if (!ctx) {
-            return AnyElement{"Failed to create AngelScript context"};
-        }
-        ctx->Release();
-    }
-    */
     return AnyElement{std::monostate{}};
 }
 

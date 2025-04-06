@@ -7,7 +7,6 @@
 
 #include "lobby_data.h"
 #include "peer_data.h"
-#include "script_angelscript.h"
 #include "script_lua.h"
 
 struct TimerData {
@@ -36,16 +35,9 @@ struct GameData {
     boost::container::flat_set<std::string> enabled_callbacks;
     boost::container::flat_map<std::string, TimerData> timer_data;
     ScriptLua lua;
-    // ScriptAngelScript angelscript;
 
-    void close() {
-        lua.close();
-        // angelscript.close();
-    }
-    void open() {
-        lua.open();
-        // angelscript.open();
-    }
+    void close() { lua.close(); }
+    void open() { enabled_callbacks = lua.open(); }
 
     std::string peers_to_string(std::string &lobby_id) {
         std::string result = "[";
