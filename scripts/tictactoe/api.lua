@@ -118,7 +118,7 @@ end
 function api.set_initial_data(l)
     l.public_data["turn_timestamp"] = system.get_time()
     l.public_data["game_state"] = "playing"
-    board = {
+    local board = {
         { 0, 0, 0 },
         { 0, 0, 0 },
         { 0, 0, 0 },

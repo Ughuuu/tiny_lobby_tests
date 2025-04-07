@@ -63,6 +63,7 @@ void GameThread::load_games() {
         if (check_interval < 16) {
             check_interval = 100;
         }
+        std::cout<<"Loading game from "<<folder_name << " with id "<<section<<std::endl;
         int sendrate = config_reader.GetInteger(section, "sendrate", 50);
         games.emplace(section,
                       GameData{
