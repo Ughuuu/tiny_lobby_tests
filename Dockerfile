@@ -15,6 +15,7 @@ RUN apt-get update && apt-get install -y \
 COPY ./build/lobby_server /app/lobby_server
 COPY ./scripts /app/scripts
 COPY ./config.ini /app/config.ini
+COPY ./games.ini /app/games.ini
 
 RUN chmod +x /app/lobby_server
 RUN mkdir /app/logs
