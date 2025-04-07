@@ -1555,7 +1555,7 @@ AnyElement GameThread::scripted_function_call(std::string peer_id, std::string l
 void GameThread::send_message(GameData &game, std::string &lobby_id, std::string &message) {
     std::string notification = NOTIFICATION_CHAT;
     auto &lobby = game.lobbies[lobby_id];
-    notification.replace(notification.find("%s"), 2, lobby.host);
+    notification.replace(notification.find("%s"), 2, EMPTY_STRING);
     notification.replace(notification.find("%s"), 2, message);
     notification.replace(notification.find("%s"), 2, EMPTY_STRING);
     for (const auto &peer_id : lobby.peer_ids) {
