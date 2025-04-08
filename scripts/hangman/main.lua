@@ -7,6 +7,8 @@ local main = {}
 main.start_game = api.start_game
 main.set_word = api.set_word
 main.guess_letter = api.guess_letter
+main.guess_word = api.guess_word
+main.me_command = api.me_command
 main.skip = api.skip
 
 -- Private Function

@@ -215,7 +215,7 @@ static int notify(lua_State *L) {
     lua_pop(L, 1);
 
     auto &game = game_thread->games[game_id];
-    game_thread->notify_peer(game, lobby_id, peer_id, notification_object.to_string());
+    game_thread->notify_peer(game, lobby_id, peer_id, notification_object);
     return 0;
 }
 

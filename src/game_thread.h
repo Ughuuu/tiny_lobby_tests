@@ -106,7 +106,7 @@ class GameThread {
     void send_message(GameData &game, std::string &peer_id, std::string &message);
     void notify_lobby_changes(GameData &game, std::string &lobby_id);
     void notify_peer(GameData &game, std::string &lobby_id, std::string peer_id,
-                     std::string notification);
+                     const AnyElement &notification);
     void send(GameData &game, const std::string &peer_id, const std::string &message,
               uWS::OpCode opCode = uWS::OpCode::TEXT);
     void send_all(GameData &game);

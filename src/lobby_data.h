@@ -27,7 +27,7 @@ struct LobbyData {
     bool tags_dirty = false;
     bool sealed_dirty = false;
 
-    std::string to_string(bool include_private = false) {
+    boost::container::flat_map<std::string, AnyElement> to_dict(bool include_private = false) {
         boost::container::flat_map<std::string, AnyElement> lobby_dict;
         lobby_dict["id"] = AnyElement{id};
         lobby_dict["name"] = AnyElement{name};
@@ -42,6 +42,6 @@ struct LobbyData {
         if (include_private) {
             lobby_dict["private_data"] = AnyElement{private_data};
         }
-        return AnyElement{lobby_dict}.to_string();
+        return lobby_dict;
     }
 };

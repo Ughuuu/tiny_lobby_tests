@@ -25,7 +25,8 @@ struct PeerData {
         order_id = 0;
     }
 
-    std::string to_string(bool include_private = false, bool include_reconnection = false) {
+    boost::container::flat_map<std::string, AnyElement> to_dict(bool include_private = false,
+                                                                bool include_reconnection = false) {
         boost::container::flat_map<std::string, AnyElement> peer_dict;
         peer_dict["id"] = AnyElement{id};
         peer_dict["order_id"] = AnyElement{order_id};
@@ -40,6 +41,6 @@ struct PeerData {
         peer_dict["user_data"] = AnyElement{user_data};
         peer_dict["is_disconnected"] = AnyElement{disconnected};
         peer_dict["ready"] = AnyElement{ready};
-        return AnyElement{peer_dict}.to_string();
+        return peer_dict;
     }
 };

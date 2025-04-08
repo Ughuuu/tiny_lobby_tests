@@ -39,12 +39,12 @@ struct GameData {
     void close() { lua.close(); }
     void open() { enabled_callbacks = lua.open(); }
 
-    std::string peers_to_string(std::string &lobby_id) {
-        std::string result = "[";
+    boost::container::vector<AnyElement> peers_to_array(std::string &lobby_id) {
+        boost::container::vector<AnyElement> result;
         for (auto &peer_id : lobbies[lobby_id].peer_ids) {
             auto &peer = peers[peer_id];
-            result += peer.to_string() + ",";
+            result.push_back(AnyElement{peer.to_dict()});
         }
-        return result.substr(0, result.size() - 1) + "]";
+        return result;
     }
 };

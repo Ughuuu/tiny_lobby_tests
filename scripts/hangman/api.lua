@@ -61,6 +61,42 @@ function api.set_word(word)
     return
 end
 
+function api.guess_word(word)
+    local err = turn.validate_game_state_is("playing")
+    if err then return err end
+
+    local l = lobby.get()
+    local dealerID = l.public_data["dealer"]
+    if dealerID == l.calling_peer_id then
+        return { error = "The dealer cannot guess the word." }
+    end
+    if #word == 0 then return { error = "Empty word." } end
+    if #word > 20 then return { error = "Too many letters." } end
+    if #word ~= #l.peers[dealerID].private_data["word"] then return { error = "Incorrect length." } end
+    for i = 1, #word do
+        local letter = word:sub(i, i)
+        if not (api.is_letter(letter) or letter == ' ') then
+            return { error = "Only alphabetic characters and spaces are allowed." }
+        end
+    end
+    if l.private_data["tried_words"][word] then
+        return { error = "Word was already tried." }
+    end
+
+    local words = l.private_data["tried_words"]
+    words[word] = true
+    l.private_data["tried_words"] = words
+
+    for i = 1, #word do
+        local letter = word:sub(i, i)
+        if letter ~= ' ' then
+            local val = api.guess_letter(letter)
+            if val then return val end
+        end
+    end
+    return
+end
+
 function api.guess_letter(letter)
     letter = string.upper(tostring(letter))
     if #letter ~= 1 then return { error = "Too many letters." } end
@@ -82,10 +118,13 @@ function api.guess_letter(letter)
     pressed[letter] = l.calling_peer_id
     l.public_data["pressed"] = pressed
 
+    local peer_name = string.upper(tostring(l.peers[l.calling_peer_id].user_data["name"]))
     local word = l.peers[dealerID].private_data["word"]
     if not string.find(word, letter, 1, true) then
         l.public_data["health"] = l.public_data["health"] - 1
         if l.public_data["health"] == 0 then api.end_game("lost") end
+
+        lobby.broadcast_chat(string.format("%s Guessed the wrong letter, %s", peer_name, letter))
         return { error = "Letter is not in the word." }
     end
 
@@ -104,12 +143,25 @@ function api.guess_letter(letter)
     end
 
     l.peers[l.calling_peer_id].public_data["points"] = points
-    l.peers[l.calling_peer_id].public_data["total_points"] = (l.peers[l.calling_peer_id].public_data["total_points"] or 0) + points
+    local total_points = (l.peers[l.calling_peer_id].public_data["total_points"] or 0) + points
+    l.peers[l.calling_peer_id].public_data["total_points"] = total_points
+    lobby.broadcast_chat(string.format(
+            "%s Guessed letter %s. Gained %d points. Total: %d",
+            peer_name, letter, points, total_points
+        )
+    )
 
     if l.public_data["guessed"] == word then
         lobby.start_timer("_on_timer_restart_game", 1)
         api.end_game("won")
     end
+    return
+end
+
+function api.me_command(action)
+    local l = lobby.get()
+    local peer_name = l.peers[l.calling_peer_id].user_data["name"]
+    lobby.broadcast_chat(string.format("* %s %s", peer_name, action))
     return
 end
 
@@ -125,14 +177,25 @@ function api.end_game(newState)
     local l = lobby.get()
     local points = 0
     for i = 1, #l.public_data["guessed"] do
-        if l.public_data["guessed"]:sub(i, i) == '_' then points = points + 1 end
+        if l.public_data["guessed"]:sub(i, i) == '_' then points += 1 end
     end
+
     l.public_data["game_state"] = newState
     local dealerID = l.public_data["dealer"]
     if l.peers[dealerID] then
         l.public_data["guessed"] = l.peers[dealerID].private_data["word"]
-        l.peers[dealerID].public_data["points"] = points
+        local total_points = (l.peers[dealerID].public_data["total_points"] or 0) + points
+        l.peers[dealerID].public_data["total_points"] = total_points
     end
+
+    if newState == "won" then
+        lobby.broadcast_chat("The guessers sucessfully found the word!")
+    elseif newState == "lost" then
+        local dealer_name = l.peers[dealerID].user_data["name"] or ""
+        local total = l.peers[dealerID].public_data["total_points"]
+        lobby.broadcast_chat(string.format("%s won! Gained %d points. Total: %d", dealer_name, points, total))
+    end
+
     lobby.start_timer("_on_timer_restart_game", 1)
 end
 
@@ -158,6 +221,7 @@ function api.set_initial_data(l)
     l.public_data["health"] = 6
     l.public_data["guessed"] = ""
     l.public_data["pressed"] = {}
+    l.private_data["tried_words"] = {}
     -- If the dealer left, revert the turn
     if l.public_data["dealer"] ~= nil and l.peers[l.public_data["dealer"]] == nil then
         l = turn.increment_dealer(l, -1)
