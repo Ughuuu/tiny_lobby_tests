@@ -13,9 +13,7 @@ Set-Location -Path "external\vcpkg"
 .\vcpkg install luau --disable-metrics --triplet x64-windows-static
 .\vcpkg install zlib --disable-metrics --triplet x64-windows-static
 .\vcpkg install bzip2 --disable-metrics --triplet x64-windows-static
+.\vcpkg install getopt --disable-metrics --triplet x64-windows-static
+.\vcpkg install dirent --disable-metrics --triplet x64-windows-static
 .\vcpkg integrate install
 Set-Location -Path "..\.."
-
-Write-Output "Installing RNP"
-# Install RNP
-.\install-rnp.ps1

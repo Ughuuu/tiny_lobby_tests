@@ -19,12 +19,12 @@ Write-Output "Current directory: $currDir"
 Get-ChildItem ../external/vcpkg/scripts/buildsystems
 cmake -S .. -B . `
     -DCMAKE_TOOLCHAIN_FILE="$toolchainFile" `
-    -DCMAKE_BUILD_TYPE=RelWithDebInfo `
-    -DCMAKE_ASM_MASM_FLAGS="" # `
-    #-DCMAKE_CXX_FLAGS_RELWITHDEBINFO="/O2 /GL /DNDEBUG"
+    -DVCPKG_TARGET_TRIPLET="x64-windows-static" `
+    -DCMAKE_BUILD_TYPE=Release `
+    -DCMAKE_ASM_MASM_FLAGS="" 
 
 # Build the project
-cmake --build . --config RelWithDebInfo
+cmake --build . --config Release
 
 # Go back to the previous directory
 Set-Location -Path $currentDir

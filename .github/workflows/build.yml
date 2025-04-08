@@ -209,8 +209,8 @@ jobs:
 
   build-windows:
     name: Build on Windows (x64)
-    if: false
     needs: lint
+    if: false
     runs-on: windows-latest
 
     steps:
@@ -247,10 +247,14 @@ jobs:
             external/vcpkg/installed
           key: vcpkg-${{ runner.os }}
 
+      - name: Install RNP
+        shell: pwsh
+        run: |
+          .\install-rnp.ps1
+
       - name: Build Release
         shell: pwsh
         run: |
-          Comment this out so we have a passing build, for cache
           .\build_release.ps1
 
       - name: Archive build artifacts

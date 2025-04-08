@@ -8,10 +8,8 @@ cmake -S .. -B . \
 -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++ \
 -DCMAKE_SYSTEM_NAME=Linux \
 -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
--DCMAKE_BUILD_TYPE=RelWithDebInfo \
--DCMAKE_CXX_FLAGS_RELWITHDEBINFO="-O3 -flto -DNDEBUG"
-#-DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc \
-#-DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++
+-DCMAKE_BUILD_TYPE=Release \
+-DCMAKE_CXX_FLAGS_RELEASE="-O3 -flto -DNDEBUG"
 
-cmake --build . --config RelWithDebInfo
+cmake --build . --config Release
 cd ..
