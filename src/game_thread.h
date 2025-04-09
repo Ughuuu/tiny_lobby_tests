@@ -100,9 +100,6 @@ class GameThread {
                                       std::string funcname, bool override,
                                       boost::container::vector<AnyElement> &args, bool &has_error);
 
-    AnyElement decode_luatable(lua_State *L, int idx);
-    AnyElement decode_luavalue(lua_State *L, int idx);
-
     void send_message(GameData &game, std::string &peer_id, std::string &message);
     void notify_lobby_changes(GameData &game, std::string &lobby_id);
     void notify_peer(GameData &game, std::string &lobby_id, std::string peer_id,
