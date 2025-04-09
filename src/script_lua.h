@@ -28,35 +28,6 @@ struct ScriptLua {
     LuaWrapperInfo tags_wrapper = {.name = "tags", .idx = 0};
     LuaWrapperInfo public_data_wrapper = {.name = "public_data", .idx = 0};
     LuaWrapperInfo private_data_wrapper = {.name = "private_data", .idx = 0};
-    // peers array of 10
-    LuaWrapperInfo peers_elements_wrapper[10] = {
-        {.name = "peer_object", .idx = 0}, {.name = "peer_object", .idx = 1},
-        {.name = "peer_object", .idx = 2}, {.name = "peer_object", .idx = 3},
-        {.name = "peer_object", .idx = 4}, {.name = "peer_object", .idx = 5},
-        {.name = "peer_object", .idx = 6}, {.name = "peer_object", .idx = 7},
-        {.name = "peer_object", .idx = 8}, {.name = "peer_object", .idx = 9},
-    };
-    LuaWrapperInfo peers_public_wrapper[10] = {
-        {.name = "peer_public_data", .idx = 0}, {.name = "peer_public_data", .idx = 1},
-        {.name = "peer_public_data", .idx = 2}, {.name = "peer_public_data", .idx = 3},
-        {.name = "peer_public_data", .idx = 4}, {.name = "peer_public_data", .idx = 5},
-        {.name = "peer_public_data", .idx = 6}, {.name = "peer_public_data", .idx = 7},
-        {.name = "peer_public_data", .idx = 8}, {.name = "peer_public_data", .idx = 9},
-    };
-    LuaWrapperInfo peers_private_wrapper[10] = {
-        {.name = "peer_private_data", .idx = 0}, {.name = "peer_private_data", .idx = 1},
-        {.name = "peer_private_data", .idx = 2}, {.name = "peer_private_data", .idx = 3},
-        {.name = "peer_private_data", .idx = 4}, {.name = "peer_private_data", .idx = 5},
-        {.name = "peer_private_data", .idx = 6}, {.name = "peer_private_data", .idx = 7},
-        {.name = "peer_private_data", .idx = 8}, {.name = "peer_private_data", .idx = 9},
-    };
-    LuaWrapperInfo peers_user_wrapper[10] = {
-        {.name = "peer_user_data", .idx = 0}, {.name = "peer_user_data", .idx = 1},
-        {.name = "peer_user_data", .idx = 2}, {.name = "peer_user_data", .idx = 3},
-        {.name = "peer_user_data", .idx = 4}, {.name = "peer_user_data", .idx = 5},
-        {.name = "peer_user_data", .idx = 6}, {.name = "peer_user_data", .idx = 7},
-        {.name = "peer_user_data", .idx = 8}, {.name = "peer_user_data", .idx = 9},
-    };
 
    public:
     bool enabled = false;
