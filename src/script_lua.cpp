@@ -162,7 +162,7 @@ static int lobby_newindex(lua_State* L) {
         } break;
         case LobbyUserdata::LobbyType::LOBBY_TAGS: {
             auto new_tag = decode_luavalue(L, 3);
-            if (AnyElement* result = find_up_to_path(lobby.tags, keys, 0) && result != nullptr) {
+            if (AnyElement* result = find_up_to_path(lobby.tags, keys, 0)) {
                 if (std::holds_alternative<boost::container::flat_map<std::string, AnyElement>>(
                         result->value)) {
                     auto& nested_dict =
@@ -187,8 +187,7 @@ static int lobby_newindex(lua_State* L) {
         } break;
         case LobbyUserdata::LobbyType::LOBBY_PUBLIC_DATA: {
             auto new_public_data = decode_luavalue(L, 3);
-            if (AnyElement* result =
-                    find_up_to_path(lobby.public_data, keys, 0) && result != nullptr) {
+            if (AnyElement* result = find_up_to_path(lobby.public_data, keys, 0)) {
                 if (std::holds_alternative<boost::container::flat_map<std::string, AnyElement>>(
                         result->value)) {
                     auto& nested_dict =
@@ -213,8 +212,7 @@ static int lobby_newindex(lua_State* L) {
         } break;
         case LobbyUserdata::LobbyType::LOBBY_PRIVATE_DATA: {
             auto new_private_data = decode_luavalue(L, 3);
-            if (AnyElement* result =
-                    find_up_to_path(lobby.private_data, keys, 0) && result != nullptr) {
+            if (AnyElement* result = find_up_to_path(lobby.private_data, keys, 0)) {
                 if (std::holds_alternative<boost::container::flat_map<std::string, AnyElement>>(
                         result->value)) {
                     auto& nested_dict =
@@ -241,19 +239,34 @@ static int lobby_newindex(lua_State* L) {
             auto& peer = game.peers[info->peer_id];
             if (strcmp(key, "public_data") == 0) {
                 AnyElement new_public_data = decode_luavalue(L, 3);
-                peer.public_data = new_public_data;
-                peer.public_data_dirty = true;
+                if (std::holds_alternative<boost::container::flat_map<std::string, AnyElement>>(
+                        new_public_data.value)) {
+                    auto& new_public_data_dict =
+                        std::get<boost::container::flat_map<std::string, AnyElement>>(
+                            new_public_data.value);
+                    if (peer.public_data != new_public_data_dict) {
+                        peer.public_data = new_public_data_dict;
+                        peer.public_data_dirty = true;
+                    }
+                }
             } else if (strcmp(key, "private_data") == 0) {
                 AnyElement new_private_data = decode_luavalue(L, 3);
-                peer.private_data = new_private_data;
-                peer.private_data_dirty = true;
+                if (std::holds_alternative<boost::container::flat_map<std::string, AnyElement>>(
+                        new_private_data.value)) {
+                    auto& new_private_data_dict =
+                        std::get<boost::container::flat_map<std::string, AnyElement>>(
+                            new_private_data.value);
+                    if (peer.private_data != new_private_data_dict) {
+                        peer.private_data = new_private_data_dict;
+                        peer.private_data_dirty = true;
+                    }
+                }
             }
         } break;
         case LobbyUserdata::LobbyType::PEER_PUBLIC_DATA: {
             auto& peer = game.peers[info->peer_id];
             auto new_public_data = decode_luavalue(L, 3);
-            if (AnyElement* result =
-                    find_up_to_path(peer.public_data, keys, 0) && result != nullptr) {
+            if (AnyElement* result = find_up_to_path(peer.public_data, keys, 0)) {
                 if (std::holds_alternative<boost::container::flat_map<std::string, AnyElement>>(
                         result->value)) {
                     auto& nested_dict =
@@ -279,8 +292,7 @@ static int lobby_newindex(lua_State* L) {
         case LobbyUserdata::LobbyType::PEER_PRIVATE_DATA: {
             auto& peer = game.peers[info->peer_id];
             auto new_private_data = decode_luavalue(L, 3);
-            if (AnyElement* result =
-                    find_up_to_path(peer.private_data, keys, 0) && result != nullptr) {
+            if (AnyElement* result = find_up_to_path(peer.private_data, keys, 0)) {
                 if (std::holds_alternative<boost::container::flat_map<std::string, AnyElement>>(
                         result->value)) {
                     auto& nested_dict =
@@ -303,6 +315,31 @@ static int lobby_newindex(lua_State* L) {
                 }
             }
         } break;
+        case LobbyUserdata::LobbyType::PEER_USER_DATA: {
+            auto& peer = game.peers[info->peer_id];
+            auto new_user_data = decode_luavalue(L, 3);
+            if (AnyElement* result = find_up_to_path(peer.user_data, keys, 0)) {
+                if (std::holds_alternative<boost::container::flat_map<std::string, AnyElement>>(
+                        result->value)) {
+                    auto& nested_dict =
+                        std::get<boost::container::flat_map<std::string, AnyElement>>(
+                            result->value);
+                    nested_dict[key] = new_user_data;
+                } else if (std::holds_alternative<boost::container::vector<AnyElement>>(
+                               result->value)) {
+                    auto& nested_array =
+                        std::get<boost::container::vector<AnyElement>>(result->value);
+                    int idx = string_to_int_or_minus1(key);
+                    if (idx != -1) {
+                        if (idx >= nested_array.size()) {
+                            nested_array.resize(idx + 1);
+                        }
+                        nested_array[idx] = new_user_data;
+                        peer.user_data_dirty = true;
+                    }
+                }
+            }
+        }
     }
 
     return 0;
@@ -379,10 +416,10 @@ static int lobby_index(lua_State* L) {
             }
         } break;
         case LobbyUserdata::LobbyType::LOBBY_TAGS: {
-            if (AnyElement* result = find_up_to_path(lobby.tags, keys, 0) && result != nullptr) {
+            if (AnyElement* result = find_up_to_path(lobby.tags, keys, 0)) {
                 if (std::holds_alternative<boost::container::flat_map<std::string, AnyElement>>(
-                        *result.value) ||
-                    std::holds_alternative<boost::container::vector<AnyElement>>(*result.value)) {
+                        result->value) ||
+                    std::holds_alternative<boost::container::vector<AnyElement>>(result->value)) {
                     create_lobby_userdata(L, game_thread, game_id, lobby_id, calling_peer_id,
                                           empty_string, keys, LobbyUserdata::LobbyType::LOBBY_TAGS);
                     return 1;
@@ -392,11 +429,10 @@ static int lobby_index(lua_State* L) {
             }
         } break;
         case LobbyUserdata::LobbyType::LOBBY_PUBLIC_DATA: {
-            if (AnyElement* result =
-                    find_up_to_path(lobby.public_data, keys, 0) && result != nullptr) {
+            if (AnyElement* result = find_up_to_path(lobby.public_data, keys, 0)) {
                 if (std::holds_alternative<boost::container::flat_map<std::string, AnyElement>>(
-                        *result.value) ||
-                    std::holds_alternative<boost::container::vector<AnyElement>>(*result.value)) {
+                        result->value) ||
+                    std::holds_alternative<boost::container::vector<AnyElement>>(result->value)) {
                     create_lobby_userdata(L, game_thread, game_id, lobby_id, calling_peer_id,
                                           empty_string, keys,
                                           LobbyUserdata::LobbyType::LOBBY_PUBLIC_DATA);
@@ -407,11 +443,10 @@ static int lobby_index(lua_State* L) {
             }
         } break;
         case LobbyUserdata::LobbyType::LOBBY_PRIVATE_DATA: {
-            if (AnyElement* result =
-                    find_up_to_path(lobby.private_data, keys, 0) && result != nullptr) {
+            if (AnyElement* result = find_up_to_path(lobby.private_data, keys, 0)) {
                 if (std::holds_alternative<boost::container::flat_map<std::string, AnyElement>>(
-                        *result.value) ||
-                    std::holds_alternative<boost::container::vector<AnyElement>>(*result.value)) {
+                        result->value) ||
+                    std::holds_alternative<boost::container::vector<AnyElement>>(result->value)) {
                     create_lobby_userdata(L, game_thread, game_id, lobby_id, calling_peer_id,
                                           empty_string, keys,
                                           LobbyUserdata::LobbyType::LOBBY_PRIVATE_DATA);
@@ -451,11 +486,10 @@ static int lobby_index(lua_State* L) {
         } break;
         case LobbyUserdata::LobbyType::PEER_PUBLIC_DATA: {
             auto& peer = game.peers[info->peer_id];
-            if (AnyElement* result =
-                    find_up_to_path(peer.public_data, keys, 0) && result != nullptr) {
+            if (AnyElement* result = find_up_to_path(peer.public_data, keys, 0)) {
                 if (std::holds_alternative<boost::container::flat_map<std::string, AnyElement>>(
-                        *result.value) ||
-                    std::holds_alternative<boost::container::vector<AnyElement>>(*result.value)) {
+                        result->value) ||
+                    std::holds_alternative<boost::container::vector<AnyElement>>(result->value)) {
                     create_lobby_userdata(L, game_thread, game_id, lobby_id, calling_peer_id,
                                           empty_string, keys,
                                           LobbyUserdata::LobbyType::PEER_PUBLIC_DATA);
@@ -467,11 +501,10 @@ static int lobby_index(lua_State* L) {
         } break;
         case LobbyUserdata::LobbyType::PEER_PRIVATE_DATA: {
             auto& peer = game.peers[info->peer_id];
-            if (AnyElement* result =
-                    find_up_to_path(peer.private_data, keys, 0) && result != nullptr) {
+            if (AnyElement* result = find_up_to_path(peer.private_data, keys, 0)) {
                 if (std::holds_alternative<boost::container::flat_map<std::string, AnyElement>>(
-                        *result.value) ||
-                    std::holds_alternative<boost::container::vector<AnyElement>>(*result.value)) {
+                        result->value) ||
+                    std::holds_alternative<boost::container::vector<AnyElement>>(result->value)) {
                     create_lobby_userdata(L, game_thread, game_id, lobby_id, calling_peer_id,
                                           empty_string, keys,
                                           LobbyUserdata::LobbyType::PEER_PRIVATE_DATA);
@@ -483,11 +516,10 @@ static int lobby_index(lua_State* L) {
         } break;
         case LobbyUserdata::LobbyType::PEER_USER_DATA: {
             auto& peer = game.peers[info->peer_id];
-            if (AnyElement* result =
-                    find_up_to_path(peer.user_data, keys, 0) && result != nullptr) {
+            if (AnyElement* result = find_up_to_path(peer.user_data, keys, 0)) {
                 if (std::holds_alternative<boost::container::flat_map<std::string, AnyElement>>(
-                        *result.value) ||
-                    std::holds_alternative<boost::container::vector<AnyElement>>(*result.value)) {
+                        result->value) ||
+                    std::holds_alternative<boost::container::vector<AnyElement>>(result->value)) {
                     create_lobby_userdata(L, game_thread, game_id, lobby_id, calling_peer_id,
                                           empty_string, keys,
                                           LobbyUserdata::LobbyType::PEER_USER_DATA);
@@ -516,11 +548,6 @@ void ScriptLua::set_lua_metatables() {
     lua_pushcfunction(L, lobby_newindex, "lobby_newindex");
     lua_settable(L, -3);
     lua_pop(L, 1);
-    // lobby
-    lua_pushlightuserdata(L, &lobby_wrapper);
-    luaL_getmetatable(L, "LobbyMetatable");
-    lua_setmetatable(L, -2);
-    lua_setfield(L, LUA_REGISTRYINDEX, "lobby_global");
     luaopen_lobby(L);
     luaopen_system(L);
 }

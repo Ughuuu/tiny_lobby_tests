@@ -18,6 +18,7 @@ struct PeerData {
     bool ready = false;
     bool public_data_dirty = false;
     bool private_data_dirty = false;
+    bool user_data_dirty = false;
 
     void leave_lobby() {
         lobby_id = "";

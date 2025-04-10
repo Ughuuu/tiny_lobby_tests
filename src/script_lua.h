@@ -26,7 +26,6 @@ struct LobbyUserdata {
         PEER_PUBLIC_DATA,
         PEER_PRIVATE_DATA,
         PEER_USER_DATA,
-        NESTED_MAP
     } type;
 
     GameThread* game_thread;
