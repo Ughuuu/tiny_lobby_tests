@@ -13,7 +13,7 @@ int stop_timer(lua_State *L);
 int notify(lua_State *L);
 int broadcast_chat(lua_State *L);
 int get_time(lua_State *L);
-int get_delta_time(lua_State *L);
+int get_tick_rate(lua_State *L);
 int get_lobby(lua_State *L);
 
 int lua_require(lua_State *L);

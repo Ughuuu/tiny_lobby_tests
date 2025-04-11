@@ -22,7 +22,7 @@ function api.set_initial_data(l)
         l.peers[k].private_data["answer"] = -1
     end
     l.public_data["game_state"] = "playing"
-    l.public_data["turn_timestamp"] = system.get_time()
+    l.public_data["turn_timestamp"] = system.get_time_since_epoch()
     l.public_data["correct_answer"] = -1
     l = turn.increment_dealer(l, 1)
     l = api.update_question(l)
@@ -101,7 +101,7 @@ function api.on_timer_question_reset()
         return lobby.start_timer("_on_timer_restart_game", 3)
     end
     l.public_data["game_state"] = "playing"
-    l.public_data["turn_timestamp"] = system.get_time()
+    l.public_data["turn_timestamp"] = system.get_time_since_epoch()
     l = api.update_question(l)
     
     return lobby.start_timer("_on_timer_question_expired", 7)

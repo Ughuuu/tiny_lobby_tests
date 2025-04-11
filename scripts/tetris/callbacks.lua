@@ -11,7 +11,17 @@ function callbacks.on_create(minPlayers, maxPlayers)
     end
 
     l.tags["max_points"] = l.tags["max_points"] or 5
+    l.public_data["start_time"] = system.get_time_since_epoch()
     l.public_data["game_state"] = "setup"
+    return
+end
+
+function callbacks.on_join()
+    local l = lobby.get()
+    if l.public_data["game_state"] == "setup" then return end
+    -- If a player joins, add initial data
+    local peer = l.peers[l.calling_peer_id]
+    api.set_peer_initial_data(peer)
     return
 end
 
@@ -35,6 +45,7 @@ function callbacks.on_tags(tags)
     if l.public_data["game_state"] ~= "setup" then
         return { error = "Cannot change settings during game" }
     end
+    return
 end
 
 function callbacks.on_ready(ready)
@@ -55,18 +66,19 @@ function callbacks.on_ready(ready)
     if all_ready then
         api.start_game()
     end
+    return
 end
 
 function callbacks.on_tick()
     local l = lobby.get()
     if l.public_data["game_state"] ~= "playing" then return end
     
-    local current_time = system.get_time()
-    local delta_time = system.get_delta_time()
+    local current_time = system.get_time_since_epoch()
+    local delta_time = system.get_tick_rate()
     
     -- Update each player's game
     for peer_id, peer in pairs(l.peers) do
-        local game = peer.public_data.game
+        local game = peer.public_data
         if not game.game_over then
             -- Handle entry delay
             if game.entry_delay > 0 then

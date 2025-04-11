@@ -65,22 +65,24 @@ void GameThread::load_games() {
         }
         std::cout << "Loading game from " << folder_name << " with id " << section << std::endl;
         int sendrate = config_reader.GetInteger(section, "sendrate", 50);
-        games.emplace(section,
-                      GameData{
-                          .id = section,
-                          .entrypoint = script_entrypoint,
-                          .lobby_control = config_reader.Get(section, "lobby_control", "scripted"),
-                          .tick_rate = tickrate,
-                          .send_rate = sendrate,
-                          .lua =
-                              ScriptLua{
-                                  .scripts_folder = scripts_folder,
-                                  .folder_name = folder_name,
-                                  .script_entrypoint = script_entrypoint,
-                                  .logs_folder = logs_folder,
-                                  .game_thread = this,
-                              },
-                      });
+        games.emplace(
+            section,
+            GameData{
+                .id = section,
+                .entrypoint = script_entrypoint,
+                .lobby_control = config_reader.Get(section, "lobby_control", "scripted"),
+                .tick_rate = tickrate,
+                .send_rate = sendrate,
+                .lua =
+                    ScriptLua{
+                        .autoreload = config_reader.GetBoolean(section, "autoreload", false),
+                        .scripts_folder = scripts_folder,
+                        .folder_name = folder_name,
+                        .script_entrypoint = script_entrypoint,
+                        .logs_folder = logs_folder,
+                        .game_thread = this,
+                    },
+            });
     }
     for (auto &game : games) {
         game.second.open();
@@ -719,6 +721,16 @@ bool GameThread::on_join_lobby(GameData &game, std::string command_id, PeerData 
             return false;
         }
     }
+    // CHANGES
+    game.lobby_listing_peers.erase(peer.id);
+    if (reconnecting) {
+        peer.ready = false;
+    } else {
+        peer.order_id = ++lobby.order_id_counter;
+        peer.lobby_id = lobby_id;
+        lobby.peer_ids.insert(peer.id);
+    }
+    peer.disconnected = false;
     // SCRIPTED CALL
     if (!reconnecting) {
         if (game.enabled_callbacks.find("_on_join") != game.enabled_callbacks.end()) {
@@ -733,16 +745,6 @@ bool GameThread::on_join_lobby(GameData &game, std::string command_id, PeerData 
             }
         }
     }
-    // CHANGES
-    game.lobby_listing_peers.erase(peer.id);
-    if (reconnecting) {
-        peer.ready = false;
-    } else {
-        peer.order_id = ++lobby.order_id_counter;
-        peer.lobby_id = lobby_id;
-        lobby.peer_ids.insert(peer.id);
-    }
-    peer.disconnected = false;
     // NOTIFICATION
     if (reconnecting) {
         std::string notification = notification_peer_reconnected(peer.id);

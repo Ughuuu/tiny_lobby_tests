@@ -6,8 +6,10 @@ local api = {}
 api.GRID_WIDTH = 10
 api.GRID_HEIGHT = 20
 api.PIECE_TYPES = {"I", "J", "L", "O", "S", "T", "Z"}
-api.LOCK_DELAY = 0.5 -- 500ms lock delay
-api.ARE = 0.5 -- 500ms entry delay (optional)
+api.LOCK_DELAY = 500 -- 250ms lock delay
+api.ARE = 500 -- 500ms entry delay (optional)
+api.INITIAL_POS_X = 4
+api.INITIAL_POS_Y = -2
 
 -- Piece definitions
 api.PIECE_SHAPES = {
@@ -72,34 +74,45 @@ function api.start_game()
         return { error = "Game already started" }
     end
     
+    api.set_initial_data(l)
+    return true
+end
+
+function api.set_peer_initial_data(peer)
+    peer.public_data = {
+        board = api.create_empty_board(),
+        current_piece = api.generate_new_piece(),
+        next_piece = api.generate_new_piece(),
+        held_piece = nil,
+        can_hold = true,
+        piece_position = {x = api.INITIAL_POS_X, y = api.INITIAL_POS_Y}, -- Start above the board
+        score = 0,
+        level = 1,
+        lines_cleared = 0,
+        last_drop_time = system.get_time_since_epoch(),
+        last_move_time = system.get_time_since_epoch(),
+        lock_pending = false,
+        lock_start_time = nil,
+        game_over = false,
+        entry_delay = api.ARE,
+        last_t_spin = nil,
+        points = 0,
+        total_points = 0
+    }
+    if peer.public_data.current_piece.type == "O" then
+        peer.public_data.piece_position = {x = api.INITIAL_POS_X + 1, y = api.INITIAL_POS_Y}
+    end
+    return
+end
+    
+
+function api.set_initial_data(l)
     l.public_data["game_state"] = "playing"
-    l.public_data["start_time"] = system.get_time()
     
     -- Initialize each player's game
     for peer_id, peer in pairs(l.peers) do
-        peer.public_data["game"] = {
-            board = api.create_empty_board(),
-            current_piece = api.generate_new_piece(),
-            next_piece = api.generate_new_piece(),
-            held_piece = nil,
-            can_hold = true,
-            piece_position = {x = 3, y = -2}, -- Start above the board
-            score = 0,
-            level = 1,
-            lines_cleared = 0,
-            last_drop_time = system.get_time(),
-            last_move_time = system.get_time(),
-            lock_pending = false,
-            lock_start_time = nil,
-            game_over = false,
-            entry_delay = api.ARE,
-            last_t_spin = nil
-        }
-        peer.public_data["points"] = 0
-        peer.public_data["total_points"] = 0
+        api.set_peer_initial_data(peer)
     end
-    
-    return true
 end
 
 function api.create_empty_board()
@@ -137,14 +150,14 @@ function api.move_piece(direction)
         return { error = "Game not in progress" }
     end
     
-    local peer_game = l.peers[l.calling_peer_id].public_data.game
+    local peer_game = l.peers[l.calling_peer_id].public_data
     if peer_game.game_over then
         return { error = "Your game is over" }
     end
     
     -- Handle entry delay
     if peer_game.entry_delay > 0 then
-        peer_game.entry_delay = peer_game.entry_delay - system.get_delta_time()
+        peer_game.entry_delay = peer_game.entry_delay - system.get_tick_rate()
         return { error = "Piece is entering" }
     end
     
@@ -162,14 +175,14 @@ function api.move_piece(direction)
     
     if can_move then
         peer_game.piece_position = new_pos
-        peer_game.last_move_time = system.get_time()
+        peer_game.last_move_time = system.get_time_since_epoch()
         
         -- Cancel any pending lock
         peer_game.lock_pending = false
         peer_game.lock_start_time = nil
         
         if direction == "down" then
-            peer_game.last_drop_time = system.get_time()
+            peer_game.last_drop_time = system.get_time_since_epoch()
             peer_game.score = peer_game.score + api.SCORE_VALUES.soft_drop
         end
         
@@ -178,7 +191,7 @@ function api.move_piece(direction)
         -- Start lock delay when piece can't move down
         if not peer_game.lock_pending then
             peer_game.lock_pending = true
-            peer_game.lock_start_time = system.get_time()
+            peer_game.lock_start_time = system.get_time_since_epoch()
         end
     end
     
@@ -191,7 +204,7 @@ function api.hard_drop()
         return { error = "Game not in progress" }
     end
     
-    local peer_game = l.peers[l.calling_peer_id].public_data.game
+    local peer_game = l.peers[l.calling_peer_id].public_data
     if peer_game.game_over then
         return { error = "Your game is over" }
     end
@@ -206,9 +219,12 @@ function api.hard_drop()
     end
     
     if drop_distance > 0 then
-        peer_game.piece_position.y = peer_game.piece_position.y + (drop_distance - 1)
+        local piece_pos = peer_game.piece_position
+        piece_pos.y = peer_game.piece_position.y + (drop_distance - 1)
+        peer_game.piece_position = piece_pos
         peer_game.score = peer_game.score + (api.SCORE_VALUES.hard_drop * drop_distance)
-        peer_game.last_move_time = system.get_time()
+        peer_game.last_move_time = system.get_time_since_epoch()
+        l.peers[l.calling_peer_id].public_data = peer_game
         api.lock_piece(l.calling_peer_id)
         return true
     end
@@ -222,7 +238,7 @@ function api.rotate_piece(direction)
         return { error = "Game not in progress" }
     end
     
-    local peer_game = l.peers[l.calling_peer_id].public_data.game
+    local peer_game = l.peers[l.calling_peer_id].public_data
     if peer_game.game_over then
         return { error = "Your game is over" }
     end
@@ -256,7 +272,7 @@ function api.rotate_piece(direction)
     
     if api.is_valid_position(test_piece, peer_game.piece_position, peer_game.board) then
         peer_game.current_piece = test_piece
-        peer_game.last_move_time = system.get_time()
+        peer_game.last_move_time = system.get_time_since_epoch()
         
         -- Check for T-Spin
         if piece.type == "T" then
@@ -283,7 +299,7 @@ function api.rotate_piece(direction)
             if api.is_valid_position(test_piece, test_pos, peer_game.board) then
                 peer_game.current_piece = test_piece
                 peer_game.piece_position = test_pos
-                peer_game.last_move_time = system.get_time()
+                peer_game.last_move_time = system.get_time_since_epoch()
                 
                 -- Check for T-Spin
                 if piece.type == "T" then
@@ -327,7 +343,7 @@ function api.hold_piece()
         return { error = "Game not in progress" }
     end
     
-    local peer_game = l.peers[l.calling_peer_id].public_data.game
+    local peer_game = l.peers[l.calling_peer_id].public_data
     if peer_game.game_over then
         return { error = "Your game is over" }
     end
@@ -347,10 +363,13 @@ function api.hold_piece()
     
     peer_game.held_piece = current
     peer_game.current_piece = held or api.generate_new_piece()
-    peer_game.piece_position = {x = 3, y = -2}
+    peer_game.piece_position = {x = api.INITIAL_POS_X, y = api.INITIAL_POS_Y}
+    if peer_game.current_piece.type == "O" then
+        peer_game.piece_position = {x = api.INITIAL_POS_X + 1, y = api.INITIAL_POS_Y}
+    end
     peer_game.can_hold = false
     peer_game.entry_delay = api.ARE
-    peer_game.last_move_time = system.get_time()
+    peer_game.last_move_time = system.get_time_since_epoch()
     
     -- Cancel any pending lock
     peer_game.lock_pending = false
@@ -383,11 +402,23 @@ function api.is_valid_position(piece, position, board)
     return true
 end
 
+function api.print_board(l, peer_id)
+    local board = l.peers[peer_id].public_data.board
+    for y = 1, api.GRID_HEIGHT do
+        local line = ""
+        for x = 1, api.GRID_WIDTH do
+            line = line .. tostring(board[y][x])
+        end
+        print(tostring(y) .. " : " .. line)
+    end
+end
+
 function api.lock_piece(peer_id)
     local l = lobby.get()
-    local peer_game = l.peers[peer_id].public_data.game
+    local peer_game = l.peers[peer_id].public_data
     local piece = peer_game.current_piece
     local pos = peer_game.piece_position
+    local board = peer_game.board
     
     -- Add piece to the board
     for y = 1, #piece.shape do
@@ -395,11 +426,12 @@ function api.lock_piece(peer_id)
             if piece.shape[y][x] ~= 0 then
                 local board_y = pos.y + y - 1
                 if board_y >= 1 then
-                    peer_game.board[board_y][pos.x + x - 1] = piece.shape[y][x]
+                    board[board_y][pos.x + x - 1] = piece.shape[y][x]
                 end
             end
         end
     end
+    l.peers[peer_id].public_data.board = board
     
     -- Check for game over (piece locked above visible area)
     if pos.y <= 0 then
@@ -410,15 +442,35 @@ function api.lock_piece(peer_id)
     
     -- Clear completed lines and calculate score
     local lines_cleared = api.clear_lines(peer_id)
+    local garbage_table = { [1] = 1, [2] = 1, [3] = 2, [4] = 4 }
+    local garbage = garbage_table[lines_cleared] or 0
+    if garbage > 0 then
+        -- get list of *other* players
+        local target_ids = {}
+        for peer_id, p in pairs(l.peers) do
+            if peer_id ~= l.calling_peer_id and not p.public_data.game_over then
+                table.insert(target_ids, peer_id)
+            end
+        end
+    
+        if #target_ids > 0 then
+            local target_peer_id = target_ids[math.random(#target_ids)]
+            -- generate garbage lines and add them to the board
+            api.add_garbage(l, target_peer_id, garbage)
+        end
+    end
     api.update_score(peer_id, lines_cleared)
     
     -- Spawn new piece
     peer_game.current_piece = peer_game.next_piece
     peer_game.next_piece = api.generate_new_piece()
-    peer_game.piece_position = {x = 3, y = -2}
+    peer_game.piece_position = {x = api.INITIAL_POS_X, y = api.INITIAL_POS_Y}
+    if peer_game.current_piece.type == "O" then
+        peer_game.piece_position = {x = api.INITIAL_POS_X + 1, y = api.INITIAL_POS_Y}
+    end
     peer_game.can_hold = true
     peer_game.entry_delay = api.ARE
-    peer_game.last_drop_time = system.get_time()
+    peer_game.last_drop_time = system.get_time_since_epoch()
     peer_game.lock_pending = false
     peer_game.lock_start_time = nil
     
@@ -429,8 +481,28 @@ function api.lock_piece(peer_id)
     end
 end
 
+function api.add_garbage(l, target_peer_id, count)
+    local peer = l.peers[target_peer_id]
+    local board = peer.public_data.board
+    for _ = 1, count do
+        local hole = math.random(1, 10)
+        local line = {}
+        for x = 1, 10 do
+            table.insert(line, x == hole and 0 or 8) -- 8 for garbage color, 0 for hole
+        end
+
+        -- remove top row
+        table.remove(board, 1)
+
+        -- add garbage line to bottom
+        table.insert(board, line)
+    end
+
+    peer.public_data.board = board
+end
+
 function api.clear_lines(peer_id)
-    local peer_game = lobby.get().peers[peer_id].public_data.game
+    local peer_game = lobby.get().peers[peer_id].public_data
     local new_board = api.create_empty_board()
     local lines_cleared = 0
     local new_row = api.GRID_HEIGHT
@@ -453,13 +525,12 @@ function api.clear_lines(peer_id)
             lines_cleared = lines_cleared + 1
         end
     end
-    
     peer_game.board = new_board
     return lines_cleared
 end
 
 function api.update_score(peer_id, lines_cleared)
-    local peer_game = lobby.get().peers[peer_id].public_data.game
+    local peer_game = lobby.get().peers[peer_id].public_data
     
     if lines_cleared > 0 then
         local score_add = 0
@@ -503,10 +574,10 @@ function api.check_all_players_finished()
     local winner = nil
     
     for peer_id, peer in pairs(l.peers) do
-        if not peer.public_data.game.game_over then
+        if not peer.public_data.game_over then
             all_finished = false
-        elseif peer.public_data.game.score > highest_score then
-            highest_score = peer.public_data.game.score
+        elseif peer.public_data.score > highest_score then
+            highest_score = peer.public_data.score
             winner = peer_id
         end
     end
@@ -534,7 +605,7 @@ function api.on_timer_restart_game()
     if game_over then
         l.public_data["game_state"] = "setup"
     else
-        api.start_game()
+        api.set_initial_data(l)
     end
 end
 

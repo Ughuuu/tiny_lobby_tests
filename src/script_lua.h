@@ -33,14 +33,11 @@ struct LobbyUserdata {
     std::string lobby_id;
     std::string calling_peer_id;
     std::string peer_id;
-    boost::container::vector<LobbyUserDataKey> keys;
 };
 
 void create_lobby_userdata(lua_State* L, GameThread* game_thread, const std::string& game_id,
                            const std::string& lobby_id, const std::string& calling_peer_id,
-                           const std::string& peer_id,
-                           const boost::container::vector<LobbyUserDataKey>& keys,
-                           LobbyUserdata::LobbyType type);
+                           const std::string& peer_id, LobbyUserdata::LobbyType type);
 
 struct ScriptLua {
     lua_State* L;

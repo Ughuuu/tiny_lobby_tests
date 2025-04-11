@@ -24,7 +24,7 @@ AnyElement decode_luavalue(lua_State *L, int idx) {
         case LUA_TSTRING:
             return AnyElement{lua_tostring(L, idx)};
         case LUA_TTABLE:
-            return decode_luatable(L, lua_gettop(L));
+            return decode_luatable(L, idx);
         default:
             return AnyElement{std::monostate{}};
     }
@@ -35,16 +35,16 @@ AnyElement decode_luatable(lua_State *L, int idx) {
     if (!lua_istable(L, idx)) {
         return AnyElement{std::monostate{}};
     }
+    int abs_idx = lua_absindex(L, idx);
     lua_pushnil(L);
     bool is_dict = true;
-    while (lua_next(L, idx) != 0) {
+    while (lua_next(L, abs_idx) != 0) {
         if (lua_isnumber(L, -2)) {
             auto key = lua_tointeger(L, -2);
             result_array.push_back(decode_luavalue(L, -1));
             is_dict = false;
         } else if (lua_isstring(L, -2)) {
-            lua_pushvalue(L, -2);
-            std::string key = lua_tostring(L, -1);
+            std::string key = lua_tostring(L, -2);
             if (key.size() == 0) {
                 luaL_error(L, "empty key");
                 return AnyElement{std::monostate{}};
@@ -56,13 +56,12 @@ AnyElement decode_luatable(lua_State *L, int idx) {
                     result_array.push_back(decode_luavalue(L, -1));
                 }
             } else {
-                auto value_decoded = decode_luavalue(L, -2);
+                auto value_decoded = decode_luavalue(L, -1);
                 // do not put nil values in dictionary
                 if (!std::holds_alternative<std::monostate>(value_decoded.value)) {
                     result_dict.emplace(key, value_decoded);
                 }
             }
-            lua_pop(L, 1);
         } else {
             luaL_error(L, "invalid key type");
             return AnyElement{std::monostate{}};
@@ -210,7 +209,7 @@ int notify(lua_State *L) {
     lua_pop(L, 1);
 
     auto &game = game_thread->games[game_id];
-    game_thread->notify_peer(game, lobby_id, peer_id, notification_object.to_string());
+    game_thread->notify_peer(game, lobby_id, peer_id, notification_object);
     return 0;
 }
 
@@ -244,7 +243,7 @@ int get_time(lua_State *L) {
     return 1;
 }
 
-int get_delta_time(lua_State *L) {
+int get_tick_rate(lua_State *L) {
     lua_getfield(L, LUA_REGISTRYINDEX, "game_thread");
     GameThread *game_thread = static_cast<GameThread *>(lua_touserdata(L, -1));
     lua_getfield(L, LUA_REGISTRYINDEX, "game_id");
@@ -252,9 +251,9 @@ int get_delta_time(lua_State *L) {
     lua_pop(L, 1);
     auto &game = game_thread->games[game_id];
     if (game.tick_rate == 0) {
-        lua_pushinteger(L, 1);
+        lua_pushinteger(L, 1000);
     } else {
-        lua_pushnumber(L, game.tick_rate / 1000.0);
+        lua_pushnumber(L, game.tick_rate);
     }
     return 1;
 }
@@ -276,10 +275,9 @@ int get_lobby(lua_State *L) {
     GameThread *game_thread = static_cast<GameThread *>(lua_touserdata(L, -1));
     lua_pop(L, 1);
     std::string empty_string;
-    boost::container::vector<LobbyUserDataKey> empty_keys;
 
     create_lobby_userdata(L, game_thread, game_id, lobby_id, caling_peer_id, empty_string,
-                          empty_keys, LobbyUserdata::LobbyType::LOBBY_ROOT);
+                          LobbyUserdata::LobbyType::LOBBY_ROOT);
     return 1;
 }
 
@@ -442,8 +440,14 @@ void luaopen_lobby(lua_State *L) {
 void luaopen_system(lua_State *L) {
     lua_newtable(L);
 
-    lua_pushcfunction(L, get_time, "get_time");
-    lua_setfield(L, -2, "get_time");
+    lua_pushcfunction(L, get_time, "get_time_since_epoch");
+    lua_setfield(L, -2, "get_time_since_epoch");
+
+    lua_pushcfunction(L, get_tick_rate, "get_tick_rate");
+    lua_setfield(L, -2, "get_tick_rate");
+
+    lua_pushcfunction(L, get_time, "get_time_since_start");
+    lua_setfield(L, -2, "get_time_since_start");
 
     luaL_findtable(L, LUA_REGISTRYINDEX, "_MODULES", 1);
     lua_pushstring(L, "system");
