@@ -300,6 +300,9 @@ void ScriptLua::set_lua_metatables() {
 }
 
 boost::container::flat_set<std::string> ScriptLua::open() {
+    if (enabled) {
+        close();
+    }
     boost::container::flat_set<std::string> empty_set;
     // do not open if folder_name is empty
     if (folder_name.empty()) {

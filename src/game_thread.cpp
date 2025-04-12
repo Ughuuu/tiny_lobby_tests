@@ -65,23 +65,30 @@ void GameThread::load_games() {
         }
         std::cout << "Loading game from " << folder_name << " with id " << section << std::endl;
         int sendrate = config_reader.GetInteger(section, "sendrate", 50);
+        std::string lobby_control = config_reader.Get(section, "lobby_control", "lua");
         games.emplace(
             section,
             GameData{
                 .id = section,
                 .entrypoint = script_entrypoint,
-                .lobby_control = config_reader.Get(section, "lobby_control", "scripted"),
+                .lobby_control = lobby_control,
                 .tick_rate = tickrate,
                 .send_rate = sendrate,
                 .lua =
-                    ScriptLua{
-                        .autoreload = config_reader.GetBoolean(section, "autoreload", false),
-                        .scripts_folder = scripts_folder,
-                        .folder_name = folder_name,
-                        .script_entrypoint = script_entrypoint,
-                        .logs_folder = logs_folder,
-                        .game_thread = this,
-                    },
+                    ScriptLua{.autoreload = config_reader.GetBoolean(section, "autoreload", false),
+                              .scripts_folder = scripts_folder,
+                              .folder_name = folder_name,
+                              .script_entrypoint = script_entrypoint,
+                              .logs_folder = logs_folder,
+                              .game_thread = this,
+                              .enabled = lobby_control == "lua"},
+                ScriptAS{.autoreload = config_reader.GetBoolean(section, "autoreload", false),
+                         .scripts_folder = scripts_folder,
+                         .folder_name = folder_name,
+                         .script_entrypoint = script_entrypoint,
+                         .logs_folder = logs_folder,
+                         .game_thread = this,
+                         .enabled = lobby_control == "angelscript"},
             });
     }
     for (auto &game : games) {
@@ -1454,6 +1461,21 @@ AnyElement GameThread::scripted_function_call(std::string peer_id, std::string l
                                               bool &has_error) {
     if (game.lua.enabled) {
         auto result = game.lua.func_call(funcname, args, peer_id, lobby_id, game.id, has_error);
+        // if dictionary with error, put error
+        auto result_dict =
+            std::get_if<boost::container::flat_map<std::string, AnyElement>>(&result.value);
+        if (result_dict && result_dict->find("error") != result_dict->end()) {
+            has_error = true;
+            // logical error generates events too
+            notify_lobby_changes(game, lobby_id);
+            return (*result_dict)["error"];
+        }
+        notify_lobby_changes(game, lobby_id);
+        return result;
+    }
+    if (game.angelscript.enabled) {
+        auto result =
+            game.angelscript.func_call(funcname, args, peer_id, lobby_id, game.id, has_error);
         // if dictionary with error, put error
         auto result_dict =
             std::get_if<boost::container::flat_map<std::string, AnyElement>>(&result.value);
