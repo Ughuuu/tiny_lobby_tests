@@ -23,7 +23,6 @@ struct GameData {
     int64_t last_send_time = 0;
     int64_t last_tick_time = 0;
     std::string id;
-    std::string entrypoint;
     std::string lobby_control = "peer";
     int tick_rate = 0;
     int send_rate = 0;

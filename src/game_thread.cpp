@@ -54,7 +54,6 @@ void GameThread::load_games() {
     for (const auto &section : sections) {
         std::string folder_name = config_reader.GetString(section, "folder", "");
         logger.debug_log("[GameThread] on_load_game ", folder_name);
-        std::string script_entrypoint = "main.lua";
         int tickrate = config_reader.GetInteger(section, "tickrate", 0);
         if (tickrate < 16) {
             tickrate = 0;
@@ -70,7 +69,6 @@ void GameThread::load_games() {
             section,
             GameData{
                 .id = section,
-                .entrypoint = script_entrypoint,
                 .lobby_control = lobby_control,
                 .tick_rate = tickrate,
                 .send_rate = sendrate,
@@ -78,14 +76,14 @@ void GameThread::load_games() {
                     ScriptLua{.autoreload = config_reader.GetBoolean(section, "autoreload", false),
                               .scripts_folder = scripts_folder,
                               .folder_name = folder_name,
-                              .script_entrypoint = script_entrypoint,
+                              .script_entrypoint = "main.lua",
                               .logs_folder = logs_folder,
                               .game_thread = this,
                               .enabled = lobby_control == "lua"},
                 ScriptAS{.autoreload = config_reader.GetBoolean(section, "autoreload", false),
                          .scripts_folder = scripts_folder,
                          .folder_name = folder_name,
-                         .script_entrypoint = script_entrypoint,
+                         .script_entrypoint = "main.as",
                          .logs_folder = logs_folder,
                          .game_thread = this,
                          .enabled = lobby_control == "angelscript"},

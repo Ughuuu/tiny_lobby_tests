@@ -6,7 +6,7 @@ const { error } = require('console');
 // Configuration
 const serverUrl = 'ws://localhost:8080/connect'; // Your WebSocket server URL
 //const serverUrl = 'wss://lobby.blazium.app/connect'; // Your WebSocket server URL
-const numClients = 100;  // Number of WebSocket clients to simulate
+const numClients = 1;  // Number of WebSocket clients to simulate
 let stopAfter = 0; // Number of messages each client will send. Set to 0 for infinite
 let messageInterval = 1;  // Interval in milliseconds between messages
 const max_time = 30000; // 30 s

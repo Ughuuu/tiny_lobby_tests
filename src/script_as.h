@@ -5,8 +5,9 @@
 #include <vector>
 
 #include "any_type.h"
-#include "game_thread.h"
 #include "server_logger.h"
+
+class GameThread;
 
 struct ScriptAS {
     bool autoreload;

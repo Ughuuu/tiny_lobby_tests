@@ -2,8 +2,10 @@
 
 #include <scriptany/scriptany.h>
 #include <scriptarray/scriptarray.h>
+#include <scriptbuilder/scriptbuilder.h>
 #include <scriptdictionary/scriptdictionary.h>
 #include <scriptgrid/scriptgrid.h>
+#include <scriptmath/scriptmath.h>
 #include <scriptstdstring/scriptstdstring.h>
 
 #include <variant>
@@ -81,6 +83,15 @@ CScriptArray *ConvertToArray(asIScriptEngine *engine,
     return arr;
 }
 
+void MessageCallback(const asSMessageInfo *msg, void *param) {
+    const char *type = "ERR ";
+    if (msg->type == asMSGTYPE_WARNING)
+        type = "WARN";
+    else if (msg->type == asMSGTYPE_INFORMATION)
+        type = "INFO";
+    printf("%s (%d, %d) : %s : %s\n", msg->section, msg->row, msg->col, type, msg->message);
+}
+
 boost::container::flat_set<std::string> ScriptAS::open() {
     if (enabled) {
         close();
@@ -97,12 +108,46 @@ boost::container::flat_set<std::string> ScriptAS::open() {
     }
 
     // Setup basic configuration
-    as_engine->SetEngineProperty(asEP_ALLOW_UNSAFE_REFERENCES, false);
     as_engine->SetEngineProperty(asEP_REQUIRE_ENUM_SCOPE, true);
+    as_engine->SetEngineProperty(asEP_MAX_STACK_SIZE, 1024);
     RegisterScriptArray(as_engine, true);
     RegisterScriptDictionary(as_engine);
     RegisterScriptAny(as_engine);
-    // TODO: Load and compile scripts
+    RegisterStdStringUtils(as_engine);
+    RegisterStdString(as_engine);
+    RegisterScriptMath(as_engine);
+
+    int r = as_engine->SetMessageCallback(asFUNCTION(MessageCallback), 0, asCALL_CDECL);
+    if (r < 0) {
+        std::cerr << "Failed to set message callback" << std::endl;
+        close();
+        return empty_set;
+    }
+
+    std::string base_path = scripts_folder + "/" + folder_name;
+    std::string main_script_path = base_path + "/" + script_entrypoint;
+
+    CScriptBuilder builder;
+    r = builder.StartNewModule(as_engine, "Main");
+    if (r < 0) {
+        std::cerr << "Failed to start new module" << std::endl;
+        close();
+        return empty_set;
+    }
+
+    r = builder.AddSectionFromFile(main_script_path.c_str());
+    if (r < 0) {
+        std::cerr << "Failed to add section from file" << std::endl;
+        close();
+        return empty_set;
+    }
+
+    r = builder.BuildModule();
+    if (r < 0) {
+        std::cerr << "Failed to build module" << std::endl;
+        close();
+        return empty_set;
+    }
     enabled = true;
 
     return empty_set;
@@ -179,7 +224,13 @@ AnyElement ScriptAS::func_call(std::string &func_name, boost::container::vector<
     r = as_context->Execute();
     if (r != asEXECUTION_FINISHED) {
         has_error = true;
-        return AnyElement{"Script execution failed"};
+        // The execution didn't complete as expected. Determine what happened.
+        if (r == asEXECUTION_EXCEPTION) {
+            // An exception occurred, let the script writer know what happened so it can be
+            // corrected.
+            return AnyElement{as_context->GetExceptionString()};
+        }
+        return AnyElement{"Execution failed"};
     }
 
     // Get return value

@@ -96,8 +96,11 @@ add_compile_options(-Wno-deprecated-declarations)
 add_subdirectory(external/angelscript/sdk/angelscript/projects/cmake)
 file(GLOB SCRIPTSTDSTRING_SOURCES external/angelscript/sdk/add_on/scriptstdstring/*.cpp)
 file(GLOB SCRIPTGRID_SOURCES external/angelscript/sdk/add_on/scriptgrid/*.cpp)
+file(GLOB SCRIPTANY_SOURCES external/angelscript/sdk/add_on/scriptany/*.cpp)
 file(GLOB SCRIPTARRAY_SOURCES external/angelscript/sdk/add_on/scriptarray/*.cpp)
 file(GLOB SCRIPTDICTIONARY_SOURCES external/angelscript/sdk/add_on/scriptdictionary/*.cpp)
+file(GLOB SCRIPTMATH_SOURCES external/angelscript/sdk/add_on/scriptmath/*.cpp)
+file(GLOB SCRIPTBUILDER_SOURCES external/angelscript/sdk/add_on/scriptbuilder/*.cpp)
 
 target_include_directories(lobby_server PRIVATE
   "external/angelscript/sdk/angelscript/include"
@@ -133,7 +136,10 @@ if(NOT WIN32)
   endif()
 endif()
 
-target_sources(lobby_server PRIVATE 
+target_sources(lobby_server PRIVATE
+    ${SCRIPTBUILDER_SOURCES}
+    ${SCRIPTMATH_SOURCES}
+    ${SCRIPTANY_SOURCES}
     ${SCRIPTGRID_SOURCES}
     ${SCRIPTSTDSTRING_SOURCES}
     ${SCRIPTARRAY_SOURCES}
