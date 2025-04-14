@@ -157,7 +157,7 @@ function api.move_piece(direction)
     
     -- Handle entry delay
     if peer_game.entry_delay > 0 then
-        peer_game.entry_delay = peer_game.entry_delay - system.get_tick_rate()
+        peer_game.entry_delay = peer_game.entry_delay - l.tick_rate
         return { error = "Piece is entering" }
     end
     

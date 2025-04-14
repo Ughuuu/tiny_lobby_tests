@@ -74,7 +74,7 @@ function callbacks.on_tick()
     if l.public_data["game_state"] ~= "playing" then return end
     
     local current_time = system.get_time_since_epoch()
-    local delta_time = system.get_tick_rate()
+    local delta_time = l.tick_rate
     
     -- Update each player's game
     for peer_id, peer in pairs(l.peers) do

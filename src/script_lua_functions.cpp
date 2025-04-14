@@ -243,21 +243,6 @@ int get_time(lua_State *L) {
     return 1;
 }
 
-int get_tick_rate(lua_State *L) {
-    lua_getfield(L, LUA_REGISTRYINDEX, "game_thread");
-    GameThread *game_thread = static_cast<GameThread *>(lua_touserdata(L, -1));
-    lua_getfield(L, LUA_REGISTRYINDEX, "game_id");
-    std::string game_id = lua_tostring(L, -1);
-    lua_pop(L, 1);
-    auto &game = game_thread->games[game_id];
-    if (game.tick_rate == 0) {
-        lua_pushinteger(L, 1000);
-    } else {
-        lua_pushnumber(L, game.tick_rate);
-    }
-    return 1;
-}
-
 int get_lobby(lua_State *L) {
     lua_getfield(L, LUA_REGISTRYINDEX, "peer_id");
     std::string caling_peer_id = lua_tostring(L, -1);
@@ -442,12 +427,6 @@ void luaopen_system(lua_State *L) {
 
     lua_pushcfunction(L, get_time, "get_time_since_epoch");
     lua_setfield(L, -2, "get_time_since_epoch");
-
-    lua_pushcfunction(L, get_tick_rate, "get_tick_rate");
-    lua_setfield(L, -2, "get_tick_rate");
-
-    lua_pushcfunction(L, get_time, "get_time_since_start");
-    lua_setfield(L, -2, "get_time_since_start");
 
     luaL_findtable(L, LUA_REGISTRYINDEX, "_MODULES", 1);
     lua_pushstring(L, "system");

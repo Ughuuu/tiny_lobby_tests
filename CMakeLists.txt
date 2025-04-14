@@ -101,6 +101,13 @@ file(GLOB SCRIPTARRAY_SOURCES external/angelscript/sdk/add_on/scriptarray/*.cpp)
 file(GLOB SCRIPTDICTIONARY_SOURCES external/angelscript/sdk/add_on/scriptdictionary/*.cpp)
 file(GLOB SCRIPTMATH_SOURCES external/angelscript/sdk/add_on/scriptmath/*.cpp)
 file(GLOB SCRIPTBUILDER_SOURCES external/angelscript/sdk/add_on/scriptbuilder/*.cpp)
+file(GLOB WEAKREF_SOURCES external/angelscript/sdk/add_on/weakref/*.cpp)
+file(GLOB SCRIPTHANDLE_SOURCES external/angelscript/sdk/add_on/scripthandle/*.cpp)
+file(GLOB DATETIME_SOURCES external/angelscript/sdk/add_on/datetime/*.cpp)
+file(GLOB SCRIPTHELPER_SOURCES external/angelscript/sdk/add_on/scripthelper/*.cpp)
+file(GLOB SCRIPTFILE_SOURCES external/angelscript/sdk/add_on/scriptfile/*.cpp)
+
+
 
 target_include_directories(lobby_server PRIVATE
   "external/angelscript/sdk/angelscript/include"
@@ -137,6 +144,11 @@ if(NOT WIN32)
 endif()
 
 target_sources(lobby_server PRIVATE
+    ${SCRIPTFILE_SOURCES}
+    ${SCRIPTHELPER_SOURCES}
+    ${DATETIME_SOURCES}
+    ${SCRIPTHANDLE_SOURCES}
+    ${WEAKREF_SOURCES}
     ${SCRIPTBUILDER_SOURCES}
     ${SCRIPTMATH_SOURCES}
     ${SCRIPTANY_SOURCES}

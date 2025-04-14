@@ -1,7 +1,6 @@
 const WebSocket = require('ws');
 const fs = require('fs');
 const path = require('path');
-const { error } = require('console');
 
 // Configuration
 const serverUrl = 'ws://localhost:8080/connect'; // Your WebSocket server URL
@@ -11,7 +10,7 @@ let stopAfter = 0; // Number of messages each client will send. Set to 0 for inf
 let messageInterval = 1;  // Interval in milliseconds between messages
 const max_time = 30000; // 30 s
 //let usecase = "max_sent"
-let usecase = "max_single_chat"
+let usecase = "max_echo"
 switch (usecase) {
     case "max_echo":
         // send as many messages as possible
@@ -43,7 +42,7 @@ fs.writeFileSync(csvFilePath, 'timestamp,client_count,client_errors,messages_sen
 
 // Function to start a WebSocket client
 function startClient(clientId) {
-    const ws = new WebSocket(serverUrl, ['blazium', '00000000-0000-0000-0000-000000000001']);
+    const ws = new WebSocket(serverUrl, ['blazium', '00000000-0000-0000-0000-000000000002']);
     ws.on('open', () => {
         clientCount++;
     });
@@ -109,7 +108,7 @@ function startStresTest() {
                     case "max_echo":
                         ws.send(JSON.stringify({
                             "command": "lobby_call",
-                            "data": { "function": "echo", "inputs": ["abc"], "id": "123" }
+                            "data": { "function": "echo", "inputs": ["15.7"], "id": "123" }
                         }));
                     break;
                     case "max_single_chat":

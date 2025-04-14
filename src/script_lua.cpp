@@ -167,6 +167,9 @@ static int lobby_index(lua_State* L) {
             } else if (strcmp(key, "id") == 0) {
                 lua_pushstring(L, lobby_id.c_str());
                 return 1;
+            } else if (strcmp(key, "tick_rate") == 0) {
+                lua_pushinteger(L, game.tick_rate);
+                return 1;
             } else if (strcmp(key, "name") == 0) {
                 lua_pushstring(L, lobby.name.c_str());
                 return 1;
