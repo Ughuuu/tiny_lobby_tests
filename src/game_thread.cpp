@@ -65,29 +65,27 @@ void GameThread::load_games() {
         std::cout << "Loading game from " << folder_name << " with id " << section << std::endl;
         int sendrate = config_reader.GetInteger(section, "sendrate", 50);
         std::string lobby_control = config_reader.Get(section, "lobby_control", "lua");
-        games.emplace(
-            section,
-            GameData{
-                .id = section,
-                .lobby_control = lobby_control,
-                .tick_rate = tickrate,
-                .send_rate = sendrate,
-                .lua =
-                    ScriptLua{.autoreload = config_reader.GetBoolean(section, "autoreload", false),
-                              .scripts_folder = scripts_folder,
-                              .folder_name = folder_name,
-                              .script_entrypoint = "main.lua",
-                              .logs_folder = logs_folder,
-                              .game_thread = this,
-                              .enabled = lobby_control == "lua"},
-                ScriptAS{.autoreload = config_reader.GetBoolean(section, "autoreload", false),
-                         .scripts_folder = scripts_folder,
-                         .folder_name = folder_name,
-                         .script_entrypoint = "main.as",
-                         .logs_folder = logs_folder,
-                         .game_thread = this,
-                         .enabled = lobby_control == "angelscript"},
-            });
+        ScriptAS as;
+        as.autoreload = config_reader.GetBoolean(section, "autoreload", false);
+        as.scripts_folder = scripts_folder;
+        as.folder_name = folder_name;
+        as.script_entrypoint = "main.as";
+        as.logs_folder = logs_folder;
+        as.game_thread = this;
+        as.enabled = lobby_control == "angelscript";
+        games.emplace(section, GameData{.id = section,
+                                        .lobby_control = lobby_control,
+                                        .tick_rate = tickrate,
+                                        .send_rate = sendrate,
+                                        .lua = ScriptLua{.autoreload = config_reader.GetBoolean(
+                                                             section, "autoreload", false),
+                                                         .scripts_folder = scripts_folder,
+                                                         .folder_name = folder_name,
+                                                         .script_entrypoint = "main.lua",
+                                                         .logs_folder = logs_folder,
+                                                         .game_thread = this,
+                                                         .enabled = lobby_control == "lua"},
+                                        .angelscript = as});
     }
     for (auto &game : games) {
         game.second.open();
