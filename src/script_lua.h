@@ -11,58 +11,48 @@
 
 class GameThread;
 
-struct LuaWrapperInfo {
-    std::string name;
+struct LobbyUserDataKey {
+    std::string key;
     int idx = -1;
 };
 
+struct LobbyUserdata {
+    enum LobbyType {
+        LOBBY_ROOT,
+        LOBBY_PUBLIC_DATA,
+        LOBBY_PRIVATE_DATA,
+        LOBBY_TAGS,
+        PEER_ROOT,
+        PEER_PUBLIC_DATA,
+        PEER_PRIVATE_DATA,
+        PEER_USER_DATA,
+    } type;
+
+    GameThread* game_thread;
+    std::string game_id;
+    std::string lobby_id;
+    std::string calling_peer_id;
+    std::string peer_id;
+};
+
+void create_lobby_userdata(lua_State* L, GameThread* game_thread, const std::string& game_id,
+                           const std::string& lobby_id, const std::string& calling_peer_id,
+                           const std::string& peer_id, LobbyUserdata::LobbyType type);
+
 struct ScriptLua {
-    lua_State *L;
+    lua_State* L;
     bool autoreload;
     std::string scripts_folder;
     std::string folder_name;
     std::string script_entrypoint;
     std::string logs_folder;
-    GameThread *game_thread;
-    LuaWrapperInfo lobby_wrapper = {.name = "lobby", .idx = 0};
-    LuaWrapperInfo tags_wrapper = {.name = "tags", .idx = 0};
-    LuaWrapperInfo public_data_wrapper = {.name = "public_data", .idx = 0};
-    LuaWrapperInfo private_data_wrapper = {.name = "private_data", .idx = 0};
-    // peers array of 10
-    LuaWrapperInfo peers_elements_wrapper[10] = {
-        {.name = "peer_object", .idx = 0}, {.name = "peer_object", .idx = 1},
-        {.name = "peer_object", .idx = 2}, {.name = "peer_object", .idx = 3},
-        {.name = "peer_object", .idx = 4}, {.name = "peer_object", .idx = 5},
-        {.name = "peer_object", .idx = 6}, {.name = "peer_object", .idx = 7},
-        {.name = "peer_object", .idx = 8}, {.name = "peer_object", .idx = 9},
-    };
-    LuaWrapperInfo peers_public_wrapper[10] = {
-        {.name = "peer_public_data", .idx = 0}, {.name = "peer_public_data", .idx = 1},
-        {.name = "peer_public_data", .idx = 2}, {.name = "peer_public_data", .idx = 3},
-        {.name = "peer_public_data", .idx = 4}, {.name = "peer_public_data", .idx = 5},
-        {.name = "peer_public_data", .idx = 6}, {.name = "peer_public_data", .idx = 7},
-        {.name = "peer_public_data", .idx = 8}, {.name = "peer_public_data", .idx = 9},
-    };
-    LuaWrapperInfo peers_private_wrapper[10] = {
-        {.name = "peer_private_data", .idx = 0}, {.name = "peer_private_data", .idx = 1},
-        {.name = "peer_private_data", .idx = 2}, {.name = "peer_private_data", .idx = 3},
-        {.name = "peer_private_data", .idx = 4}, {.name = "peer_private_data", .idx = 5},
-        {.name = "peer_private_data", .idx = 6}, {.name = "peer_private_data", .idx = 7},
-        {.name = "peer_private_data", .idx = 8}, {.name = "peer_private_data", .idx = 9},
-    };
-    LuaWrapperInfo peers_user_wrapper[10] = {
-        {.name = "peer_user_data", .idx = 0}, {.name = "peer_user_data", .idx = 1},
-        {.name = "peer_user_data", .idx = 2}, {.name = "peer_user_data", .idx = 3},
-        {.name = "peer_user_data", .idx = 4}, {.name = "peer_user_data", .idx = 5},
-        {.name = "peer_user_data", .idx = 6}, {.name = "peer_user_data", .idx = 7},
-        {.name = "peer_user_data", .idx = 8}, {.name = "peer_user_data", .idx = 9},
-    };
+    GameThread* game_thread;
 
    public:
     bool enabled = false;
-    AnyElement func_call(std::string &func_name, boost::container::vector<AnyElement> &args,
-                         std::string &peer_id, std::string &lobby_id, std::string &game_id,
-                         bool &has_error);
+    AnyElement func_call(std::string& func_name, boost::container::vector<AnyElement>& args,
+                         std::string& peer_id, std::string& lobby_id, std::string& game_id,
+                         bool& has_error);
     boost::container::flat_set<std::string> open();
     void close();
     void set_lua_metatables();

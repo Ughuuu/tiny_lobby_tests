@@ -54,7 +54,6 @@ void GameThread::load_games() {
     for (const auto &section : sections) {
         std::string folder_name = config_reader.GetString(section, "folder", "");
         logger.debug_log("[GameThread] on_load_game ", folder_name);
-        std::string script_entrypoint = "main.lua";
         int tickrate = config_reader.GetInteger(section, "tickrate", 0);
         if (tickrate < 16) {
             tickrate = 0;
@@ -65,22 +64,28 @@ void GameThread::load_games() {
         }
         std::cout << "Loading game from " << folder_name << " with id " << section << std::endl;
         int sendrate = config_reader.GetInteger(section, "sendrate", 50);
-        games.emplace(section,
-                      GameData{
-                          .id = section,
-                          .entrypoint = script_entrypoint,
-                          .lobby_control = config_reader.Get(section, "lobby_control", "scripted"),
-                          .tick_rate = tickrate,
-                          .send_rate = sendrate,
-                          .lua =
-                              ScriptLua{
-                                  .scripts_folder = scripts_folder,
-                                  .folder_name = folder_name,
-                                  .script_entrypoint = script_entrypoint,
-                                  .logs_folder = logs_folder,
-                                  .game_thread = this,
-                              },
-                      });
+        std::string lobby_control = config_reader.Get(section, "lobby_control", "lua");
+        ScriptAS as;
+        as.autoreload = config_reader.GetBoolean(section, "autoreload", false);
+        as.scripts_folder = scripts_folder;
+        as.folder_name = folder_name;
+        as.script_entrypoint = "main.as";
+        as.logs_folder = logs_folder;
+        as.game_thread = this;
+        as.enabled = lobby_control == "angelscript";
+        games.emplace(section, GameData{.id = section,
+                                        .lobby_control = lobby_control,
+                                        .tick_rate = tickrate,
+                                        .send_rate = sendrate,
+                                        .lua = ScriptLua{.autoreload = config_reader.GetBoolean(
+                                                             section, "autoreload", false),
+                                                         .scripts_folder = scripts_folder,
+                                                         .folder_name = folder_name,
+                                                         .script_entrypoint = "main.lua",
+                                                         .logs_folder = logs_folder,
+                                                         .game_thread = this,
+                                                         .enabled = lobby_control == "lua"},
+                                        .angelscript = as});
     }
     for (auto &game : games) {
         game.second.open();
@@ -190,12 +195,13 @@ void GameThread::handle_send() {
 }
 
 void GameThread::handle_tick() {
-    boost::container::vector<AnyElement> empty_args;
     for (auto &game : games) {
         auto &game_data = game.second;
         if (game_data.tick_rate == 0 || game_data.last_tick_time + game_data.tick_rate > now) {
             continue;
         }
+        boost::container::vector<AnyElement> args(1);
+        args[0] = AnyElement{game_data.tick_rate};
         game_data.last_tick_time = now;
 
         for (auto &peer : game_data.peers) {
@@ -209,10 +215,10 @@ void GameThread::handle_tick() {
             }
             bool has_error = false;
             auto result = scripted_function_call(peer_id, peer_data.lobby_id, game_data, "_on_tick",
-                                                 true, empty_args, has_error);
+                                                 true, args, has_error);
             if (has_error || std::holds_alternative<std::string>(result.value)) {
                 on_error(game_data, EMPTY_STRING, peer_id, std::get<std::string>(result.value),
-                         false);
+                         false, true);
             }
         }
     }
@@ -719,6 +725,16 @@ bool GameThread::on_join_lobby(GameData &game, std::string command_id, PeerData 
             return false;
         }
     }
+    // CHANGES
+    game.lobby_listing_peers.erase(peer.id);
+    if (reconnecting) {
+        peer.ready = false;
+    } else {
+        peer.order_id = ++lobby.order_id_counter;
+        peer.lobby_id = lobby_id;
+        lobby.peer_ids.insert(peer.id);
+    }
+    peer.disconnected = false;
     // SCRIPTED CALL
     if (!reconnecting) {
         if (game.enabled_callbacks.find("_on_join") != game.enabled_callbacks.end()) {
@@ -733,16 +749,6 @@ bool GameThread::on_join_lobby(GameData &game, std::string command_id, PeerData 
             }
         }
     }
-    // CHANGES
-    game.lobby_listing_peers.erase(peer.id);
-    if (reconnecting) {
-        peer.ready = false;
-    } else {
-        peer.order_id = ++lobby.order_id_counter;
-        peer.lobby_id = lobby_id;
-        lobby.peer_ids.insert(peer.id);
-    }
-    peer.disconnected = false;
     // NOTIFICATION
     if (reconnecting) {
         std::string notification = notification_peer_reconnected(peer.id);
@@ -1452,6 +1458,21 @@ AnyElement GameThread::scripted_function_call(std::string peer_id, std::string l
                                               bool &has_error) {
     if (game.lua.enabled) {
         auto result = game.lua.func_call(funcname, args, peer_id, lobby_id, game.id, has_error);
+        // if dictionary with error, put error
+        auto result_dict =
+            std::get_if<boost::container::flat_map<std::string, AnyElement>>(&result.value);
+        if (result_dict && result_dict->find("error") != result_dict->end()) {
+            has_error = true;
+            // logical error generates events too
+            notify_lobby_changes(game, lobby_id);
+            return (*result_dict)["error"];
+        }
+        notify_lobby_changes(game, lobby_id);
+        return result;
+    }
+    if (game.angelscript.enabled) {
+        auto result =
+            game.angelscript.func_call(funcname, args, peer_id, lobby_id, game.id, has_error);
         // if dictionary with error, put error
         auto result_dict =
             std::get_if<boost::container::flat_map<std::string, AnyElement>>(&result.value);

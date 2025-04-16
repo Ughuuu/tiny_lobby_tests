@@ -50,7 +50,7 @@ function api.set_word(word)
     local words = l.private_data["words"]
     words[word] = true
     l.private_data["words"] = words
-    l.public_data["turn_timestamp"] = system.get_time()
+    l.public_data["turn_timestamp"] = system.get_time_since_epoch()
     l.public_data["game_state"] = "playing"
     l.public_data["guessed"] = ""
 
@@ -117,7 +117,7 @@ function api.guess_letter(letter)
     local pressed = l.public_data["pressed"]
     pressed[letter] = l.calling_peer_id
     l.public_data["pressed"] = pressed
-
+    
     local peer_name = string.upper(tostring(l.peers[l.calling_peer_id].user_data["name"]))
     local word = l.peers[dealerID].private_data["word"]
     if not string.find(word, letter, 1, true) then
@@ -191,9 +191,11 @@ function api.end_game(newState)
     if newState == "won" then
         lobby.broadcast_chat("The guessers sucessfully found the word!")
     elseif newState == "lost" then
-        local dealer_name = l.peers[dealerID].user_data["name"] or ""
-        local total = l.peers[dealerID].public_data["total_points"]
-        lobby.broadcast_chat(string.format("%s won! Gained %d points. Total: %d", dealer_name, points, total))
+        if l.peers[dealerID] then
+            local dealer_name = l.peers[dealerID].user_data["name"] or ""
+            local total = l.peers[dealerID].public_data["total_points"]
+            lobby.broadcast_chat(string.format("%s won! Gained %d points. Total: %d", dealer_name, points, total))
+        end
     end
 
     lobby.start_timer("_on_timer_restart_game", 1)
@@ -216,7 +218,7 @@ function api.on_timer_restart_game()
 end
 
 function api.set_initial_data(l)
-    l.public_data["turn_timestamp"] = system.get_time()
+    l.public_data["turn_timestamp"] = system.get_time_since_epoch()
     l.public_data["game_state"] = "setting_word"
     l.public_data["health"] = 6
     l.public_data["guessed"] = ""

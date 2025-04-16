@@ -116,7 +116,7 @@ function api.set_piece(placementTileX, placementTileY)
 end
 
 function api.set_initial_data(l)
-    l.public_data["turn_timestamp"] = system.get_time()
+    l.public_data["turn_timestamp"] = system.get_time_since_epoch()
     l.public_data["game_state"] = "playing"
     local board = {
         { 0, 0, 0 },
