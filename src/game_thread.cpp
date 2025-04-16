@@ -197,12 +197,13 @@ void GameThread::handle_send() {
 }
 
 void GameThread::handle_tick() {
-    boost::container::vector<AnyElement> empty_args;
     for (auto &game : games) {
         auto &game_data = game.second;
         if (game_data.tick_rate == 0 || game_data.last_tick_time + game_data.tick_rate > now) {
             continue;
         }
+        boost::container::vector<AnyElement> args(1);
+        args[0] = AnyElement{game_data.tick_rate};
         game_data.last_tick_time = now;
 
         for (auto &peer : game_data.peers) {
@@ -216,10 +217,10 @@ void GameThread::handle_tick() {
             }
             bool has_error = false;
             auto result = scripted_function_call(peer_id, peer_data.lobby_id, game_data, "_on_tick",
-                                                 true, empty_args, has_error);
+                                                 true, args, has_error);
             if (has_error || std::holds_alternative<std::string>(result.value)) {
                 on_error(game_data, EMPTY_STRING, peer_id, std::get<std::string>(result.value),
-                         false);
+                         false, true);
             }
         }
     }

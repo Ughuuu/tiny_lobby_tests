@@ -1,4 +1,4 @@
-
+#pragma once
 #include <scriptany/scriptany.h>
 #include <scriptarray/scriptarray.h>
 #include <scriptbuilder/scriptbuilder.h>
@@ -8,6 +8,7 @@
 #include <scriptmath/scriptmath.h>
 #include <scriptstdstring/scriptstdstring.h>
 #include <weakref/weakref.h>
+
 #include <iostream>
 
 #include "any_type.h"
@@ -16,13 +17,14 @@ CScriptArray *ConvertToArray(asIScriptEngine *engine,
                              const boost::container::vector<AnyElement> &elements);
 CScriptDictionary *ConvertToDictionary(
     asIScriptEngine *engine, const boost::container::flat_map<std::string, AnyElement> &map);
-void as_MessageCallback(const asSMessageInfo *msg, void *param);
+CScriptAny *ConvertToAny(asIScriptEngine *engine, AnyElement &element);
 void as_print_int(int value);
 void as_print_float(float value);
 void as_print_double(double value);
 void as_print_bool(bool value);
 void as_print_string(const std::string &value);
 AnyElement ConvertFromScriptType(asIScriptEngine *engine, void *value, int typeId);
+AnyElement ConvertFromAny(asIScriptEngine *engine, CScriptAny *any);
 boost::container::vector<AnyElement> ConvertFromGrid(asIScriptEngine *engine, CScriptGrid *grid);
 boost::container::flat_map<std::string, AnyElement> ConvertFromDictionary(asIScriptEngine *engine,
                                                                           CScriptDictionary *dict);

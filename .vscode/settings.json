@@ -90,6 +90,7 @@
         "random": "cpp",
         "ranges": "cpp",
         "csignal": "cpp",
-        "*.inc": "cpp"
+        "*.inc": "cpp",
+        "type_traits": "cpp"
     }
 }

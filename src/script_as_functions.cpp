@@ -38,6 +38,32 @@ CScriptDictionary *ConvertToDictionary(
     return dict;
 }
 
+CScriptAny *ConvertToAny(asIScriptEngine *engine, AnyElement &element) {
+    CScriptAny *any = new CScriptAny(engine);
+
+    if (auto v = std::get_if<int64_t>(&element.value)) {
+        any->Store(static_cast<void *>(v), engine->GetTypeIdByDecl("int64"));
+    } else if (auto v = std::get_if<double>(&element.value)) {
+        any->Store(static_cast<void *>(v), engine->GetTypeIdByDecl("double"));
+    } else if (auto v = std::get_if<bool>(&element.value)) {
+        any->Store(static_cast<void *>(v), engine->GetTypeIdByDecl("bool"));
+    } else if (auto v = std::get_if<std::string>(&element.value)) {
+        any->Store(static_cast<void *>(v), engine->GetTypeIdByDecl("string"));
+    } else if (auto submap = std::get_if<boost::container::flat_map<std::string, AnyElement>>(
+                   &element.value)) {
+        CScriptDictionary *dict =
+            ConvertToDictionary(engine, *submap);  // Assume returns CScriptDictionary*
+        any->Store(dict, engine->GetTypeIdByDecl("dictionary@"));
+        dict->Release();  // Release our temporary reference
+    } else if (auto subvec = std::get_if<boost::container::vector<AnyElement>>(&element.value)) {
+        CScriptArray *arr = ConvertToArray(engine, *subvec);  // Assume returns CScriptArray*
+        any->Store(arr, engine->GetTypeIdByDecl("array<any>@"));
+        arr->Release();  // Release our temporary reference
+    }
+
+    return any;
+}
+
 CScriptArray *ConvertToArray(asIScriptEngine *engine,
                              const boost::container::vector<AnyElement> &elements) {
     asITypeInfo *type = engine->GetTypeInfoByDecl("array<any>");
@@ -74,34 +100,15 @@ CScriptArray *ConvertToArray(asIScriptEngine *engine,
     return arr;
 }
 
-void as_MessageCallback(const asSMessageInfo *msg, void *param) {
-    const char *type = "ERR ";
-    if (msg->type == asMSGTYPE_WARNING)
-        type = "WARN";
-    else if (msg->type == asMSGTYPE_INFORMATION)
-        type = "INFO";
-    printf("%s (%d, %d) : %s : %s\n", msg->section, msg->row, msg->col, type, msg->message);
-}
+void as_print_int(int value) { std::cout << value << std::endl; }
 
-void as_print_int(int value) {
-    std::cout << value << std::endl;
-}
+void as_print_float(float value) { std::cout << value << std::endl; }
 
-void as_print_float(float value) {
-    std::cout << value << std::endl;
-}
+void as_print_double(double value) { std::cout << value << std::endl; }
 
-void as_print_double(double value) {
-    std::cout << value << std::endl;
-}
+void as_print_bool(bool value) { std::cout << (value ? "true" : "false") << std::endl; }
 
-void as_print_bool(bool value) {
-    std::cout << (value ? "true" : "false") << std::endl;
-}
-
-void as_print_string(const std::string &value) {
-    std::cout << value << std::endl;
-}
+void as_print_string(const std::string &value) { std::cout << value << std::endl; }
 AnyElement ConvertFromScriptType(asIScriptEngine *engine, void *value, int typeId) {
     if (!value) {
         return AnyElement{"Uninitialized value"};
@@ -147,9 +154,82 @@ AnyElement ConvertFromScriptType(asIScriptEngine *engine, void *value, int typeI
         return AnyElement{ConvertFromArray(engine, static_cast<CScriptArray *>(value))};
     } else if (typeName == "grid") {
         return AnyElement{ConvertFromGrid(engine, static_cast<CScriptGrid *>(value))};
+    } else if (typeName == "any") {
+        CScriptAny *anyValue = static_cast<CScriptAny *>(value);
+        if (!anyValue) {
+            return AnyElement{std::monostate{}};
+        }
+
+        int storedTypeId = anyValue->GetTypeId();
+        void *storedValue;
+        if (anyValue->Retrieve(storedValue, storedTypeId)) {
+            return ConvertFromScriptType(engine, storedValue, storedTypeId);
+        } else {
+            return AnyElement{"Empty any"};
+        }
     }
 
     return AnyElement{std::monostate{}};
+}
+AnyElement ConvertFromAny(asIScriptEngine *engine, CScriptAny *any) {
+    if (!any) {
+        return AnyElement{std::monostate{}};
+    }
+
+    int storedTypeId = any->GetTypeId();
+
+    // Get type info
+    asITypeInfo *typeInfo = engine->GetTypeInfoById(storedTypeId);
+    if (!typeInfo) {
+        return AnyElement{"Unknown type"};
+    }
+
+    // Handle primitive types
+    if ((storedTypeId & asTYPEID_MASK_OBJECT) == 0) {
+        // Primitive type
+        union {
+            bool b;
+            int32_t i32;
+            int64_t i64;
+            float f;
+            double d;
+        } data;
+
+        void *ptr = nullptr;
+        switch (storedTypeId) {
+            case asTYPEID_BOOL:
+                ptr = &data.b;
+                break;
+            case asTYPEID_INT32:
+                ptr = &data.i32;
+                break;
+            case asTYPEID_INT64:
+                ptr = &data.i64;
+                break;
+            case asTYPEID_FLOAT:
+                ptr = &data.f;
+                break;
+            case asTYPEID_DOUBLE:
+                ptr = &data.d;
+                break;
+            default:
+                return AnyElement{"Unsupported primitive type"};
+        }
+
+        if (any->Retrieve(ptr, storedTypeId)) {
+            return ConvertFromScriptType(engine, ptr, storedTypeId);
+        } else {
+            return AnyElement{"Failed to retrieve primitive"};
+        }
+    } else {
+        // Object type
+        void *object = nullptr;
+        if (any->Retrieve(&object, storedTypeId)) {
+            return ConvertFromScriptType(engine, object, storedTypeId);
+        } else {
+            return AnyElement{"Failed to retrieve object"};
+        }
+    }
 }
 boost::container::vector<AnyElement> ConvertFromGrid(asIScriptEngine *engine, CScriptGrid *grid) {
     boost::container::vector<AnyElement> result;

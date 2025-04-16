@@ -105,7 +105,6 @@ file(GLOB WEAKREF_SOURCES external/angelscript/sdk/add_on/weakref/*.cpp)
 file(GLOB SCRIPTHANDLE_SOURCES external/angelscript/sdk/add_on/scripthandle/*.cpp)
 file(GLOB DATETIME_SOURCES external/angelscript/sdk/add_on/datetime/*.cpp)
 file(GLOB SCRIPTHELPER_SOURCES external/angelscript/sdk/add_on/scripthelper/*.cpp)
-file(GLOB SCRIPTFILE_SOURCES external/angelscript/sdk/add_on/scriptfile/*.cpp)
 
 
 
@@ -144,7 +143,6 @@ if(NOT WIN32)
 endif()
 
 target_sources(lobby_server PRIVATE
-    ${SCRIPTFILE_SOURCES}
     ${SCRIPTHELPER_SOURCES}
     ${DATETIME_SOURCES}
     ${SCRIPTHANDLE_SOURCES}
