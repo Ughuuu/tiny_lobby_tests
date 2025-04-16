@@ -20,7 +20,7 @@ namespace main {
     void _on_create() {
         Lobby@ l = lobby::get();
         if (l.max_players != 1000) {
-            throw("max players needs to be 1000")
+            throw("max players needs to be 1000");
         }
         main::_init_peer();
         file f;

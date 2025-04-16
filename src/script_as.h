@@ -98,11 +98,11 @@ struct ScriptAS {
     asIScriptEngine* as_engine = nullptr;
     asIScriptContext* as_context = nullptr;
     asIScriptModule* as_module = nullptr;
-    boost::container::flat_map<std::string, int> as_functions;
-    std::string as_peer_id;
-    std::string as_lobby_id;
-    std::string as_game_id;
-    std::string error_msg;
+    boost::container::flat_map<std::string, int> as_functions{};
+    std::string as_peer_id = "";
+    std::string as_lobby_id = "";
+    std::string as_game_id = "";
+    std::string error_msg = "";
 
    public:
     bool enabled = false;
