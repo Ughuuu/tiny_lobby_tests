@@ -24,4 +24,4 @@ RUN useradd -m -s /bin/bash lobbyuser
 USER lobbyuser
 
 EXPOSE 8080
-CMD ["./lobby_server"]
+CMD ["./lobby_server", "--disable-login"]
