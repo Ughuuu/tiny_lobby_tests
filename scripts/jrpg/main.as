@@ -1,40 +1,69 @@
-// AngelScript
+#include "vector2i.as"
+#include "player.as"
+#include "map.as"
+
 namespace main {
-    // dir 0 for left
-    // dir 1 for up
-    // dir 2 for right
-    // dir 3 for down
-    void move(double dir_double) {
+    // key pressed and release and direction isn't same
+    void turn(int64 dir) {
         Lobby@ l = lobby::get();
-        int dir = int(dir_double);
         auto peer = cast<LobbyPeer@>(l.peers[l.calling_peer_id]);
-        peer.private_data.set("dir", dir);
+        if (dir < 0 || dir > 3) {
+            throw("invalid dir");
+        }
+        _set_peer_direction(peer, dir);
     }
-    void _init_peer() {
+    // key pressed and released
+    void move_press(int64 dir) {
+        array<any> query_params;
+        query_params.insertLast(any("query_param1"));
+        query_params.insertLast(any("query_val_1"));
+
+        array<any> headers;
+        headers.insertLast(any("header1"));
+        headers.insertLast(any("value1"));
+        print("requesting2");
+        auto result = Http::request("DELETE", "https://google.com", query_params, headers, "");
+
+        print(result.status);
+        print(result.body);
         Lobby@ l = lobby::get();
         auto peer = cast<LobbyPeer@>(l.peers[l.calling_peer_id]);
-        peer.public_data.set("pos_x", 0);
-        peer.public_data.set("pos_y", 0);
-        peer.private_data.set("dir", -1);
+        if (dir < 0 || dir > 3) {
+            throw("invalid dir");
+        }
+
+        auto move_start_ms = peer.public_data.get_int("move_start");
+        auto move_time_ms = peer.public_data.get_int("move_time");
+        auto current_time_ms = lobby::get_ticks_ms();
+        if (current_time_ms - move_start_ms < move_time_ms) {
+            return;
+        }
+        // same direction walking already
+        if (peer.public_data.get_bool("is_moving") && dir == peer.public_data.get_int("dir")) {
+            return;
+        }
+        _set_peer_direction(peer, dir);
+        if (_move_peer(peer, l, dir)) {
+            peer.public_data.set("is_moving", true);
+            peer.public_data.set("move_start", current_time_ms);
+        }
+    }
+    // key released
+    void move_release() {
+        Lobby@ l = lobby::get();
+        auto peer = cast<LobbyPeer@>(l.peers[l.calling_peer_id]);
+        peer.public_data.set("is_moving", false);
     }
     void _on_create() {
         Lobby@ l = lobby::get();
         if (l.max_players != 1000) {
             throw("max players needs to be 1000");
         }
-        main::_init_peer();
-        file f;
-        if( f.open("map.csv", "r") >= 0 )
-        {
-            string str = f.readString(f.getSize());
-            print(str);
-            f.close();
-        } else {
-            throw("cannot read file");
-        }
+        map::_read_map();
+        player::_init_peer();
     }
     void _on_join() {
-        main::_init_peer();
+        player::_init_peer();
     }
     void _on_chat(string message) {}
     void _on_tags(dictionary tags) {}
@@ -42,43 +71,63 @@ namespace main {
     void _on_ready(bool ready) {}
     void _on_seal(bool seal) {}
     void _on_left() {}
-    void _move_peer(LobbyPeer@ peer) {
-        auto dir = peer.private_data.get_int("dir");
-        if (dir == -1) {
-            // No movement key pressed
-            return;
-        }
-
-        auto pos_x = peer.public_data.get_int("pos_x");
-        auto pos_y = peer.public_data.get_int("pos_y");
-
-        switch(dir) {
-            case 0:
-                pos_x -= 1;
-            break;
-            case 1:
-                pos_y -= 1;
-            break;
-            case 2:
-                pos_x += 1;
-            break;
-            case 3:
-                pos_y += 1;
-            break;
-            default:
-            break;
-        }
-        
-        peer.public_data.set("pos_x", pos_x);
-        peer.public_data.set("pos_x", pos_x);
-        peer.private_data.set("dir", -1);
+    void _set_peer_direction(LobbyPeer@ peer, int64 dir) {
+        peer.public_data.set("dir", dir);
     }
-    void _on_tick(int delta) {
-        Lobby@ l = lobby::get();
-        auto keys = l.peers.getKeys();
-        for (uint i=0; i < keys.length(); i++) {
-            auto peer = cast<LobbyPeer@>(l.peers[keys[i]]);
-            main::_move_peer(peer);
+    Vector2i _dir_code_to_vector(int64 dir_code) {
+        switch(dir_code) {
+            case player::PLAYER_DIR::DIR_LEFT:
+                return Vector2i(-1, 0);
+            case player::PLAYER_DIR::DIR_UP:
+                return Vector2i(0, -1);
+            case player::PLAYER_DIR::DIR_RIGHT:
+                return Vector2i(1, 0);
+            case player::PLAYER_DIR::DIR_DOWN:
+                return Vector2i(0, 1);
+            default:
+                return Vector2i(0, 0);
+        }
+    }
+    bool _check_peer_collision(Lobby@ l, Vector2i pos) {
+        auto peerKeys = l.peers.getKeys();
+        for (uint64 i=0; i < peerKeys.length(); i++) {
+            auto checking_peer = cast<LobbyPeer@>(l.peers[peerKeys[i]]);
+            auto checking_pos = Vector2i(checking_peer.public_data.get_int("pos_x"), checking_peer.public_data.get_int("pos_y"));
+            if (checking_pos == pos) {
+                // another peer is in the way
+                return true;
+            }
+        }
+        return false;
+    }
+    bool _move_peer(LobbyPeer@ moving_peer, Lobby@ l, int64 dir_code) {
+        auto pos = Vector2i(moving_peer.public_data.get_int("pos_x"), moving_peer.public_data.get_int("pos_y"));
+        auto dir = _dir_code_to_vector(dir_code);
+        auto current_id = l.private_data.get_int(pos.ToString());
+        auto new_id = l.private_data.get_int((pos + dir).ToString());
+        moving_peer.public_data.set("is_interactable", map::_is_interactable(new_id));
+        if (!map::_is_walkable(new_id)) {
+            return false;
+        }
+        if (_check_peer_collision(l, pos + dir)) {
+            return false;
+        }
+        auto speed_ms = map::_tile_speed(current_id) + map::_tile_speed(new_id);
+        moving_peer.public_data.set("move_time", speed_ms);
+        moving_peer.public_data.set("pos_x", (pos + dir).x);
+        moving_peer.public_data.set("pos_y", (pos + dir).y);
+        return true;
+    }
+    void _on_tick(int64 delta) {
+        auto l = lobby::get();
+        auto peer = cast<LobbyPeer@>(l.peers[l.calling_peer_id]);
+        if (peer.public_data.get_bool("is_moving")) {
+            auto move_start_ms = int64(peer.public_data.get_int("move_start"));
+            auto move_time_ms = peer.public_data.get_int("move_time");
+            if (lobby::get_ticks_ms() - move_start_ms > move_time_ms) {
+                _move_peer(peer, l, peer.public_data.get_int("dir"));
+                peer.public_data.set("move_start", move_start_ms + move_time_ms);
+            }
         }
     }
 }

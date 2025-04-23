@@ -10,10 +10,10 @@ cd external/vcpkg
 ./vcpkg install botan --triplet x64-osx
 ./vcpkg install json-c --triplet x64-osx
 ./vcpkg install openssl --triplet x64-osx
-./vcpkg install "cpp-httplib[openssl]" --triplet x64-osx
 ./vcpkg install boost-container --triplet x64-osx
 ./vcpkg install luau --triplet x64-osx
 ./vcpkg install zlib --triplet x64-osx
+./vcpkg install boost-beast --triplet x64-osx
 ./vcpkg list
 ./vcpkg integrate install
 cd ../..

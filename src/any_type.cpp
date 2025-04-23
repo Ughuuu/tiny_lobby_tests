@@ -14,7 +14,7 @@ std::string decode_string_or_default(yyjson_val *object, std::string key,
     return std::string(yyjson_get_str(value));
 }
 
-int decode_int_or_default(yyjson_val *object, std::string key, int default_value) {
+int64_t decode_int_or_default(yyjson_val *object, std::string key, int64_t default_value) {
     if (!object || yyjson_get_type(object) != YYJSON_TYPE_OBJ) {
         return default_value;
     }
@@ -22,7 +22,7 @@ int decode_int_or_default(yyjson_val *object, std::string key, int default_value
     yyjson_val *val = yyjson_obj_get(object, key.c_str());
     if (!val) return default_value;
 
-    if (yyjson_is_int(val)) return static_cast<int>(yyjson_get_int(val));
+    if (yyjson_is_int(val)) return static_cast<int>(yyjson_get_sint(val));
     if (yyjson_is_uint(val)) return static_cast<int>(yyjson_get_uint(val));
     if (yyjson_is_real(val)) return static_cast<int>(yyjson_get_real(val));
 
@@ -74,7 +74,7 @@ std::string decode_value(yyjson_val *value, AnyElement &element) {
             break;
         case YYJSON_TYPE_NUM:
             if (yyjson_is_int(value)) {
-                element.value = yyjson_get_int(value);
+                element.value = yyjson_get_sint(value);
             } else if (yyjson_is_uint(value)) {
                 element.value = static_cast<int64_t>(yyjson_get_uint(value));
             } else {

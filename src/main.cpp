@@ -1,6 +1,7 @@
 #include <readerwriterqueue.h>
 #include <stddef.h>
 
+#include <filesystem>
 #include <thread>
 
 #include "App.h"
@@ -8,13 +9,104 @@
 #include "database.h"
 #include "decrypt_pgp.h"
 #include "game_thread.h"
+#include "login_client.h"
 #include "pogr_client.h"
 #include "websocket_server.h"
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
+std::string getUserAppDataPath(const std::string &appName = "LobbyServer") {
+    std::string path;
+
+#ifdef _WIN32
+    const char *appData = std::getenv("APPDATA");  // Usually C:\Users\Username\AppData\Roaming
+    if (appData)
+        path = std::string(appData) + "\\" + appName + "\\";
+    else
+        path = ".\\" + appName + "\\";
+
+#elif __APPLE__
+    const char *home = std::getenv("HOME");
+    if (home)
+        path = std::string(home) + "/Library/Application Support/" + appName + "/";
+    else
+        path = "./" + appName + "/";
+
+#elif __linux__
+    const char *configHome = std::getenv("XDG_CONFIG_HOME");
+    const char *home = std::getenv("HOME");
+
+    if (configHome)
+        path = std::string(configHome) + "/" + appName + "/";
+    else if (home)
+        path = std::string(home) + "/.config/" + appName + "/";
+    else
+        path = "./" + appName + "/";
+#else
+    path = "./" + appName + "/";
+#endif
+
+    return path;
+}
+
+std::string get_jwt_path() { return getUserAppDataPath("LobbyServer") + "session.jwt"; }
 
 void check_signature() {
     std::string license_data = "license_id|holder|email|created_on|expires_on";
     std::string signature_base64 = "<base64-signature>";
     // verify_detached_signature(license_data, signature_base64);
+}
+
+bool login_server() {
+    std::string base_path = getUserAppDataPath("LobbyServer");
+    if (!std::filesystem::exists(base_path)) {
+        std::filesystem::create_directories(base_path);
+    }
+    std::string jwt_path = get_jwt_path();
+    std::cout << jwt_path << std::endl;
+    if (std::filesystem::exists(jwt_path)) {
+        std::ifstream jwt_file(jwt_path);
+        if (jwt_file.is_open()) {
+            std::string jwt;
+            std::getline(jwt_file, jwt);
+            jwt_file.close();
+            if (!jwt.empty()) {
+                std::cout << "JWT already exists: " << jwt << std::endl;
+                return true;
+            }
+        }
+    }
+    LoginClient client("login.blazium.app", "137991a7-9cd5-413b-ba4a-ffb1bd29bb6a");
+    std::string error;
+    if (!client.connect(error)) {
+        std::cerr << "Connect failed: " << error << std::endl;
+        return false;
+    }
+    std::string url, login_type;
+    if (client.request_url("discord", url, login_type, error)) {
+        std::cout << "Login URL: " << url << std::endl;
+    } else {
+        std::cerr << "Request URL failed: " << error << std::endl;
+        return false;
+    }
+    std::string jwt, type, access_token;
+    if (client.wait_for_jwt(jwt, type, access_token, error)) {
+        std::cout << "JWT: " << jwt << " access_token: " << access_token << std::endl;
+        std::ofstream jwt_file(jwt_path);
+        if (jwt_file.is_open()) {
+            jwt_file << jwt;
+            jwt_file.close();
+        } else {
+            std::cerr << "Failed to open JWT file for writing." << std::endl;
+            return false;
+        }
+    } else {
+        std::cerr << "JWT wait failed: " << error << std::endl;
+        return false;
+    }
+    client.close();
+    return true;
 }
 
 int main(int argc, char *argv[]) {
@@ -27,6 +119,7 @@ int main(int argc, char *argv[]) {
     }
     bool verbose = false;
     bool disable_metrics = false;
+    bool disable_login = false;
     for (int i = 1; i < argc; ++i) {
         std::string arg(argv[i]);
 
@@ -34,12 +127,24 @@ int main(int argc, char *argv[]) {
             verbose = true;
         } else if (arg == "--disable-metrics") {
             disable_metrics = true;
+        } else if (arg == "--disable-login") {
+            disable_login = true;
+        } else if (arg == "--help" || arg == "-h") {
+            std::cout << "Usage: " << argv[0]
+                      << " [--verbose] [--disable-metrics] [--disable-login]" << std::endl;
+            return 0;
         }
     }
     if (!disable_metrics) {
         std::cout << "This application collects anonymous usage statistics. To disable it pass "
                      "--disable-metrics"
                   << std::endl;
+    }
+    if (!disable_login && !login_server()) {
+        std::cerr << "Login failed. Please check your internet connection." << std::endl;
+        exit(1);
+    } else {
+        std::cout << "Login disabled. Locked to 10 players." << std::endl;
     }
 
     if (config_reader.GetBoolean("database", "enabled", false) == true) {

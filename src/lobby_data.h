@@ -13,7 +13,7 @@ struct LobbyData {
     std::string name;
     std::string host;
     std::string password;
-    int max_players;
+    int64_t max_players;
     boost::container::flat_set<std::string> peer_ids;
     int64_t create_time;
     std::string game_id;
@@ -21,7 +21,7 @@ struct LobbyData {
     boost::container::flat_map<std::string, AnyElement> public_data;
     boost::container::flat_map<std::string, AnyElement> private_data;
     boost::container::flat_map<std::string, AnyElement> tags;
-    int order_id_counter = 0;
+    int64_t order_id_counter = 0;
     bool public_data_dirty = false;
     bool private_data_dirty = false;
     bool tags_dirty = false;

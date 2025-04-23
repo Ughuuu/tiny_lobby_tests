@@ -332,10 +332,6 @@ AnyElement ScriptLua::func_call(std::string& func_name, boost::container::vector
     if (!enabled) {
         return AnyElement{"Lua script is not enabled"};
     }
-    if (autoreload) {
-        close();
-        open();
-    }
     if (!enabled) {
         return AnyElement{"Lua script is not enabled"};
     }
@@ -389,5 +385,4 @@ void ScriptLua::close() {
         lua_close(L);
         L = nullptr;
     }
-    enabled = false;
 }

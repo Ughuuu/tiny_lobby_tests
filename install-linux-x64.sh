@@ -11,10 +11,10 @@ cd external/vcpkg
 ./vcpkg install botan
 ./vcpkg install json-c
 ./vcpkg install openssl
-./vcpkg install "cpp-httplib[openssl]"
 ./vcpkg install boost-container
 ./vcpkg install luau
 ./vcpkg install zlib
+./vcpkg install boost-beast
 ./vcpkg integrate install
 ls external/vcpkg/installed/x64-linux/include
 cd ../..

@@ -16,6 +16,8 @@
 
 #include "game_thread.h"
 #include "script_as_functions.h"
+#include "script_as_http.h"
+#include "script_as_json.h"
 #include "script_as_scriptfile.h"
 
 void as_start_timer_wrapper(asIScriptGeneric *gen) {
@@ -88,6 +90,16 @@ void as_get_lobby_wrapper(asIScriptGeneric *gen) {
     });
 }
 
+void as_get_ticks_ms_wrapper(asIScriptGeneric *gen) {
+    // Retrieve the ScriptAS instance from the engine's user data
+    asIScriptEngine *engine = gen->GetEngine();
+    ScriptAS *self = static_cast<ScriptAS *>(engine->GetUserData());
+    auto &game_thread = self->game_thread;
+    auto &game = game_thread->games[self->as_game_id];
+    auto &lobby = game.lobbies[self->as_lobby_id];
+    gen->SetReturnQWord((asQWORD)self->game_thread->get_time());
+}
+
 void ScriptAS::as_MessageCallback(const asSMessageInfo *msg, void *param) {
     const char *type = "ERR ";
     if (msg->type == asMSGTYPE_WARNING)
@@ -100,9 +112,6 @@ void ScriptAS::as_MessageCallback(const asSMessageInfo *msg, void *param) {
 }
 
 boost::container::flat_set<std::string> ScriptAS::open() {
-    if (enabled) {
-        close();
-    }
     as_functions.clear();
 
     boost::container::flat_set<std::string> empty_set;
@@ -131,6 +140,8 @@ boost::container::flat_set<std::string> ScriptAS::open() {
     RegisterScriptDateTime(as_engine);
     RegisterExceptionRoutines(as_engine);
     RegisterScriptFileCustom_Generic(as_engine);
+    RegisterScriptJSON(as_engine);
+    RegisterHTTPInterface(as_engine);
 
     int r = as_engine->SetMessageCallback(asMETHOD(ScriptAS, as_MessageCallback), this,
                                           asCALL_THISCALL);
@@ -140,8 +151,7 @@ boost::container::flat_set<std::string> ScriptAS::open() {
         return empty_set;
     }
 
-    as_engine->RegisterGlobalFunction("void print(int)", asFUNCTION(as_print_int), asCALL_CDECL);
-    as_engine->RegisterGlobalFunction("void print(float)", asFUNCTION(as_print_float),
+    as_engine->RegisterGlobalFunction("void print(int64)", asFUNCTION(as_print_int64),
                                       asCALL_CDECL);
     as_engine->RegisterGlobalFunction("void print(double)", asFUNCTION(as_print_double),
                                       asCALL_CDECL);
@@ -215,33 +225,25 @@ boost::container::flat_set<std::string> ScriptAS::open() {
     // Set
     as_engine->RegisterObjectMethod("LobbyData", "void set(string key, any@ value)",
                                     asMETHOD(LobbyAS, set), asCALL_THISCALL);
-    as_engine->RegisterObjectMethod("LobbyData", "void set(string key, int value)",
-                                    asMETHOD(LobbyAS, setInt), asCALL_THISCALL);
     as_engine->RegisterObjectMethod("LobbyData", "void set(string key, int64 value)",
                                     asMETHOD(LobbyAS, setInt64), asCALL_THISCALL);
     as_engine->RegisterObjectMethod("LobbyData", "void set(string key, bool value)",
                                     asMETHOD(LobbyAS, setBool), asCALL_THISCALL);
-    as_engine->RegisterObjectMethod("LobbyData", "void set(string key, float value)",
-                                    asMETHOD(LobbyAS, setFloat), asCALL_THISCALL);
     as_engine->RegisterObjectMethod("LobbyData", "void set(string key, double value)",
                                     asMETHOD(LobbyAS, setDouble), asCALL_THISCALL);
     as_engine->RegisterObjectMethod("LobbyData", "void set(string key, string value)",
                                     asMETHOD(LobbyAS, setString), asCALL_THISCALL);
-    as_engine->RegisterObjectMethod("LobbyData", "void set(string key, array<any>@ value)",
+    as_engine->RegisterObjectMethod("LobbyData", "void set(string key, array<any> &value)",
                                     asMETHOD(LobbyAS, setArray), asCALL_THISCALL);
-    as_engine->RegisterObjectMethod("LobbyData", "void set(string key, dictionary@ value)",
+    as_engine->RegisterObjectMethod("LobbyData", "void set(string key, dictionary &value)",
                                     asMETHOD(LobbyAS, setDictionary), asCALL_THISCALL);
     // Get
     as_engine->RegisterObjectMethod("LobbyData", "any@ get(string key)", asMETHOD(LobbyAS, get),
                                     asCALL_THISCALL);
-    as_engine->RegisterObjectMethod("LobbyData", "int get_int(string key)",
-                                    asMETHOD(LobbyAS, getInt), asCALL_THISCALL);
-    as_engine->RegisterObjectMethod("LobbyData", "int get_int64(string key)",
+    as_engine->RegisterObjectMethod("LobbyData", "int64 get_int(string key)",
                                     asMETHOD(LobbyAS, getInt64), asCALL_THISCALL);
     as_engine->RegisterObjectMethod("LobbyData", "bool get_bool(string key)",
                                     asMETHOD(LobbyAS, getBool), asCALL_THISCALL);
-    as_engine->RegisterObjectMethod("LobbyData", "float get_float(string key)",
-                                    asMETHOD(LobbyAS, getFloat), asCALL_THISCALL);
     as_engine->RegisterObjectMethod("LobbyData", "double get_double(string key)",
                                     asMETHOD(LobbyAS, getDouble), asCALL_THISCALL);
     as_engine->RegisterObjectMethod("LobbyData", "array<any>@ get_array(string key)",
@@ -267,7 +269,8 @@ boost::container::flat_set<std::string> ScriptAS::open() {
                                       asFUNCTION(as_notifty_wrapper), asCALL_GENERIC);
     as_engine->RegisterGlobalFunction("void broadcast_chat(string message)",
                                       asFUNCTION(as_broadcast_chat_wrapper), asCALL_GENERIC);
-
+    as_engine->RegisterGlobalFunction("int64 get_ticks_ms()", asFUNCTION(as_get_ticks_ms_wrapper),
+                                      asCALL_GENERIC);
     as_engine->RegisterGlobalFunction("Lobby@ get()", asFUNCTION(as_get_lobby_wrapper),
                                       asCALL_GENERIC);
     as_engine->SetDefaultNamespace("");
@@ -409,11 +412,6 @@ AnyElement ScriptAS::func_call(std::string &func_name, boost::container::vector<
     if (!enabled) {
         return AnyElement{"AngelScript not enabled"};
     }
-    if (autoreload) {
-        // TODO
-        close();
-        open();
-    }
     if (!as_functions.contains(func_name)) {
         has_error = true;
         return AnyElement{"Function not found"};
@@ -438,9 +436,9 @@ AnyElement ScriptAS::func_call(std::string &func_name, boost::container::vector<
     if (args.size() != func->GetParamCount()) {
         return AnyElement{"Argument count mismatch"};
     }
-    static int string_type_id = as_engine->GetTypeIdByDecl("string");
-    static int dict_type_id = as_engine->GetTypeIdByDecl("dictionary");
-    static int array_type_id = as_engine->GetTypeIdByDecl("array<any>");
+    int string_type_id = as_engine->GetTypeIdByDecl("string");
+    int dict_type_id = as_engine->GetTypeIdByDecl("dictionary");
+    int array_type_id = as_engine->GetTypeIdByDecl("array<any>");
     // Set arguments
     for (size_t i = 0; i < args.size(); i++) {
         int typeId;
@@ -695,7 +693,7 @@ int64_t LobbyAS::get_peers_count() {
 
 CScriptDictionary *LobbyAS::get_peers() {
     CScriptDictionary *dict = CScriptDictionary::Create(as_engine);
-    static int peer_type_id = as_engine->GetTypeIdByDecl("LobbyPeer@");
+    int peer_type_id = as_engine->GetTypeIdByDecl("LobbyPeer@");
     assert(peer_type_id >= 0);
     auto &game = game_thread->games[as_game_id];
     auto &lobby = game.lobbies[as_lobby_id];
@@ -748,14 +746,6 @@ CScriptAny *LobbyAS::get(const std::string &key) {
     return ConvertToAny(as_engine, any_val);
 }
 
-int LobbyAS::getInt(const std::string &key) {
-    AnyElement any_val = retrieve(key);
-    if (auto val = std::get_if<int64_t>(&any_val.value)) {
-        return *val;
-    }
-    return 0;
-}
-
 int64_t LobbyAS::getInt64(const std::string &key) {
     AnyElement any_val = retrieve(key);
     if (auto val = std::get_if<int64_t>(&any_val.value)) {
@@ -780,14 +770,6 @@ std::string LobbyAS::getString(const std::string &key) {
     return "";
 }
 
-float LobbyAS::getFloat(const std::string &key) {
-    AnyElement any_val = retrieve(key);
-    if (auto val = std::get_if<double>(&any_val.value)) {
-        return *val;
-    }
-    return 0.0f;
-}
-
 double LobbyAS::getDouble(const std::string &key) {
     AnyElement any_val = retrieve(key);
     if (auto val = std::get_if<double>(&any_val.value)) {
@@ -807,7 +789,7 @@ CScriptDictionary *LobbyAS::getDictionary(const std::string &key) {
 
 CScriptArray *LobbyAS::getArray(const std::string &key) {
     AnyElement any_val = retrieve(key);
-    static int any_type_id = as_engine->GetTypeIdByDecl("Any@");
+    int any_type_id = as_engine->GetTypeIdByDecl("any@");
     if (auto val = std::get_if<boost::container::vector<AnyElement>>(&any_val.value)) {
         return ConvertToArray(as_engine, *val);
     }
@@ -858,11 +840,6 @@ void LobbyAS::set(std::string &key, CScriptAny *value) {
     assign(key, value_any);
 }
 
-void LobbyAS::setInt(std::string &key, int value) {
-    AnyElement value_any{value};
-    assign(key, value_any);
-}
-
 void LobbyAS::setInt64(std::string &key, int64_t value) {
     AnyElement value_any{value};
     assign(key, value_any);
@@ -878,11 +855,6 @@ void LobbyAS::setString(std::string &key, std::string &value) {
     assign(key, value_any);
 }
 
-void LobbyAS::setFloat(std::string &key, float value) {
-    AnyElement value_any{value};
-    assign(key, value_any);
-}
-
 void LobbyAS::setDouble(std::string &key, double value) {
     AnyElement value_any{value};
     assign(key, value_any);
@@ -890,13 +862,11 @@ void LobbyAS::setDouble(std::string &key, double value) {
 
 void LobbyAS::setDictionary(std::string &key, CScriptDictionary *value) {
     AnyElement value_any{ConvertFromDictionary(as_engine, value)};
-    value->Release();
     assign(key, value_any);
 }
 
 void LobbyAS::setArray(std::string &key, CScriptArray *value) {
     AnyElement value_any{ConvertFromArray(as_engine, value)};
-    value->Release();
     assign(key, value_any);
 }
 

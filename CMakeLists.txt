@@ -17,6 +17,7 @@ target_link_libraries(uWebSockets INTERFACE uSockets ZLIB::ZLIB)
 # Boost
 find_package(boost_uuid REQUIRED CONFIG)
 find_package(boost_container REQUIRED CONFIG)
+find_package(boost_beast REQUIRED CONFIG)
 file(GLOB SOURCES "src/*.cpp")
 
 # readerwriterqueue
@@ -40,8 +41,6 @@ FetchContent_MakeAvailable(yyjson)
 # Dependencies from vcpkg
 find_package(unofficial-inih CONFIG REQUIRED)
 find_package(libpqxx CONFIG REQUIRED)
-set(CPPHTTPLIB_OPENSSL_SUPPORT ON)
-find_package(httplib CONFIG REQUIRED)
 set(OPENSSL_USE_STATIC_LIBS TRUE)
 find_package(OpenSSL REQUIRED)
 find_package(unofficial-luau CONFIG REQUIRED)
@@ -116,6 +115,7 @@ target_include_directories(lobby_server PRIVATE
 target_link_libraries(lobby_server PRIVATE
   Boost::uuid
   Boost::container
+  Boost::beast
   uWebSockets
   angelscript
   readerwriterqueue
@@ -130,7 +130,6 @@ target_link_libraries(lobby_server PRIVATE
   libpqxx::pqxx
   OpenSSL::SSL
   OpenSSL::Crypto
-  httplib::httplib
   rnp
   Botan::Botan-static
   json-c::json-c)

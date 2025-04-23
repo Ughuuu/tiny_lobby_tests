@@ -6,6 +6,7 @@
 #include "game_thread.h"
 #include "luacode.h"
 #include "lualib.h"
+#include "script_as_http.h"
 #include "script_lua.h"
 
 AnyElement decode_luavalue(lua_State *L, int idx) {
@@ -239,7 +240,103 @@ int broadcast_chat(lua_State *L) {
 int get_time(lua_State *L) {
     lua_getfield(L, LUA_REGISTRYINDEX, "game_thread");
     GameThread *game_thread = static_cast<GameThread *>(lua_touserdata(L, -1));
-    lua_pushinteger(L, game_thread->get_time());
+    lua_pushstring(L, std::to_string(game_thread->get_time()).c_str());
+    return 1;
+}
+
+int http_request(lua_State *L) {
+    if (lua_gettop(L) < 2 || lua_gettop(L) > 5) {
+        luaL_error(L, "Expected 2 argument min. Max 5.");
+        return 0;
+    }
+    std::string method = luaL_checkstring(L, 1);
+    std::string url = luaL_checkstring(L, 2);
+    AnyElement query_params{boost::container::vector<AnyElement>{}};
+    if (lua_gettop(L) >= 3) {
+        query_params = decode_luavalue(L, 3);
+    }
+    AnyElement headers{boost::container::vector<AnyElement>{}};
+    if (lua_gettop(L) >= 4) {
+        headers = decode_luavalue(L, 4);
+    }
+    std::string body;
+    if (lua_gettop(L) >= 5) {
+        body = luaL_checkstring(L, 5);
+    }
+    boost::container::vector<AnyElement> headers_vec;
+    boost::container::vector<AnyElement> query_params_vec;
+    if (auto *headers_arr = std::get_if<boost::container::vector<AnyElement>>(&headers.value)) {
+        headers_vec = *headers_arr;
+    }
+    if (auto *query_params_arr =
+            std::get_if<boost::container::vector<AnyElement>>(&query_params.value)) {
+        query_params_vec = *query_params_arr;
+    }
+
+    std::vector<std::pair<std::string, std::string>> query_params_input;
+    std::vector<std::pair<std::string, std::string>> headers_input;
+    for (size_t i = 0; i + 1 < query_params_vec.size(); i += 2) {
+        if (auto key = std::get_if<std::string>(&query_params_vec[i].value)) {
+            if (auto val = std::get_if<std::string>(&query_params_vec[i + 1].value)) {
+                query_params_input.emplace_back(*key, *val);
+            }
+        }
+    }
+    for (size_t i = 0; i + 1 < headers_vec.size(); i += 2) {
+        if (auto key = std::get_if<std::string>(&headers_vec[i].value)) {
+            if (auto val = std::get_if<std::string>(&headers_vec[i + 1].value)) {
+                headers_input.emplace_back(*key, *val);
+            }
+        }
+    }
+    try {
+        auto res = request(method, url, query_params_input, headers_input, body);
+        lua_pushinteger(L, res.result_int());
+        lua_pushstring(L, res.body().c_str());
+    } catch (const std::exception &e) {
+        lua_pushinteger(L, 500);
+        lua_pushstring(L, (std::string("Error: ") + e.what()).c_str());
+    }
+    return 2;
+}
+
+int DecodeJSON_from_string(lua_State *L) {
+    if (lua_gettop(L) < 1) {
+        luaL_error(L, "Expected 1 argument.");
+        return 0;
+    }
+    std::string json = luaL_checkstring(L, 1);
+    yyjson_doc *doc = yyjson_read(json.c_str(), json.length(), 0);
+    if (!doc) return 0;
+
+    yyjson_val *root = yyjson_doc_get_root(doc);
+    if (!root) {
+        yyjson_doc_free(doc);
+        return 0;
+    }
+
+    AnyElement root_value;
+    std::string error = decode_value(root, root_value);
+    if (!error.empty()) {
+        yyjson_doc_free(doc);
+        asIScriptContext *ctx = asGetActiveContext();
+        if (ctx) ctx->SetException(("JSON parse error: " + error).c_str());
+        return 0;
+    }
+    push_lua_value(L, root_value);
+    yyjson_doc_free(doc);
+    return 1;
+}
+
+// Encode to string
+int EncodeJSON_to_string(lua_State *L) {
+    if (lua_gettop(L) < 1) {
+        luaL_error(L, "Expected 1 argument.");
+        return 0;
+    }
+
+    AnyElement val = decode_luavalue(L, 1);
+    push_lua_value(L, AnyElement{val.to_string().c_str()});
     return 1;
 }
 
@@ -427,6 +524,14 @@ void luaopen_system(lua_State *L) {
 
     lua_pushcfunction(L, get_time, "get_time_since_epoch");
     lua_setfield(L, -2, "get_time_since_epoch");
+
+    lua_pushcfunction(L, http_request, "http_request");
+    lua_setfield(L, -2, "http_request");
+
+    lua_pushcfunction(L, DecodeJSON_from_string, "decode_json");
+    lua_setfield(L, -2, "decode_json");
+    lua_pushcfunction(L, EncodeJSON_to_string, "encode_json");
+    lua_setfield(L, -2, "encode_json");
 
     luaL_findtable(L, LUA_REGISTRYINDEX, "_MODULES", 1);
     lua_pushstring(L, "system");

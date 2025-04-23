@@ -8,9 +8,11 @@ CScriptDictionary *ConvertToDictionary(
     asIScriptEngine *engine, const boost::container::flat_map<std::string, AnyElement> &map) {
     auto *dict = CScriptDictionary::Create(engine);
 
-    static int string_type_id = engine->GetTypeIdByDecl("string");
-    static int dict_type_id = engine->GetTypeIdByDecl("dictionary@");
-    static int array_type_id = engine->GetTypeIdByDecl("array<any>@");
+    // Get type IDs (with @ for object types)
+    int string_type_id = engine->GetTypeIdByDecl("string");
+    int dict_type_id = engine->GetTypeIdByDecl("dictionary");
+    int array_type_id = engine->GetTypeIdByDecl("array<any>");
+
     for (const auto &pair : map) {
         const auto &key = pair.first;
         const auto &value = pair.second.value;
@@ -25,12 +27,12 @@ CScriptDictionary *ConvertToDictionary(
             dict->Set(key, (void *)v, string_type_id);
         } else if (auto submap =
                        std::get_if<boost::container::flat_map<std::string, AnyElement>>(&value)) {
-            auto *sub_dict = ConvertToDictionary(engine, *submap);
-            dict->Set(key, (void *)sub_dict, dict_type_id);
+            CScriptDictionary *sub_dict = ConvertToDictionary(engine, *submap);
+            dict->Set(key, sub_dict, dict_type_id);
             sub_dict->Release();
         } else if (auto subvec = std::get_if<boost::container::vector<AnyElement>>(&value)) {
-            auto *sub_array = ConvertToArray(engine, *subvec);
-            dict->Set(key, (void *)sub_array, array_type_id);
+            CScriptArray *sub_array = ConvertToArray(engine, *subvec);
+            dict->Set(key, sub_array, array_type_id);
             sub_array->Release();
         }
     }
@@ -38,71 +40,51 @@ CScriptDictionary *ConvertToDictionary(
     return dict;
 }
 
-CScriptAny *ConvertToAny(asIScriptEngine *engine, AnyElement &element) {
+CScriptAny *ConvertToAny(asIScriptEngine *engine, const AnyElement &element) {
     CScriptAny *any = new CScriptAny(engine);
 
     if (auto v = std::get_if<int64_t>(&element.value)) {
-        any->Store(static_cast<void *>(v), engine->GetTypeIdByDecl("int64"));
+        any->Store((void *)v, asTYPEID_INT64);
     } else if (auto v = std::get_if<double>(&element.value)) {
-        any->Store(static_cast<void *>(v), engine->GetTypeIdByDecl("double"));
+        any->Store((void *)v, asTYPEID_DOUBLE);
     } else if (auto v = std::get_if<bool>(&element.value)) {
-        any->Store(static_cast<void *>(v), engine->GetTypeIdByDecl("bool"));
+        any->Store((void *)v, asTYPEID_BOOL);
     } else if (auto v = std::get_if<std::string>(&element.value)) {
-        any->Store(static_cast<void *>(v), engine->GetTypeIdByDecl("string"));
+        any->Store((void *)v, engine->GetTypeIdByDecl("string"));
     } else if (auto submap = std::get_if<boost::container::flat_map<std::string, AnyElement>>(
                    &element.value)) {
-        CScriptDictionary *dict =
-            ConvertToDictionary(engine, *submap);  // Assume returns CScriptDictionary*
-        any->Store(dict, engine->GetTypeIdByDecl("dictionary@"));
-        dict->Release();  // Release our temporary reference
+        CScriptDictionary *dict = ConvertToDictionary(engine, *submap);
+        any->Store(dict, engine->GetTypeIdByDecl("dictionary"));
+        dict->Release();
     } else if (auto subvec = std::get_if<boost::container::vector<AnyElement>>(&element.value)) {
-        CScriptArray *arr = ConvertToArray(engine, *subvec);  // Assume returns CScriptArray*
-        any->Store(arr, engine->GetTypeIdByDecl("array<any>@"));
-        arr->Release();  // Release our temporary reference
+        CScriptArray *arr = ConvertToArray(engine, *subvec);
+        any->Store(arr, engine->GetTypeIdByDecl("array<any>"));
+        arr->Release();
     }
 
     return any;
 }
-
 CScriptArray *ConvertToArray(asIScriptEngine *engine,
                              const boost::container::vector<AnyElement> &elements) {
+    // Get the array type (note the @ for handle)
     asITypeInfo *type = engine->GetTypeInfoByDecl("array<any>");
-    CScriptArray *arr = CScriptArray::Create(type, elements.size());
+    if (!type) {
+        return nullptr;
+    }
 
-    static int string_type_id = engine->GetTypeIdByDecl("string");
-    static int dict_type_id = engine->GetTypeIdByDecl("dictionary");
-    static int array_type_id = engine->GetTypeIdByDecl("array<any>");
+    CScriptArray *arr = CScriptArray::Create(type, (asUINT)elements.size());
+
     for (size_t i = 0; i < elements.size(); ++i) {
-        auto &elem = elements[i];
-
-        if (auto v = std::get_if<int64_t>(&elem.value)) {
-            arr->SetValue(i, (void *)v);
-        } else if (const double *v = std::get_if<double>(&elem.value)) {
-            arr->SetValue(i, (void *)v);
-        } else if (const bool *v = std::get_if<bool>(&elem.value)) {
-            arr->SetValue(i, (void *)v);
-        } else if (const std::string *v = std::get_if<std::string>(&elem.value)) {
-            arr->SetValue(i, (void *)v);
-        } else if (const boost::container::vector<AnyElement> *v =
-                       std::get_if<boost::container::vector<AnyElement>>(&elem.value)) {
-            CScriptArray *nested = ConvertToArray(engine, *v);
-            arr->SetValue(i, (void *)nested);
-            nested->Release();
-        } else if (const boost::container::flat_map<std::string, AnyElement> *v =
-                       std::get_if<boost::container::flat_map<std::string, AnyElement>>(
-                           &elem.value)) {
-            auto *dict = ConvertToDictionary(engine, *v);
-            arr->SetValue(i, (void *)dict);
-            dict->Release();
-        }
+        auto &value = elements[i];
+        CScriptAny *any = ConvertToAny(engine, value);
+        arr->SetValue((asUINT)i, any);
+        any->Release();
     }
 
     return arr;
 }
 
-void as_print_int(int value) { std::cout << value << std::endl; }
-
-void as_print_float(float value) { std::cout << value << std::endl; }
+void as_print_int64(int64_t value) { std::cout << value << std::endl; }
 
 void as_print_double(double value) { std::cout << value << std::endl; }
 

@@ -17,9 +17,8 @@ CScriptArray *ConvertToArray(asIScriptEngine *engine,
                              const boost::container::vector<AnyElement> &elements);
 CScriptDictionary *ConvertToDictionary(
     asIScriptEngine *engine, const boost::container::flat_map<std::string, AnyElement> &map);
-CScriptAny *ConvertToAny(asIScriptEngine *engine, AnyElement &element);
-void as_print_int(int value);
-void as_print_float(float value);
+CScriptAny *ConvertToAny(asIScriptEngine *engine, const AnyElement &element);
+void as_print_int64(int64_t value);
 void as_print_double(double value);
 void as_print_bool(bool value);
 void as_print_string(const std::string &value);

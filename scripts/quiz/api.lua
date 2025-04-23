@@ -11,9 +11,37 @@ function api.start_game()
     if l.public_data["game_state"] ~= "setup" then
         return { error = "Game already started" }
     end
-    lobby.start_timer("_on_timer_question_expired", 7)
-    l = api.set_initial_data(l)
+    local data = {
+        lobby_type = "10v10",
+        lobby_uuid = l.id .. math.random(1, 1000),
+        entry_count = 10,
+        language_code = "en",
+        question_type = "text",
+        category_in = l.tags["category"]
+    }
+    local headers = {
+        "SERVICE_TOKEN", "b80f6ba2-e342-428a-b4f1-791bdebe2142",
+        "SERVICE_SECRET", "tSCU2GWuqLWT0VtkpF2u1a6DilCdhGcm",
+        "Content-Type", "application/json"
+    }
+    local status, body = system.http_request("POST", "https://quiz-service-tbrvq.ondigitalocean.app/api/v1/entries", {}, headers, system.encode_json(data))
+    if status ~= 200 then
+        print ("Error: Got status " .. status .. " and body " .. body)
+        return { error = "Failed to fetch questions." }
+    end
+    local questions = system.decode_json(body)["questions"]
+    local answers = {}
+    for i, value in ipairs(questions) do
+        local question = value["question"]
+        local answer = value["answer"]
+        table.insert(answers, answer)
+        local points = value["points"]
+        print(i, question, answer, points)
+    end
     return
+    -- lobby.start_timer("_on_timer_question_expired", 7)
+    -- l = api.set_initial_data(l)
+    -- return
 end
 
 function api.set_initial_data(l)

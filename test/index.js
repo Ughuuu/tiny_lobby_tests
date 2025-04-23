@@ -42,7 +42,7 @@ fs.writeFileSync(csvFilePath, 'timestamp,client_count,client_errors,messages_sen
 
 // Function to start a WebSocket client
 function startClient(clientId) {
-    const ws = new WebSocket(serverUrl, ['blazium', '00000000-0000-0000-0000-000000000002']);
+    const ws = new WebSocket(serverUrl, ['blazium', '00000000-0000-0000-0000-000000000001']);
     ws.on('open', () => {
         clientCount++;
     });

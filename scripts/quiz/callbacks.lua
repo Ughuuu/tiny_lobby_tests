@@ -12,6 +12,7 @@ function callbacks.on_create(minPlayers, maxPlayers)
     end
 
     l.tags["max_points"] = l.tags["max_points"] or 0
+    l.tags["category"] = l.tags["category"] or "Trivia"
     l.public_data["game_state"] = "setup"
     return
 end

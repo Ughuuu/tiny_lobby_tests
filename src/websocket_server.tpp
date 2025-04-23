@@ -7,10 +7,10 @@
 #include <atomic>
 
 // 1 second
-const int RATE_LIMIT_WINDOW = 1000;
+const int64_t RATE_LIMIT_WINDOW = 1000;
 
-int64_t get_time_now() {
-    auto now = std::chrono::steady_clock::now().time_since_epoch();
+static inline int64_t get_time_now() {
+    auto now = std::chrono::system_clock::now().time_since_epoch();
     return std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
 }
 

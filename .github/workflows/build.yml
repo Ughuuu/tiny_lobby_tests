@@ -137,7 +137,7 @@ jobs:
           cp build/lobby_server .
           ls
           chmod +x lobby_server
-          ./lobby_server &> app.log &
+          ./lobby_server --disable-login &> app.log &
           sleep 10
           cd old-lobby
           go test -timeout 200s -tags=auth ./... -v

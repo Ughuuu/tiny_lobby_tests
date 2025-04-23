@@ -100,7 +100,7 @@ static bool operator!=(const AnyElement &lhs, const AnyElement &rhs) { return !(
 
 std::string decode_string_or_default(yyjson_val *object, std::string key,
                                      std::string default_value);
-int decode_int_or_default(yyjson_val *object, std::string key, int default_value);
+int64_t decode_int_or_default(yyjson_val *object, std::string key, int64_t default_value);
 std::string decode_array(yyjson_val *array, AnyElement &element);
 std::string decode_value(yyjson_val *value, AnyElement &element);
 std::string decode_object(yyjson_val *object,

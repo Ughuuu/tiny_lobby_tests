@@ -8,12 +8,12 @@ Set-Location -Path "external\vcpkg"
 .\vcpkg install botan --disable-metrics --triplet x64-windows-static
 .\vcpkg install json-c --disable-metrics --triplet x64-windows-static
 .\vcpkg install openssl --disable-metrics --triplet x64-windows-static
-.\vcpkg install "cpp-httplib[openssl]" --disable-metrics --triplet x64-windows-static
 .\vcpkg install boost-container --disable-metrics --triplet x64-windows-static
 .\vcpkg install luau --disable-metrics --triplet x64-windows-static
 .\vcpkg install zlib --disable-metrics --triplet x64-windows-static
 .\vcpkg install bzip2 --disable-metrics --triplet x64-windows-static
 .\vcpkg install getopt --disable-metrics --triplet x64-windows-static
 .\vcpkg install dirent --disable-metrics --triplet x64-windows-static
+.\vcpkg install boost-beast --disable-metrics --triplet x64-windows-static
 .\vcpkg integrate install
 Set-Location -Path "..\.."

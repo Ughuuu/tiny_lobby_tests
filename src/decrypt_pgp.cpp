@@ -8,8 +8,6 @@
 rnp_ffi_t ffi = nullptr;
 
 void init_rnp() {
-    std::cout << "RNP backend: " << rnp_backend_string() << " version: " << rnp_backend_version()
-              << std::endl;
     if (rnp_ffi_create(&ffi, "GPG", "GPG")) {
         std::cerr << "Failed to initialize RNP." << std::endl;
         exit(0);
@@ -45,7 +43,6 @@ bool import_public_key() {
         return false;
     }
 
-    std::cout << "Public key imported successfully." << std::endl;
     return true;
 }
 

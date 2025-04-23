@@ -45,12 +45,19 @@ struct GameData {
             lua.close();
         }
     }
-    void open() {
+    void open(int64_t now) {
         if (lua.enabled) {
             enabled_callbacks = lua.open();
         }
         if (angelscript.enabled) {
             enabled_callbacks = angelscript.open();
+        }
+        // set last_send_time and last_tick_time to multiple of send_rate and tick_rate
+        if (send_rate > 0) {
+            last_send_time = (now / send_rate) * send_rate;
+        }
+        if (tick_rate > 0) {
+            last_tick_time = (now / tick_rate) * tick_rate;
         }
     }
 

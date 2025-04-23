@@ -88,7 +88,18 @@ void GameThread::load_games() {
                                         .angelscript = as});
     }
     for (auto &game : games) {
-        game.second.open();
+        game.second.open(get_time_now());
+
+        if (game.second.enabled_callbacks.find("_on_init") != game.second.enabled_callbacks.end()) {
+            bool has_error = false;
+            boost::container::vector<AnyElement> args;
+            auto func_result = scripted_function_call(EMPTY_STRING, EMPTY_STRING, game.second,
+                                                      "_on_init", true, args, has_error);
+            if (has_error && std::holds_alternative<std::string>(func_result.value)) {
+                logger.error_log("[GameThread] on_error _on_init ",
+                                 std::get<std::string>(func_result.value));
+            }
+        }
     }
 }
 
@@ -111,8 +122,9 @@ void GameThread::run() {
     int64_t timer_interval = 500;
     int min_process_size = 100;
     while (true) {
+        now = get_time_now();
         int64_t last_message_process = now;
-        // process about for either 100ms or tickrate. Check time every 100 messages.
+        // process about for either 100ms or tickrate - 10ms. Check time every 100 messages.
         int messages_processed = 0;
         while (receive_queue.size_approx() > 0 || now - last_message_process < check_interval) {
             if (messages_processed > min_process_size) {
@@ -127,8 +139,6 @@ void GameThread::run() {
             handle_disconnects();
         }
         if (now - last_listing > listing_interval) {
-            // std::cout << now << " , " << messages_received << " , " << messages_sent << " , "
-            //     << receive_queue.size_approx() << std::endl;
             messages_received = 0;
             messages_sent = 0;
             last_listing = now;
@@ -138,8 +148,8 @@ void GameThread::run() {
             last_timers = now;
             handle_timers();
         }
-        handle_send();
         handle_tick();
+        handle_send();
         // handle tick if/when needed
     }
     unload_games();
@@ -162,10 +172,10 @@ std::string join(const boost::container::vector<std::string> &vec, const std::st
 void GameThread::handle_send() {
     for (auto &game : games) {
         auto &game_data = game.second;
-        if (game_data.send_rate == 0 || game_data.last_send_time + game_data.send_rate > now) {
+        if (game_data.send_rate == 0 || game_data.last_send_time + game_data.send_rate >= now) {
             continue;
         }
-        game_data.last_send_time = now;
+        game_data.last_send_time += game_data.send_rate;
 
         if (webserver_ssl != nullptr) {
             loop->defer([lobby_listing_peers = std::move(game_data.peers_send_data),
@@ -197,18 +207,15 @@ void GameThread::handle_send() {
 void GameThread::handle_tick() {
     for (auto &game : games) {
         auto &game_data = game.second;
-        if (game_data.tick_rate == 0 || game_data.last_tick_time + game_data.tick_rate > now) {
+        if (game_data.tick_rate == 0 || game_data.last_tick_time + game_data.tick_rate >= now) {
             continue;
         }
         boost::container::vector<AnyElement> args(1);
         args[0] = AnyElement{game_data.tick_rate};
-        game_data.last_tick_time = now;
+        game_data.last_tick_time += game_data.tick_rate;
 
         for (auto &peer : game_data.peers) {
             auto &peer_id = peer.first;
-            if (game_data.disconnected_peers.find(peer_id) != game_data.disconnected_peers.end()) {
-                continue;
-            }
             auto &peer_data = peer.second;
             if (peer_data.lobby_id.empty()) {
                 continue;
@@ -1457,6 +1464,20 @@ AnyElement GameThread::scripted_function_call(std::string peer_id, std::string l
                                               boost::container::vector<AnyElement> &args,
                                               bool &has_error) {
     if (game.lua.enabled) {
+        if (game.lua.autoreload) {
+            game.close();
+            game.open(get_time_now());
+            if (game.enabled_callbacks.find("_on_reload") != game.enabled_callbacks.end()) {
+                bool has_error = false;
+                boost::container::vector<AnyElement> args;
+                auto func_result = scripted_function_call(EMPTY_STRING, EMPTY_STRING, game,
+                                                          "_on_reload", true, args, has_error);
+                if (has_error && std::holds_alternative<std::string>(func_result.value)) {
+                    logger.error_log("[GameThread] on_error _on_reload ",
+                                     std::get<std::string>(func_result.value));
+                }
+            }
+        }
         auto result = game.lua.func_call(funcname, args, peer_id, lobby_id, game.id, has_error);
         // if dictionary with error, put error
         auto result_dict =
@@ -1471,6 +1492,20 @@ AnyElement GameThread::scripted_function_call(std::string peer_id, std::string l
         return result;
     }
     if (game.angelscript.enabled) {
+        if (game.angelscript.autoreload) {
+            game.close();
+            game.open(get_time_now());
+            if (game.enabled_callbacks.find("_on_reload") != game.enabled_callbacks.end()) {
+                bool has_error = false;
+                boost::container::vector<AnyElement> args;
+                auto func_result = scripted_function_call(EMPTY_STRING, EMPTY_STRING, game,
+                                                          "_on_reload", true, args, has_error);
+                if (has_error && std::holds_alternative<std::string>(func_result.value)) {
+                    logger.error_log("[GameThread] on_error _on_reload ",
+                                     std::get<std::string>(func_result.value));
+                }
+            }
+        }
         auto result =
             game.angelscript.func_call(funcname, args, peer_id, lobby_id, game.id, has_error);
         // if dictionary with error, put error
@@ -1497,6 +1532,9 @@ void GameThread::send_message(GameData &game, std::string &lobby_id, std::string
 }
 
 void GameThread::notify_lobby_changes(GameData &game, std::string &lobby_id) {
+    if (lobby_id == "") {
+        return;
+    }
     auto &lobby = game.lobbies[lobby_id];
 
     for (const auto &peer_id : lobby.peer_ids) {
