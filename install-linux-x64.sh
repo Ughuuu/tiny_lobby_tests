@@ -15,6 +15,7 @@ cd external/vcpkg
 ./vcpkg install luau
 ./vcpkg install zlib
 ./vcpkg install boost-beast
+./vcpkg install efsw
 ./vcpkg integrate install
 ls external/vcpkg/installed/x64-linux/include
 cd ../..

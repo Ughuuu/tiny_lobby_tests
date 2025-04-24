@@ -17,6 +17,7 @@ cd external/vcpkg
 ./vcpkg install zlib --triplet arm64-linux
 ./vcpkg install bzip2 --triplet arm64-linux
 ./vcpkg install boost-beast --triplet arm64-linux
+./vcpkg install efsw --triplet arm64-linux
 ./vcpkg integrate install
 ls external/vcpkg/installed/arm64-linux/include
 cd ../..

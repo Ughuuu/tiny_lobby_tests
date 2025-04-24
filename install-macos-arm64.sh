@@ -14,6 +14,7 @@ cd external/vcpkg
 ./vcpkg install luau --triplet arm64-osx
 ./vcpkg install zlib --triplet arm64-osx
 ./vcpkg install boost-beast --triplet arm64-osx
+./vcpkg install efsw --triplet arm64-osx
 ./vcpkg list
 ./vcpkg integrate install
 cd ../..

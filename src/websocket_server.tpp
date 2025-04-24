@@ -189,6 +189,24 @@ void WebSocketServer<SSL>::send(std::string id, const std::string &message, uWS:
 }
 
 template <bool SSL>
+void WebSocketServer<SSL>::send_all(const std::string &message, uWS::OpCode opCode) {
+    for (auto it = connection_data.begin(); it != connection_data.end(); ++it) {
+        if (it->second.ws != nullptr) {
+            PerSocketData* data = it->second.ws->getUserData();
+            logger.debug_log("[WebSocketServer] on_send_all: ", data->uid, " ", data->id, " ", data->game_id, " ", message, " ", opCode);
+            if (opCode == uWS::OpCode::CLOSE) {
+                it->second.ws->end(1002, message);
+                it->second.ws = nullptr;
+            } else {
+                it->second.ws->send(message, opCode);
+            }
+        } else {
+            logger.debug_log("[WebSocketServer] on_send_all failed, ws empty: ", it->first, " ", message, " ", opCode);
+        }
+    }
+}
+
+template <bool SSL>
 void WebSocketServer<SSL>::clear_users(boost::container::flat_set<std::string> users_to_clean) {
     for (auto &user_id : users_to_clean) {
         send(user_id, std::string("Failed to reconnect"), uWS::OpCode::CLOSE);

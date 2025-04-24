@@ -79,6 +79,9 @@ endif()
 # Link libsexpp to rnp
 target_link_libraries(rnp INTERFACE sexpp)
 
+# efsw
+find_package(efsw CONFIG REQUIRED)
+
 # Public Key
 file(READ "${CMAKE_SOURCE_DIR}/public.key" PUBLIC_KEY_CONTENTS)
 set(PUBLIC_KEY "${PUBLIC_KEY_CONTENTS}")
@@ -132,7 +135,8 @@ target_link_libraries(lobby_server PRIVATE
   OpenSSL::Crypto
   rnp
   Botan::Botan-static
-  json-c::json-c)
+  json-c::json-c
+  efsw::efsw)
 
 if(NOT WIN32)
   find_library(ATOMIC_LIB atomic)

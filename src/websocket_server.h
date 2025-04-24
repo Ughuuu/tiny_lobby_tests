@@ -56,7 +56,6 @@ class WebSocketServer {
     std::unordered_map<std::string, ReconnectionTokens> reconnections;
 
    public:
-    void tick();
     void on_upgrade(uWS::HttpResponse<SSL> *res, uWS::HttpRequest *req,
                     struct us_socket_context_t *context);
     void on_open(uWS::WebSocket<SSL, true, PerSocketData> *ws);
@@ -66,6 +65,7 @@ class WebSocketServer {
                   int opCode);
 
     void send(std::string id, const std::string &message, uWS::OpCode opCode = uWS::OpCode::TEXT);
+    void send_all(const std::string &message, uWS::OpCode opCode = uWS::OpCode::TEXT);
     void clear_users(boost::container::flat_set<std::string> users_to_clean);
 
     WebSocketServer(bool verbose, std::string log_folder,

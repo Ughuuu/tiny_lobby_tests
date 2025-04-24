@@ -1,6 +1,7 @@
 #pragma once
 #include <readerwriterqueue.h>
 
+#include <atomic>
 #include <boost/asio/connect.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl.hpp>
@@ -39,6 +40,7 @@ struct POGRClient {
     std::string pogr_url = "https://api.pogr.io";
     bool enabled = false;
     std::string session_id;
+    std::atomic<bool> &stop;
 
     static std::string get_os_name() {
 #if defined(_WIN32)
@@ -252,7 +254,7 @@ struct POGRClient {
     }
 
     void run() {
-        while (true) {
+        while (!stop) {
             AnalyticsEvent analytics_event;
             analytics_queue.wait_dequeue(analytics_event);
             event(analytics_event.event, analytics_event.event_data, analytics_event.event_flag,

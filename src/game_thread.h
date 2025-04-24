@@ -1,6 +1,7 @@
 #pragma once
 #include <readerwriterqueue.h>
 
+#include <atomic>
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
@@ -30,6 +31,7 @@ class GameThread {
     struct uWS::Loop *loop;
     WebSocketServer<true> *webserver_ssl;
     WebSocketServer<false> *webserver_nossl;
+    std::atomic<bool> &stop;
 
    public:
     int64_t get_time() { return now; }
@@ -111,6 +113,6 @@ class GameThread {
                moodycamel::BlockingReaderWriterQueue<AnalyticsEvent> &analytics_queue,
                moodycamel::BlockingReaderWriterQueue<WebSocketReceivedMessage> &receive_queue,
                uWS::Loop *loop, WebSocketServer<true> *webserver,
-               WebSocketServer<false> *webserver_nossl, int listing_interval,
-               int max_recconection_time);
+               WebSocketServer<false> *webserver_nossl, std::atomic<bool> &stop,
+               int listing_interval, int max_recconection_time);
 };

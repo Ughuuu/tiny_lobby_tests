@@ -1,6 +1,7 @@
 #include <readerwriterqueue.h>
 #include <stddef.h>
 
+#include <atomic>
 #include <filesystem>
 #include <thread>
 
@@ -159,12 +160,14 @@ int main(int argc, char *argv[]) {
     int port = config_reader.GetUnsigned("webserverserver", "port", 8080);
     std::cout << "Starting analytics" << std::endl;
     moodycamel::BlockingReaderWriterQueue<AnalyticsEvent> analytics_queue(10000);
+    std::atomic<bool> stop(false);
     POGRClient pogr_client{.analytics_queue = analytics_queue,
                            .client_id = "460add56-fbe1-47cf-aa6d-81d1197ad6c6",
                            .build_id =
                                "0a3c052be193527ce52542e6c2554697836325b85695c7dd0ef0ef88abc6f19edcb"
                                "6f4d2f445356b4b1b14edded38c8a61075390e91cbb60736005a4a634079b",
-                           .association_id = license_id};
+                           .association_id = license_id,
+                           .stop = stop};
     pogr_client.enabled = !disable_metrics;
     if (pogr_client.enabled) {
         pogr_client.init();
@@ -232,11 +235,21 @@ int main(int argc, char *argv[]) {
                     }
                 });
         app.get("/health", [](auto *res, auto *req) { res->writeStatus("200 OK")->end("OK"); });
+        app.post("/system/shutdown", [&stop](auto *res, auto *req) {
+            stop = true;
+            res->writeStatus("200 OK")->end("OK");
+            // TODO do it correctly
+            exit(0);
+        });
+        app.post("/system/notify", [&webserver](auto *res, auto *req) {
+            webserver.send_all("notify", uWS::OpCode::TEXT);
+            res->writeStatus("200 OK")->end("OK");
+        });
         std::thread GameThread_thread = std::thread([&]() {
             GameThread GameThread(
                 verbose, config_reader.GetString("games", "log_folder", "logs"),
                 config_reader.Get("games", "scripts_folder", "scripts"), analytics_queue,
-                receive_queue, app.getLoop(), nullptr, &webserver,
+                receive_queue, app.getLoop(), nullptr, &webserver, stop,
                 config_reader.GetInteger("games", "listing_interval", 3000),
                 config_reader.GetInteger("games", "max_reconnection_time", 6 * 60 * 1000));
             GameThread.run();
@@ -296,11 +309,21 @@ int main(int argc, char *argv[]) {
                     }
                 });
         app.get("/health", [](auto *res, auto *req) { res->writeStatus("200 OK")->end("OK"); });
+        app.post("/system/shutdown", [&stop](auto *res, auto *req) {
+            stop = true;
+            res->writeStatus("200 OK")->end("OK");
+            // TODO do it correctly
+            exit(0);
+        });
+        app.post("/system/notify", [&webserver](auto *res, auto *req) {
+            webserver.send_all("notify", uWS::OpCode::TEXT);
+            res->writeStatus("200 OK")->end("OK");
+        });
         std::thread GameThread_thread = std::thread([&]() {
             GameThread GameThread(
                 verbose, config_reader.GetString("games", "log_folder", "logs"),
                 config_reader.Get("games", "scripts_folder", "scripts"), analytics_queue,
-                receive_queue, app.getLoop(), &webserver, nullptr,
+                receive_queue, app.getLoop(), &webserver, nullptr, stop,
                 config_reader.GetInteger("games", "listing_interval", 3000),
                 config_reader.GetInteger("games", "max_reconnection_time", 6 * 60 * 1000));
             GameThread.run();

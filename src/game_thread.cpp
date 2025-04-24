@@ -12,7 +12,7 @@ GameThread::GameThread(
     moodycamel::BlockingReaderWriterQueue<AnalyticsEvent> &analytics_queue,
     moodycamel::BlockingReaderWriterQueue<WebSocketReceivedMessage> &receive_queue, uWS::Loop *loop,
     WebSocketServer<true> *webserver, WebSocketServer<false> *webserver_no_ssl,
-    int listing_interval, int max_recconection_time)
+    std::atomic<bool> &stop, int listing_interval, int max_recconection_time)
     : listing_interval(listing_interval),
       max_reconnection_time(max_recconection_time),
       logger(verbose, log_folder + "/game.txt"),
@@ -22,6 +22,7 @@ GameThread::GameThread(
       loop(loop),
       webserver_ssl(webserver),
       webserver_nossl(webserver_no_ssl),
+      stop(stop),
       logs_folder(log_folder) {
     logger.debug_log("[GameThread] on_start");
 }
@@ -121,7 +122,7 @@ void GameThread::run() {
     int64_t disconnect_interval = max_reconnection_time / 10;
     int64_t timer_interval = 500;
     int min_process_size = 100;
-    while (true) {
+    while (!stop) {
         now = get_time_now();
         int64_t last_message_process = now;
         // process about for either 100ms or tickrate - 10ms. Check time every 100 messages.
