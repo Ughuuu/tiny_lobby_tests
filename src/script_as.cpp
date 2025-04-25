@@ -27,7 +27,7 @@ void as_start_timer_wrapper(asIScriptGeneric *gen) {
 
     // Extract arguments
     std::string timer_id = *static_cast<std::string *>(gen->GetArgObject(0));
-    int duration = gen->GetArgDWord(1);
+    double duration = gen->GetArgDouble(1);
     CScriptArray *args = static_cast<CScriptArray *>(gen->GetArgObject(2));
     // Call the actual function
     self->as_start_timer(timer_id, duration, args);
@@ -261,7 +261,7 @@ boost::container::flat_set<std::string> ScriptAS::open() {
                                     asMETHOD(LobbyAS, opIndex_any), asCALL_THISCALL);
     as_engine->SetDefaultNamespace("lobby");
     as_engine->RegisterGlobalFunction(
-        "void start_timer(string timer_id, int duration, array<any>@ args = array<any>())",
+        "void start_timer(string timer_id, double duration, array<any>@ args = array<any>())",
         asFUNCTION(as_start_timer_wrapper), asCALL_GENERIC);
     as_engine->RegisterGlobalFunction("void stop_timer(string timer_id)",
                                       asFUNCTION(as_stop_timer_wrapper), asCALL_GENERIC);
@@ -363,8 +363,8 @@ void ScriptAS::close() {
     as_engine = nullptr;
 }
 
-void ScriptAS::as_start_timer(std::string &timer_id, int duration, CScriptArray *arg) {
-    if (duration < 1 || duration > 300) {
+void ScriptAS::as_start_timer(std::string &timer_id, double duration, CScriptArray *arg) {
+    if (duration < 0.1 || duration > 600) {
         std::cerr << "Invalid duration: " << duration << std::endl;
         return;
     }
@@ -375,7 +375,7 @@ void ScriptAS::as_start_timer(std::string &timer_id, int duration, CScriptArray 
                                          .lobby_id = as_lobby_id,
                                          .game_id = as_game_id,
                                          .peer_id = as_peer_id,
-                                         .end_time = duration * 1000 + game_thread->get_time(),
+                                         .end_time = int(duration * 1000) + game_thread->get_time(),
                                          .args = ConvertFromArray(as_engine, arg),
                                      });
 }

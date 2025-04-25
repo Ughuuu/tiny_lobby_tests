@@ -126,9 +126,9 @@ int start_timer(lua_State *L) {
         return 0;
     }
     std::string timer_id = luaL_checkstring(L, 1);
-    int duration = luaL_checkinteger(L, 2);
-    if (duration < 1 || duration > 300) {
-        luaL_error(L, "Timer duration must be between 1 second and 5 minutes.");
+    double duration = luaL_checknumber(L, 2);
+    if (duration < 0.1 || duration > 600) {
+        luaL_error(L, "Timer duration must be between 0.1 second and 10 minutes.");
         return 0;
     }
     boost::container::vector<AnyElement> args;
@@ -160,7 +160,7 @@ int start_timer(lua_State *L) {
                                          .lobby_id = lobby_id,
                                          .game_id = game_id,
                                          .peer_id = peer_id,
-                                         .end_time = duration * 1000 + game_thread->get_time(),
+                                         .end_time = int(duration * 1000) + game_thread->get_time(),
                                          .args = args,
                                      });
 

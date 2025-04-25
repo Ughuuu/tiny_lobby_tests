@@ -26,6 +26,7 @@ struct GameData {
     std::string lobby_control = "peer";
     int tick_rate = 0;
     int send_rate = 0;
+    std::string folder_name;
     boost::container::flat_map<std::string, boost::container::vector<std::string>> peers_send_data;
     boost::container::flat_map<std::string, PeerData> peers;
     boost::container::flat_map<std::string, int64_t> disconnected_peers;

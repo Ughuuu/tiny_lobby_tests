@@ -84,7 +84,6 @@ struct LobbyAS {
 };
 
 struct ScriptAS {
-    bool autoreload;
     std::string scripts_folder;
     std::string folder_name;
     std::string script_entrypoint;
@@ -106,7 +105,7 @@ struct ScriptAS {
                          std::string& peer_id, std::string& lobby_id, std::string& game_id,
                          bool& has_error);
     boost::container::flat_set<std::string> open();
-    void as_start_timer(std::string& timer_id, int duration, CScriptArray* arg);
+    void as_start_timer(std::string& timer_id, double duration, CScriptArray* arg);
     void as_stop_timer(std::string& timer_id);
     void as_notifty(std::string& peer_id, CScriptAny* message);
     void as_broadcast_chat(std::string& message);

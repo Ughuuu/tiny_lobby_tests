@@ -43,8 +43,7 @@ bool LoginClient::connect(std::string& error) {
 
         ws.next_layer().handshake(ssl::stream_base::client);
 
-        ws.set_option(websocket::stream_base::decorator([=](websocket::request_type& req) {
-            // req.set(boost::beast::http::field::user_agent, "blazium-login-client");
+        ws.set_option(websocket::stream_base::decorator([this](websocket::request_type& req) {
             req.set(boost::beast::http::field::sec_websocket_protocol, "blazium," + game_id);
         }));
 

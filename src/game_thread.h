@@ -5,9 +5,12 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
+#include <efsw/efsw.hpp>
+#include <mutex>
 
 #include "App.h"
 #include "game_data.h"
+#include "games_listener.h"
 #include "lobby_data.h"
 #include "peer_data.h"
 #include "pogr_client.h"
@@ -32,12 +35,16 @@ class GameThread {
     WebSocketServer<true> *webserver_ssl;
     WebSocketServer<false> *webserver_nossl;
     std::atomic<bool> &stop;
+    GamesListener games_listener;
+    efsw::FileWatcher file_watcher;
+    moodycamel::ReaderWriterQueue<std::string> file_watcher_queue;
 
    public:
     int64_t get_time() { return now; }
     boost::container::flat_map<std::string, GameData> games;
     void load_games();
     void unload_games();
+    void reload_game(std::string folder_name);
     void run();
     void handle_events();
     void handle_disconnects();

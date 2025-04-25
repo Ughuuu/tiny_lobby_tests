@@ -86,7 +86,7 @@ bool login_server() {
     }
     std::string url, login_type;
     if (client.request_url("discord", url, login_type, error)) {
-        std::cout << "Login URL: " << url << std::endl;
+        std::cout << "Login to use the Lobby Server to the following URL: " << url << std::endl;
     } else {
         std::cerr << "Request URL failed: " << error << std::endl;
         return false;
@@ -142,10 +142,10 @@ int main(int argc, char *argv[]) {
                   << std::endl;
     }
     if (!disable_login && !login_server()) {
-        std::cerr << "Login failed. Please check your internet connection." << std::endl;
-        exit(1);
+        std::cerr << "Login succeded." << std::endl;
+        // exit(1);
     } else {
-        std::cout << "Login disabled. Locked to 10 players." << std::endl;
+        std::cout << "Login disabled or failed. Locked to 10 players." << std::endl;
     }
 
     if (config_reader.GetBoolean("database", "enabled", false) == true) {

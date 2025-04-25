@@ -14,18 +14,6 @@ namespace main {
     }
     // key pressed and released
     void move_press(int64 dir) {
-        array<any> query_params;
-        query_params.insertLast(any("query_param1"));
-        query_params.insertLast(any("query_val_1"));
-
-        array<any> headers;
-        headers.insertLast(any("header1"));
-        headers.insertLast(any("value1"));
-        print("requesting2");
-        auto result = Http::request("DELETE", "https://google.com", query_params, headers, "");
-
-        print(result.status);
-        print(result.body);
         Lobby@ l = lobby::get();
         auto peer = cast<LobbyPeer@>(l.peers[l.calling_peer_id]);
         if (dir < 0 || dir > 3) {

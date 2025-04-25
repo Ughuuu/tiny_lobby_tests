@@ -41,7 +41,6 @@ void create_lobby_userdata(lua_State* L, GameThread* game_thread, const std::str
 
 struct ScriptLua {
     lua_State* L;
-    bool autoreload;
     std::string scripts_folder;
     std::string folder_name;
     std::string script_entrypoint;
