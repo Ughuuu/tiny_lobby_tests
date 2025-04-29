@@ -8,16 +8,14 @@ cd external/vcpkg
 ./vcpkg install boost-uuid
 ./vcpkg install inih
 ./vcpkg install libpqxx
-./vcpkg install botan
-./vcpkg install json-c
 ./vcpkg install openssl
 ./vcpkg install boost-container
 ./vcpkg install luau
 ./vcpkg install zlib
 ./vcpkg install boost-beast
 ./vcpkg install efsw
+./vcpkg install "libdeflate[compression,decompression,zlib]"
+./vcpkg install "uwebsockets[libdeflate]"
 ./vcpkg integrate install
 ls external/vcpkg/installed/x64-linux/include
 cd ../..
-# Install rnp
-./install-rnp-x64.sh

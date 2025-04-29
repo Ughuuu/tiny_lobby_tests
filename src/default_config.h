@@ -1,4 +1,7 @@
+#pragma once
+#include <string>
 
+const std::string default_config = R"(
 [webserverserver]
 port=8080
 compression=1
@@ -41,3 +44,4 @@ secret_key=<secret_key>
 
 [license]
 id=f2867f41-29c8-4bfb-93b9-436f71f921dc
+)";

@@ -69,6 +69,7 @@ struct POGRClient {
     }
 
     void send_request(const std::string &target, const std::string &body, http::fields &headers) {
+        if (!enabled) return;
         try {
             auto pos = pogr_url.find("://");
             std::string host = pogr_url.substr(pos + 3);

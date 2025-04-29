@@ -7,16 +7,14 @@ cd external/vcpkg
 ./vcpkg install boost-uuid --triplet x64-osx
 ./vcpkg install inih --triplet x64-osx
 ./vcpkg install libpqxx --triplet x64-osx
-./vcpkg install botan --triplet x64-osx
-./vcpkg install json-c --triplet x64-osx
 ./vcpkg install openssl --triplet x64-osx
 ./vcpkg install boost-container --triplet x64-osx
 ./vcpkg install luau --triplet x64-osx
 ./vcpkg install zlib --triplet x64-osx
 ./vcpkg install boost-beast --triplet x64-osx
 ./vcpkg install efsw --triplet x64-osx
+./vcpkg install "libdeflate[compression,decompression,zlib]" --triplet x64-osx
+./vcpkg install "uwebsockets[libdeflate,zlib]" --triplet x64-osx
 ./vcpkg list
 ./vcpkg integrate install
 cd ../..
-# Install rnp
-./install-rnp-macos-x64.sh

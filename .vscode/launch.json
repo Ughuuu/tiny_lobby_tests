@@ -10,7 +10,8 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/lobby_server",
             "args": [
-                "--verbose"
+                //"--verbose",
+                "--disable-metrics",
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -25,6 +26,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/lobby_server",
             "args": [
+                "--disable-metrics"
                 //"--verbose"
             ],
             "stopAtEntry": false,

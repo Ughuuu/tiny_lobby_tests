@@ -46,25 +46,19 @@ std::vector<std::string> extract_bracketed_headers(const std::string &filename) 
 }
 
 void GameThread::load_games() {
-    check_interval = 100;
     logger.debug_log("[GameThread] on_load_games");
     if (!std::filesystem::exists("games.ini")) {
         logger.error_log("[GameThread] Cannot open games.ini file");
         return;
     }
-    // TODO use .Sections once inih 59 is available
-    auto sections = extract_bracketed_headers("games.ini");
     INIReader config_reader("games.ini");
+    auto sections = config_reader.Sections();
     for (const auto &section : sections) {
         std::string folder_name = config_reader.GetString(section, "folder", "");
         logger.debug_log("[GameThread] on_load_game ", folder_name);
         int tickrate = config_reader.GetInteger(section, "tickrate", 0);
         if (tickrate < 16) {
             tickrate = 0;
-        }
-        check_interval = std::min(check_interval, tickrate);
-        if (check_interval < 16) {
-            check_interval = 100;
         }
         std::cout << "Loading game from " << folder_name << " with id " << section << std::endl;
         int sendrate = config_reader.GetInteger(section, "sendrate", 50);
@@ -76,6 +70,12 @@ void GameThread::load_games() {
         as.logs_folder = logs_folder;
         as.game_thread = this;
         as.enabled = lobby_control == "angelscript";
+        if (tickrate > 0) {
+            check_time = std::min(check_time, tickrate);
+        }
+        if (sendrate > 0) {
+            check_time = std::min(check_time, sendrate);
+        }
         games.emplace(section, GameData{.id = section,
                                         .lobby_control = lobby_control,
                                         .tick_rate = tickrate,
@@ -90,7 +90,7 @@ void GameThread::load_games() {
                                         .angelscript = as});
     }
     for (auto &game : games) {
-        game.second.open(get_time_now());
+        game.second.open(now);
 
         if (game.second.enabled_callbacks.find("_on_init") != game.second.enabled_callbacks.end()) {
             bool has_error = false;
@@ -114,28 +114,32 @@ void GameThread::unload_games() {
 }
 
 void GameThread::run() {
+    now = get_time_now();
     load_games();
     logger.debug_log("[GameThread] on_start_thread");
-    now = get_time_now();
     int64_t last_listing = now;
     int64_t last_disconnect = now;
     int64_t last_timers = now;
     int64_t disconnect_interval = max_reconnection_time / 10;
     int64_t timer_interval = 500;
-    int min_process_size = 100;
+    int min_process_size = 10;
+    int last_time = 0;
     while (!stop) {
-        now = get_time_now();
-        int64_t last_message_process = now;
-        // process about for either 100ms or tickrate - 10ms. Check time every 100 messages.
+        // Process min_process_size messages
         int messages_processed = 0;
-        while (receive_queue.size_approx() > 0 || now - last_message_process < check_interval) {
-            if (messages_processed > min_process_size) {
-                messages_processed = 0;
-                now = get_time_now();
-            }
+        while (receive_queue.size_approx() > 0 && messages_processed < min_process_size) {
             messages_processed++;
-            handle_events();
+            if (!handle_events()) {
+                break;
+            }
         }
+        if (last_time == now) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(5));
+            continue;
+        }
+        last_time = now;
+        handle_tick();
+        handle_send();
         if (now - last_disconnect > disconnect_interval) {
             last_disconnect = now;
             handle_disconnects();
@@ -150,8 +154,6 @@ void GameThread::run() {
             last_timers = now;
             handle_timers();
         }
-        handle_tick();
-        handle_send();
         std::string folder_reloaded;
         if (file_watcher_queue.try_dequeue(folder_reloaded)) {
             reload_game(folder_reloaded);
@@ -159,6 +161,13 @@ void GameThread::run() {
         // handle tick if/when needed
     }
     unload_games();
+}
+
+void GameThread::time_run() {
+    while (!stop) {
+        now = get_time_now();
+        std::this_thread::sleep_for(std::chrono::milliseconds(check_time));
+    }
 }
 
 std::string join(const boost::container::vector<std::string> &vec, const std::string &delimiter) {
@@ -178,7 +187,8 @@ std::string join(const boost::container::vector<std::string> &vec, const std::st
 void GameThread::handle_send() {
     for (auto &game : games) {
         auto &game_data = game.second;
-        if (game_data.send_rate == 0 || game_data.last_send_time + game_data.send_rate >= now) {
+        if (game_data.send_rate == 0 ||
+            game_data.last_send_time + game_data.send_rate >= now + 20) {
             continue;
         }
         game_data.last_send_time += game_data.send_rate;
@@ -213,24 +223,21 @@ void GameThread::handle_send() {
 void GameThread::handle_tick() {
     for (auto &game : games) {
         auto &game_data = game.second;
-        if (game_data.tick_rate == 0 || game_data.last_tick_time + game_data.tick_rate >= now) {
+        if (game_data.tick_rate == 0 ||
+            game_data.last_tick_time + game_data.tick_rate >= now + 20) {
             continue;
         }
         boost::container::vector<AnyElement> args(1);
         args[0] = AnyElement{game_data.tick_rate};
         game_data.last_tick_time += game_data.tick_rate;
 
-        for (auto &peer : game_data.peers) {
-            auto &peer_id = peer.first;
-            auto &peer_data = peer.second;
-            if (peer_data.lobby_id.empty()) {
-                continue;
-            }
+        for (auto &lobby : game_data.lobbies) {
+            auto &lobby_id = lobby.first;
             bool has_error = false;
-            auto result = scripted_function_call(peer_id, peer_data.lobby_id, game_data, "_on_tick",
+            auto result = scripted_function_call(EMPTY_STRING, lobby_id, game_data, "_on_tick",
                                                  true, args, has_error);
             if (has_error || std::holds_alternative<std::string>(result.value)) {
-                on_error(game_data, EMPTY_STRING, peer_id, std::get<std::string>(result.value),
+                on_error(game_data, EMPTY_STRING, EMPTY_STRING, std::get<std::string>(result.value),
                          false, true);
             }
         }
@@ -271,16 +278,16 @@ void GameThread::handle_timers() {
     }
 }
 
-void GameThread::handle_events() {
+bool GameThread::handle_events() {
     WebSocketReceivedMessage message;
-    if (!receive_queue.wait_dequeue_timed(message, 50)) {
-        return;
+    if (!receive_queue.wait_dequeue_timed(message, 10)) {
+        return false;
     }
     messages_received++;
     if (games.find(message.game_id) == games.end()) {
         auto fake_game = GameData{.send_rate = 0};
         on_error(fake_game, EMPTY_STRING, message.id, ERROR_GAME_NOT_FOUND + message.game_id, true);
-        return;
+        return true;
     }
     auto &game = games[message.game_id];
     switch (message.event) {
@@ -378,6 +385,7 @@ void GameThread::handle_events() {
             yyjson_doc_free(doc);
             break;
     }
+    return true;
 }
 
 void GameThread::handle_disconnects() {
@@ -596,7 +604,7 @@ void GameThread::on_lobby_call(GameData &game, std::string command_id, PeerData 
     }
     auto func_name = decode_string_or_default(data_val, "function", "");
     if (func_name == "") {
-        return on_error(game, command_id, peer.id, ERROR_INVALID_FUNCTION);
+        return on_error(game, command_id, peer.id, ERROR_INVALID_FUNCTION_MSG);
     }
     AnyElement args{boost::container::vector<AnyElement>()};
     yyjson_val *inputs_val = yyjson_obj_get(data_val, "inputs");

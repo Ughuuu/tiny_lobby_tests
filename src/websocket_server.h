@@ -1,12 +1,12 @@
 #pragma once
 #include <readerwriterqueue.h>
+#include <uwebsockets/App.h>
 
 #include <boost/container/flat_set.hpp>
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
 
-#include "App.h"
 #include "server_logger.h"
 
 static int64_t get_time_now();
@@ -46,7 +46,7 @@ struct ReconnectionTokens {
 template <bool SSL>
 class WebSocketServer {
     int MAX_RECONNECTION_TIME = 6 * 60 * 1000;
-    int max_users = 100000;
+    int max_users;
     int max_messages_per_second;
     int connected_users = 0;
     boost::uuids::random_generator gen;
@@ -70,7 +70,7 @@ class WebSocketServer {
 
     WebSocketServer(bool verbose, std::string log_folder,
                     moodycamel::BlockingReaderWriterQueue<WebSocketReceivedMessage> &receive_queue,
-                    int max_messages_per_second);
+                    int max_messages_per_second, int max_users);
 };
 
 #include "websocket_server.tpp"

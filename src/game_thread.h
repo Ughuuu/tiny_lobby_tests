@@ -1,5 +1,6 @@
 #pragma once
 #include <readerwriterqueue.h>
+#include <uwebsockets/App.h>
 
 #include <atomic>
 #include <boost/uuid/uuid.hpp>
@@ -8,7 +9,6 @@
 #include <efsw/efsw.hpp>
 #include <mutex>
 
-#include "App.h"
 #include "game_data.h"
 #include "games_listener.h"
 #include "lobby_data.h"
@@ -23,8 +23,8 @@ class GameThread {
     int messages_received = 0;
     int max_reconnection_time = 6 * 60 * 1000;
     int listing_interval;
-    int check_interval = 100;
-    int64_t now = 0;
+    int check_time = 100;
+    std::atomic<int64_t> now;
     ServerLogger logger;
     std::string logs_folder;
     std::string scripts_folder;
@@ -46,7 +46,8 @@ class GameThread {
     void unload_games();
     void reload_game(std::string folder_name);
     void run();
-    void handle_events();
+    void time_run();
+    bool handle_events();
     void handle_disconnects();
     void handle_lobby_list();
     void handle_timers();

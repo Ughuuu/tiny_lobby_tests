@@ -224,7 +224,7 @@ template <bool SSL>
 WebSocketServer<SSL>::WebSocketServer(bool verbose,
     std::string log_folder,
     moodycamel::BlockingReaderWriterQueue<WebSocketReceivedMessage>& receive_queue,
-    int max_messages_per_second) :
-    logger(verbose, log_folder + "/websocket.txt"), receive_queue(receive_queue), max_messages_per_second(max_messages_per_second) {
+    int max_messages_per_second, int max_users) :
+    logger(verbose, log_folder + "/websocket.txt"), receive_queue(receive_queue), max_messages_per_second(max_messages_per_second), max_users(max_users) {
     logger.debug_log("[WebSocketServer] on_start");
 }

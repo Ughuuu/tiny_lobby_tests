@@ -20,8 +20,7 @@ Get-ChildItem ../external/vcpkg/scripts/buildsystems
 cmake -S .. -B . `
     -DCMAKE_TOOLCHAIN_FILE="$toolchainFile" `
     -DVCPKG_TARGET_TRIPLET="x64-windows-static" `
-    -DCMAKE_BUILD_TYPE=Release `
-    -DCMAKE_ASM_MASM_FLAGS="" 
+    -DCMAKE_BUILD_TYPE=Release
 
 # Build the project
 cmake --build . --config Release

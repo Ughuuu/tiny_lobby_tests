@@ -37,7 +37,7 @@ void GamesListener::handleFileAction(efsw::WatchID watchid, const std::string& d
     auto it = relative.begin();
     if (it == relative.end()) return;
 
-    std::string folder_name = *it;
+    std::string folder_name = it->generic_string();
     it++;
     if (it == relative.end()) return;  // Not a folder
 

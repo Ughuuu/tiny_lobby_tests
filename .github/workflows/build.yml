@@ -60,10 +60,6 @@ jobs:
             ~/.cache/vcpkg
             external/vcpkg/installed
           key: vcpkg-${{ runner.os }}-${{ matrix.arch }}-${{ matrix.type }}
-      
-      - name: Create Public Key
-        run: |
-          echo "${{ secrets.PUBLIC_KEY }}" > public.key
 
       - name: Print versions
         run: |
@@ -132,12 +128,14 @@ jobs:
       - name: Run App and Tests
         working-directory: old-lobby
         run: |
+          # Remove the sendrate, replace sendrate=100 with sendrate=0
           # Start the app in the background
           cd ..
+          sed -i 's/sendrate=100/sendrate=0/g' games.ini
           cp build/lobby_server .
           ls
           chmod +x lobby_server
-          ./lobby_server --disable-login &> app.log &
+          ./lobby_server --skip-login &> app.log &
           sleep 10
           cd old-lobby
           go test -timeout 200s -tags=auth ./... -v
@@ -174,10 +172,6 @@ jobs:
             ~/.cache/vcpkg
             external/vcpkg/installed
           key: vcpkg-${{ runner.os }}-${{ matrix.arch }}
-      
-      - name: Create Public Key
-        run: |
-          echo "${{ secrets.PUBLIC_KEY }}" > public.key
 
       - name: Print versions
         run: |
@@ -210,7 +204,6 @@ jobs:
   build-windows:
     name: Build on Windows (x64)
     needs: lint
-    if: false
     runs-on: windows-latest
 
     steps:
@@ -230,10 +223,6 @@ jobs:
             external/vcpkg/installed
           key: vcpkg-${{ runner.os }}
 
-      - name: Create Public Key
-        run: |
-          echo "${{ secrets.PUBLIC_KEY }}" > public.key
-
       - name: Install dependencies
         shell: pwsh
         run: |
@@ -247,11 +236,6 @@ jobs:
             external/vcpkg/installed
           key: vcpkg-${{ runner.os }}
 
-      - name: Install RNP
-        shell: pwsh
-        run: |
-          .\install-rnp.ps1
-
       - name: Build Release
         shell: pwsh
         run: |
@@ -261,7 +245,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: lobby_server-windows-x64
-          path: build/lobby_server*
+          path: |
+            build/Release/lobby_server.exe
           if-no-files-found: error
   
   docker-build:

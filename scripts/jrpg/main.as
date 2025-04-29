@@ -10,10 +10,11 @@ namespace main {
         if (dir < 0 || dir > 3) {
             throw("invalid dir");
         }
-        _set_peer_direction(peer, dir);
+        peer.public_data.set("dir", dir);
     }
     // key pressed and released
     void move_press(int64 dir) {
+        print("moving");
         Lobby@ l = lobby::get();
         auto peer = cast<LobbyPeer@>(l.peers[l.calling_peer_id]);
         if (dir < 0 || dir > 3) {
@@ -23,18 +24,16 @@ namespace main {
         auto move_start_ms = peer.public_data.get_int("move_start");
         auto move_time_ms = peer.public_data.get_int("move_time");
         auto current_time_ms = lobby::get_ticks_ms();
-        if (current_time_ms - move_start_ms < move_time_ms) {
+        print(current_time_ms);
+        // Not enough time passed to finish movement
+        if (move_start_ms + move_time_ms > current_time_ms) {
             return;
         }
         // same direction walking already
         if (peer.public_data.get_bool("is_moving") && dir == peer.public_data.get_int("dir")) {
             return;
         }
-        _set_peer_direction(peer, dir);
-        if (_move_peer(peer, l, dir)) {
-            peer.public_data.set("is_moving", true);
-            peer.public_data.set("move_start", current_time_ms);
-        }
+        _move_peer(peer, l, dir, current_time_ms);
     }
     // key released
     void move_release() {
@@ -59,9 +58,6 @@ namespace main {
     void _on_ready(bool ready) {}
     void _on_seal(bool seal) {}
     void _on_left() {}
-    void _set_peer_direction(LobbyPeer@ peer, int64 dir) {
-        peer.public_data.set("dir", dir);
-    }
     Vector2i _dir_code_to_vector(int64 dir_code) {
         switch(dir_code) {
             case player::PLAYER_DIR::DIR_LEFT:
@@ -88,33 +84,35 @@ namespace main {
         }
         return false;
     }
-    bool _move_peer(LobbyPeer@ moving_peer, Lobby@ l, int64 dir_code) {
+    bool _move_peer(LobbyPeer@ moving_peer, Lobby@ l, int64 dir_code, int64 move_start) {
         auto pos = Vector2i(moving_peer.public_data.get_int("pos_x"), moving_peer.public_data.get_int("pos_y"));
         auto dir = _dir_code_to_vector(dir_code);
         auto current_id = l.private_data.get_int(pos.ToString());
         auto new_id = l.private_data.get_int((pos + dir).ToString());
         moving_peer.public_data.set("is_interactable", map::_is_interactable(new_id));
-        if (!map::_is_walkable(new_id)) {
-            return false;
-        }
-        if (_check_peer_collision(l, pos + dir)) {
+        moving_peer.public_data.set("dir", dir_code);
+        if (!map::_is_walkable(new_id) || _check_peer_collision(l, pos + dir)) {
+            moving_peer.public_data.set("is_moving", false);
             return false;
         }
         auto speed_ms = map::_tile_speed(current_id) + map::_tile_speed(new_id);
         moving_peer.public_data.set("move_time", speed_ms);
         moving_peer.public_data.set("pos_x", (pos + dir).x);
         moving_peer.public_data.set("pos_y", (pos + dir).y);
+        moving_peer.public_data.set("move_start", move_start);
+        moving_peer.public_data.set("is_moving", true);
         return true;
     }
-    void _on_tick(int64 delta) {
+    void _on_tick(int64 tickrate) {
+        auto current_time_ms = lobby::get_ticks_ms();
         auto l = lobby::get();
         auto peer = cast<LobbyPeer@>(l.peers[l.calling_peer_id]);
         if (peer.public_data.get_bool("is_moving")) {
             auto move_start_ms = int64(peer.public_data.get_int("move_start"));
             auto move_time_ms = peer.public_data.get_int("move_time");
-            if (lobby::get_ticks_ms() - move_start_ms > move_time_ms) {
-                _move_peer(peer, l, peer.public_data.get_int("dir"));
-                peer.public_data.set("move_start", move_start_ms + move_time_ms);
+            // if next tick would expire our movement, send new move
+            if (move_start_ms + move_time_ms < current_time_ms + tickrate) {
+                _move_peer(peer, l, peer.public_data.get_int("dir"), move_start_ms + move_time_ms);
             }
         }
     }

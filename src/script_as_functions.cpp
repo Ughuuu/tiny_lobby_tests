@@ -143,7 +143,7 @@ AnyElement ConvertFromScriptType(asIScriptEngine *engine, void *value, int typeI
         }
 
         int storedTypeId = anyValue->GetTypeId();
-        void *storedValue;
+        void *storedValue = nullptr;
         if (anyValue->Retrieve(storedValue, storedTypeId)) {
             return ConvertFromScriptType(engine, storedValue, storedTypeId);
         } else {
@@ -243,8 +243,8 @@ boost::container::flat_map<std::string, AnyElement> ConvertFromDictionary(asIScr
     auto keys = dict->GetKeys();
     for (asUINT i = 0; i < keys->GetSize(); i++) {
         std::string key = static_cast<const char *>(keys->At(i));
-        int typeId;
-        void *value;
+        int typeId = -1;
+        void *value = nullptr;
         if (dict->Get(key.c_str(), value, typeId)) {
             result[key] = ConvertFromScriptType(engine, value, typeId);
         }
