@@ -313,6 +313,9 @@ boost::container::flat_set<std::string> ScriptAS::open() {
         asIScriptFunction *func = as_module->GetFunctionByIndex(i);
         as_functions.emplace(std::string(func->GetName()), i);
     }
+    if (as_functions.contains("_can_create")) {
+        empty_set.insert("_can_create");
+    }
     if (as_functions.contains("_on_create")) {
         empty_set.insert("_on_create");
     }

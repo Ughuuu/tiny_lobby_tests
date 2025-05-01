@@ -164,9 +164,18 @@ void GameThread::run() {
 }
 
 void GameThread::time_run() {
+    using clock = std::chrono::system_clock;
+    using ms = std::chrono::milliseconds;
+
     while (!stop) {
-        now = get_time_now();
-        std::this_thread::sleep_for(std::chrono::milliseconds(check_time));
+        auto now_local = clock::now();
+        auto now_ms = std::chrono::time_point_cast<ms>(now_local);
+        auto since_epoch = now_ms.time_since_epoch();
+        int64_t next_tick_ms = since_epoch.count() + (check_time - (since_epoch.count() % check_time));
+        auto wake_time = clock::time_point(ms(next_tick_ms));
+
+        std::this_thread::sleep_until(wake_time);
+        now = next_tick_ms;
     }
 }
 
@@ -187,7 +196,7 @@ std::string join(const boost::container::vector<std::string> &vec, const std::st
 void GameThread::handle_send() {
     for (auto &game : games) {
         auto &game_data = game.second;
-        if (game_data.send_rate == 0 || game_data.last_send_time + game_data.send_rate < now) {
+        if (game_data.send_rate == 0 || game_data.last_send_time + game_data.send_rate > now) {
             continue;
         }
         game_data.last_send_time += game_data.send_rate;
@@ -224,7 +233,7 @@ void GameThread::handle_tick() {
     for (auto &game : games) {
         auto &game_data = game.second;
         if (game_data.tick_rate == 0 ||
-            game_data.last_tick_time + game_data.tick_rate < previous_tick) {
+            game_data.last_tick_time + game_data.tick_rate > previous_tick) {
             continue;
         }
         boost::container::vector<AnyElement> args(1);
@@ -282,7 +291,7 @@ void GameThread::handle_timers() {
 
 bool GameThread::handle_events() {
     WebSocketReceivedMessage message;
-    if (!receive_queue.wait_dequeue_timed(message, 10)) {
+    if (!receive_queue.wait_dequeue_timed(message, 100)) {
         return false;
     }
     messages_received++;
