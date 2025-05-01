@@ -82,6 +82,8 @@ jobs:
 
       - name: Build Release
         run: |
+          export OPENSSL_ROOT_DIR=./external/vcpkg/installed/x64-linux
+          export PKG_CONFIG_PATH=./external/vcpkg/installed/x64-linux/lib/pkgconfig
           ./build_${{ matrix.type }}-${{ matrix.arch }}.sh
 
       - name: Archive build artifacts

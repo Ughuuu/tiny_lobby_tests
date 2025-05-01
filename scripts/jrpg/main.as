@@ -14,7 +14,6 @@ namespace main {
     }
     // key pressed and released
     void move_press(int64 dir) {
-        print("moving");
         Lobby@ l = lobby::get();
         auto peer = cast<LobbyPeer@>(l.peers[l.calling_peer_id]);
         if (dir < 0 || dir > 3) {
@@ -24,7 +23,6 @@ namespace main {
         auto move_start_ms = peer.public_data.get_int("move_start");
         auto move_time_ms = peer.public_data.get_int("move_time");
         auto current_time_ms = lobby::get_ticks_ms();
-        print(current_time_ms);
         // Not enough time passed to finish movement
         if (move_start_ms + move_time_ms > current_time_ms) {
             return;
@@ -41,11 +39,13 @@ namespace main {
         auto peer = cast<LobbyPeer@>(l.peers[l.calling_peer_id]);
         peer.public_data.set("is_moving", false);
     }
-    void _on_create() {
+    void _can_create() {
         Lobby@ l = lobby::get();
         if (l.max_players != 1000) {
             throw("max players needs to be 1000");
         }
+    }
+    void _on_create() {
         map::_read_map();
         player::_init_peer();
     }
@@ -104,15 +104,21 @@ namespace main {
         return true;
     }
     void _on_tick(int64 tickrate) {
-        auto current_time_ms = lobby::get_ticks_ms();
         auto l = lobby::get();
-        auto peer = cast<LobbyPeer@>(l.peers[l.calling_peer_id]);
-        if (peer.public_data.get_bool("is_moving")) {
-            auto move_start_ms = int64(peer.public_data.get_int("move_start"));
-            auto move_time_ms = peer.public_data.get_int("move_time");
-            // if next tick would expire our movement, send new move
-            if (move_start_ms + move_time_ms < current_time_ms + tickrate) {
-                _move_peer(peer, l, peer.public_data.get_int("dir"), move_start_ms + move_time_ms);
+        auto current_time_ms = lobby::get_ticks_ms();
+        print("current time");
+        print(l.id);
+        print(current_time_ms);
+        auto peerKeys = l.peers.getKeys();
+        for (uint64 i=0; i < peerKeys.length(); i++) {
+            auto peer = cast<LobbyPeer@>(l.peers[peerKeys[i]]);
+            if (peer.public_data.get_bool("is_moving")) {
+                auto move_start_ms = int64(peer.public_data.get_int("move_start"));
+                auto move_time_ms = peer.public_data.get_int("move_time");
+                // if next tick would expire our movement, send new move
+                if (move_start_ms + move_time_ms < current_time_ms + tickrate) {
+                    _move_peer(peer, l, peer.public_data.get_int("dir"), move_start_ms + move_time_ms);
+                }
             }
         }
     }

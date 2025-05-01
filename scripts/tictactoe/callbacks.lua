@@ -5,13 +5,17 @@ local lobby = require("lobby")
 
 local callbacks = {}
 
-function callbacks.on_create(minPlayers, maxPlayers)
+function callbacks.can_create(minPlayers, maxPlayers)
     local l = lobby.get()
     local max_players = l.max_players
     if max_players < minPlayers or max_players > maxPlayers then
         return { error = ("Max players must be between " .. tostring(minPlayers) .. " and " .. tostring(maxPlayers)) }
     end
+    return
+end
 
+function callbacks.on_create()
+    local l = lobby.get()
     l.tags["max_points"] = l.tags["max_points"] or 0
     l.public_data["game_state"] = "setup"
     return

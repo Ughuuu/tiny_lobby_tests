@@ -202,77 +202,6 @@ int main(int argc, char *argv[]) {
         message_queue_length);
     if (config_reader.GetBoolean("ssl", "enabled", false)) {
         std::cout << "Starting webserver with SSL" << std::endl;
-        WebSocketServer<false> webserver(
-            verbose, config_reader.GetString("webserverserver", "log_folder", "logs"),
-            receive_queue,
-            config_reader.GetInteger("webserverserver", "max_messages_per_second", 5), max_users);
-        uWS::App app =
-            uWS::App()
-                .ws<PerSocketData>(
-                    "/connect",
-                    {/* Settings */
-                     .compression = static_cast<uWS::CompressOptions>(config_reader.GetUnsigned(
-                         "webserverserver", "compression", uWS::DISABLED)),
-                     // max 2 kb
-                     .maxPayloadLength = static_cast<unsigned int>(config_reader.GetUnsigned(
-                         "webserverserver", "max_payload_length", 2 * 1024)),
-                     // 3 minutes
-                     .idleTimeout = static_cast<unsigned short>(
-                         config_reader.GetUnsigned("webserverserver", "idle_timeout", 180)),
-                     // 64 kb
-                     .maxBackpressure = static_cast<unsigned int>(config_reader.GetUnsigned(
-                         "webserverserver", "max_backpressure", 64 * 1024)),
-                     .closeOnBackpressureLimit = true,
-                     .resetIdleTimeoutOnSend = config_reader.GetBoolean(
-                         "webserverserver", "reset_idle_timeout_on_send", true),
-                     /* Handlers */
-                     .upgrade = [&](auto *res, auto *req,
-                                    auto *context) { webserver.on_upgrade(res, req, context); },
-                     .open = [&](auto *ws) { webserver.on_open(ws); },
-                     .message =
-                         [&](auto *ws, std::string_view message, uWS::OpCode opCode) {
-                             webserver.on_message(ws, message, opCode);
-                         },
-                     .drain = [](auto * /*ws*/) {},
-                     .ping = [](auto * /*ws*/, std::string_view) {},
-                     .pong = [](auto * /*ws*/, std::string_view) {},
-                     .close =
-                         [&](auto *ws, int code, std::string_view message) {
-                             webserver.on_close(ws, message, code);
-                         }})
-                .listen(port, [&](auto *listen_socket) {
-                    if (listen_socket) {
-                        std::cout << "Listening on port " << port << std::endl;
-                    } else {
-                        std::cout << "Failed to listen on port" << port << std::endl;
-                    }
-                });
-        app.get("/health", [](auto *res, auto *req) { res->writeStatus("200 OK")->end("OK"); });
-        app.post("/system/shutdown", [&stop](auto *res, auto *req) {
-            stop = true;
-            res->writeStatus("200 OK")->end("OK");
-            // TODO do it correctly
-            exit(0);
-        });
-        app.post("/system/notify", [&webserver](auto *res, auto *req) {
-            webserver.send_all("notify", uWS::OpCode::TEXT);
-            res->writeStatus("200 OK")->end("OK");
-        });
-        GameThread GameThread(
-            verbose, config_reader.GetString("games", "log_folder", "logs"),
-            config_reader.Get("games", "scripts_folder", "scripts"), analytics_queue, receive_queue,
-            app.getLoop(), nullptr, &webserver, stop,
-            config_reader.GetInteger("games", "listing_interval", 3000),
-            config_reader.GetInteger("games", "max_reconnection_time", 6 * 60 * 1000));
-        std::thread GameThread_thread = std::thread([&]() { GameThread.run(); });
-        std::thread GameThread_time_thread = std::thread([&]() { GameThread.time_run(); });
-        std::thread AnalyticsThread_thread = std::thread([&]() { pogr_client.run(); });
-        app.run();
-        GameThread_thread.join();
-        GameThread_time_thread.join();
-        AnalyticsThread_thread.join();
-    } else {
-        std::cout << "Starting webserver without SSL" << std::endl;
         WebSocketServer<true> webserver(
             verbose, config_reader.GetString("webserverserver", "log_folder", "logs"),
             receive_queue,
@@ -290,15 +219,16 @@ int main(int argc, char *argv[]) {
                      // max 2 kb
                      .maxPayloadLength = static_cast<unsigned int>(config_reader.GetUnsigned(
                          "webserverserver", "max_payload_length", 2 * 1024)),
-                     // 3 minutes
+                     // 2 minutes
                      .idleTimeout = static_cast<unsigned short>(
-                         config_reader.GetUnsigned("webserverserver", "idle_timeout", 180)),
+                         config_reader.GetUnsigned("webserverserver", "idle_timeout", 120)),
                      // 64 kb
                      .maxBackpressure = static_cast<unsigned int>(config_reader.GetUnsigned(
                          "webserverserver", "max_backpressure", 64 * 1024)),
                      .closeOnBackpressureLimit = true,
                      .resetIdleTimeoutOnSend = config_reader.GetBoolean(
                          "webserverserver", "reset_idle_timeout_on_send", true),
+                     .sendPingsAutomatically = true,
                      /* Handlers */
                      .upgrade = [&](auto *res, auto *req,
                                     auto *context) { webserver.on_upgrade(res, req, context); },
@@ -336,6 +266,78 @@ int main(int argc, char *argv[]) {
             verbose, config_reader.GetString("games", "log_folder", "logs"),
             config_reader.Get("games", "scripts_folder", "scripts"), analytics_queue, receive_queue,
             app.getLoop(), &webserver, nullptr, stop,
+            config_reader.GetInteger("games", "listing_interval", 3000),
+            config_reader.GetInteger("games", "max_reconnection_time", 6 * 60 * 1000));
+        std::thread GameThread_thread = std::thread([&]() { GameThread.run(); });
+        std::thread GameThread_time_thread = std::thread([&]() { GameThread.time_run(); });
+        std::thread AnalyticsThread_thread = std::thread([&]() { pogr_client.run(); });
+        app.run();
+        GameThread_thread.join();
+        GameThread_time_thread.join();
+        AnalyticsThread_thread.join();
+    } else {
+        std::cout << "Starting webserver without SSL" << std::endl;
+        WebSocketServer<false> webserver(
+            verbose, config_reader.GetString("webserverserver", "log_folder", "logs"),
+            receive_queue,
+            config_reader.GetInteger("webserverserver", "max_messages_per_second", 5), max_users);
+        uWS::App app =
+            uWS::App()
+                .ws<PerSocketData>(
+                    "/connect",
+                    {/* Settings */
+                     .compression = static_cast<uWS::CompressOptions>(config_reader.GetUnsigned(
+                         "webserverserver", "compression", uWS::DISABLED)),
+                     // max 2 kb
+                     .maxPayloadLength = static_cast<unsigned int>(config_reader.GetUnsigned(
+                         "webserverserver", "max_payload_length", 2 * 1024)),
+                     // 2 minutes
+                     .idleTimeout = static_cast<unsigned short>(
+                         config_reader.GetUnsigned("webserverserver", "idle_timeout", 120)),
+                     // 64 kb
+                     .maxBackpressure = static_cast<unsigned int>(config_reader.GetUnsigned(
+                         "webserverserver", "max_backpressure", 64 * 1024)),
+                     .closeOnBackpressureLimit = true,
+                     .resetIdleTimeoutOnSend = config_reader.GetBoolean(
+                         "webserverserver", "reset_idle_timeout_on_send", true),
+                     .sendPingsAutomatically = true,
+                     /* Handlers */
+                     .upgrade = [&](auto *res, auto *req,
+                                    auto *context) { webserver.on_upgrade(res, req, context); },
+                     .open = [&](auto *ws) { webserver.on_open(ws); },
+                     .message =
+                         [&](auto *ws, std::string_view message, uWS::OpCode opCode) {
+                             webserver.on_message(ws, message, opCode);
+                         },
+                     .drain = [](auto * /*ws*/) {},
+                     .ping = [](auto * /*ws*/, std::string_view) {},
+                     .pong = [](auto * /*ws*/, std::string_view) {},
+                     .close =
+                         [&](auto *ws, int code, std::string_view message) {
+                             webserver.on_close(ws, message, code);
+                         }})
+                .listen(port, [&](auto *listen_socket) {
+                    if (listen_socket) {
+                        std::cout << "Listening on port " << port << std::endl;
+                    } else {
+                        std::cout << "Failed to listen on port" << port << std::endl;
+                    }
+                });
+        app.get("/health", [](auto *res, auto *req) { res->writeStatus("200 OK")->end("OK"); });
+        app.post("/system/shutdown", [&stop](auto *res, auto *req) {
+            stop = true;
+            res->writeStatus("200 OK")->end("OK");
+            // TODO do it correctly
+            exit(0);
+        });
+        app.post("/system/notify", [&webserver](auto *res, auto *req) {
+            webserver.send_all("notify", uWS::OpCode::TEXT);
+            res->writeStatus("200 OK")->end("OK");
+        });
+        GameThread GameThread(
+            verbose, config_reader.GetString("games", "log_folder", "logs"),
+            config_reader.Get("games", "scripts_folder", "scripts"), analytics_queue, receive_queue,
+            app.getLoop(), nullptr, &webserver, stop,
             config_reader.GetInteger("games", "listing_interval", 3000),
             config_reader.GetInteger("games", "max_reconnection_time", 6 * 60 * 1000));
         std::thread GameThread_thread = std::thread([&]() { GameThread.run(); });

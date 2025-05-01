@@ -12,6 +12,9 @@ namespace player {
     }
     void _init_peer() {
         Lobby@ l = lobby::get();
+        print("init peer");
+        print(l.id);
+        print(l.calling_peer_id);
         auto peer = cast<LobbyPeer@>(l.peers[l.calling_peer_id]);
         peer.public_data.set("pos_x", int64(11));
         peer.public_data.set("pos_y", int64(9));

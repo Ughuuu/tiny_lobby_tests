@@ -91,6 +91,7 @@
         "ranges": "cpp",
         "csignal": "cpp",
         "*.inc": "cpp",
-        "type_traits": "cpp"
+        "type_traits": "cpp",
+        "scoped_allocator": "cpp"
     }
 }
