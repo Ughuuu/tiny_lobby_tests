@@ -122,7 +122,7 @@ void GameThread::run() {
     int64_t last_timers = now;
     int64_t disconnect_interval = max_reconnection_time / 10;
     int64_t timer_interval = 500;
-    int min_process_size = 10;
+    int min_process_size = 100;
     int last_time = 0;
     while (!stop) {
         // Process min_process_size messages
@@ -134,7 +134,7 @@ void GameThread::run() {
             }
         }
         if (last_time == now) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(5));
+            std::this_thread::sleep_for(std::chrono::milliseconds(check_time / 2));
             continue;
         }
         last_time = now;
@@ -291,7 +291,7 @@ void GameThread::handle_timers() {
 
 bool GameThread::handle_events() {
     WebSocketReceivedMessage message;
-    if (!receive_queue.wait_dequeue_timed(message, 100)) {
+    if (!receive_queue.wait_dequeue_timed(message, check_time * 500)) {
         return false;
     }
     messages_received++;

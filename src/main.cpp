@@ -221,7 +221,7 @@ int main(int argc, char *argv[]) {
                          "webserverserver", "max_payload_length", 2 * 1024)),
                      // 2 minutes
                      .idleTimeout = static_cast<unsigned short>(
-                         config_reader.GetUnsigned("webserverserver", "idle_timeout", 120)),
+                         config_reader.GetUnsigned("webserverserver", "idle_timeout", 30)),
                      // 64 kb
                      .maxBackpressure = static_cast<unsigned int>(config_reader.GetUnsigned(
                          "webserverserver", "max_backpressure", 64 * 1024)),
@@ -237,9 +237,9 @@ int main(int argc, char *argv[]) {
                          [&](auto *ws, std::string_view message, uWS::OpCode opCode) {
                              webserver.on_message(ws, message, opCode);
                          },
-                     .drain = [](auto * /*ws*/) {},
-                     .ping = [](auto * /*ws*/, std::string_view) {},
-                     .pong = [](auto * /*ws*/, std::string_view) {},
+                     //.drain = [](auto * /*ws*/) {},
+                     //.ping = [](auto * /*ws*/, std::string_view) {},
+                     //.pong = [](auto * /*ws*/, std::string_view) {},
                      .close =
                          [&](auto *ws, int code, std::string_view message) {
                              webserver.on_close(ws, message, code);
@@ -293,7 +293,7 @@ int main(int argc, char *argv[]) {
                          "webserverserver", "max_payload_length", 2 * 1024)),
                      // 2 minutes
                      .idleTimeout = static_cast<unsigned short>(
-                         config_reader.GetUnsigned("webserverserver", "idle_timeout", 120)),
+                         config_reader.GetUnsigned("webserverserver", "idle_timeout", 30)),
                      // 64 kb
                      .maxBackpressure = static_cast<unsigned int>(config_reader.GetUnsigned(
                          "webserverserver", "max_backpressure", 64 * 1024)),
@@ -309,9 +309,9 @@ int main(int argc, char *argv[]) {
                          [&](auto *ws, std::string_view message, uWS::OpCode opCode) {
                              webserver.on_message(ws, message, opCode);
                          },
-                     .drain = [](auto * /*ws*/) {},
-                     .ping = [](auto * /*ws*/, std::string_view) {},
-                     .pong = [](auto * /*ws*/, std::string_view) {},
+                     //.drain = [](auto * /*ws*/) {},
+                     //.ping = [](auto * /*ws*/, std::string_view) {},
+                     //.pong = [](auto * /*ws*/, std::string_view) {},
                      .close =
                          [&](auto *ws, int code, std::string_view message) {
                              webserver.on_close(ws, message, code);
