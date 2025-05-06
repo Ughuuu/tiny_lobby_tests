@@ -58,6 +58,33 @@ std::string notification_lobby_sealed(const std::string& command_id) {
                                        {"id", AnyElement{command_id}}}}}}}
         .to_string();
 }
+std::string notification_lobby_max_players(int max_players, const std::string& command_id) {
+    return AnyElement{boost::container::flat_map<std::string, AnyElement>{
+                          {"command", AnyElement{"lobby_resized"}},
+                          {"message", AnyElement{"Lobby resized"}},
+                          {"data", AnyElement{boost::container::flat_map<std::string, AnyElement>{
+                                       {"max_players", AnyElement{max_players}},
+                                       {"id", AnyElement{command_id}}}}}}}
+        .to_string();
+}
+std::string notification_lobby_password_protected(bool password_protected, const std::string& command_id) {
+return AnyElement{boost::container::flat_map<std::string, AnyElement>{
+{"command", AnyElement{"lobby_passworded"}},
+{"message", AnyElement{"Lobby password protected"}},
+{"data", AnyElement{boost::container::flat_map<std::string, AnyElement>{
+    {"password_protected", AnyElement{password_protected}},
+    {"id", AnyElement{command_id}}}}}}}
+.to_string();
+}
+std::string notification_lobby_title(std::string title, const std::string& command_id) {
+return AnyElement{boost::container::flat_map<std::string, AnyElement>{
+{"command", AnyElement{"lobby_titled"}},
+{"message", AnyElement{"Lobby title changed"}},
+{"data", AnyElement{boost::container::flat_map<std::string, AnyElement>{
+    {"lobby_title", AnyElement{title}},
+    {"id", AnyElement{command_id}}}}}}}
+.to_string();
+}
 std::string notification_peer_ready(const std::string& peer_id, const std::string& command_id) {
     return AnyElement{
         boost::container::flat_map<std::string, AnyElement>{

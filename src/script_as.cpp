@@ -15,6 +15,7 @@
 #include <variant>
 
 #include "game_thread.h"
+#include "script_lua_functions.h"
 #include "script_as_functions.h"
 #include "script_as_http.h"
 #include "script_as_json.h"
@@ -309,39 +310,15 @@ boost::container::flat_set<std::string> ScriptAS::open() {
         return empty_set;
     }
     as_module = as_engine->GetModule("Main", asGM_ONLY_IF_EXISTS);
+    std::vector<std::string> expected_functions = get_expected_functions();
     for (int i = 0; i < as_module->GetFunctionCount(); i++) {
         asIScriptFunction *func = as_module->GetFunctionByIndex(i);
         as_functions.emplace(std::string(func->GetName()), i);
     }
-    if (as_functions.contains("_can_create")) {
-        empty_set.insert("_can_create");
-    }
-    if (as_functions.contains("_on_create")) {
-        empty_set.insert("_on_create");
-    }
-    if (as_functions.contains("_on_join")) {
-        empty_set.insert("_on_join");
-    }
-    if (as_functions.contains("_on_chat")) {
-        empty_set.insert("_on_chat");
-    }
-    if (as_functions.contains("_on_tags")) {
-        empty_set.insert("_on_tags");
-    }
-    if (as_functions.contains("_on_kick")) {
-        empty_set.insert("_on_kick");
-    }
-    if (as_functions.contains("_on_ready")) {
-        empty_set.insert("_on_ready");
-    }
-    if (as_functions.contains("_on_seal")) {
-        empty_set.insert("_on_seal");
-    }
-    if (as_functions.contains("_on_left")) {
-        empty_set.insert("_on_left");
-    }
-    if (as_functions.contains("_on_tick")) {
-        empty_set.insert("_on_tick");
+    for (const auto &func_name : expected_functions) {
+        if (as_functions.find(func_name) != as_functions.end()) {
+            empty_set.insert(func_name);
+        }
     }
     return empty_set;
 }

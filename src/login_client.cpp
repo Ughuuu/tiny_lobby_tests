@@ -1,4 +1,5 @@
 #include "login_client.h"
+#include "pogr_client.h"
 
 #include "yyjson.h"
 
@@ -133,4 +134,14 @@ bool LoginClient::wait_for_jwt(std::string& jwt, std::string& type, std::string&
         error = e.what();
         return false;
     }
+}
+
+std::string LoginClient::verify_jwt(const std::string& jwt, std::string& error) {
+    http::fields headers;
+    headers.set("SESSION", jwt);
+    headers.set("INTERNAL_ACCESS", "921f0111-eb2c-4ac9-8ff9-61174f866001");
+    headers.set("INTERNAL_SECRET", "frtZnC0L3IasO4AGLZFARFgdtdkc8W7p");
+    auto result = send_request(boost::beast::http::verb::get, "https://login.blazium.app", "/api/v1/internal/token/verify", "", headers);
+    std::cout<< "Result: " << result << std::endl;
+    return result;
 }

@@ -23,6 +23,7 @@ class LoginClient {
                      std::string& error);
     bool wait_for_jwt(std::string& jwt, std::string& type, std::string& access_token,
                       std::string& error);
+    std::string verify_jwt(const std::string& jwt, std::string& error);
     void close();
 
    private:

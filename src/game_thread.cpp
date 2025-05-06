@@ -389,6 +389,12 @@ bool GameThread::handle_events() {
                 on_seal_lobby(game, std::string(command_id), peer, data_val);
             } else if (command == "unseal_lobby") {
                 on_unseal_lobby(game, std::string(command_id), peer, data_val);
+            } else if (command == "lobby_max_players") {
+                on_lobby_max_players(game, std::string(command_id), peer, data_val);
+            } else if (command == "lobby_title") {
+                on_lobby_title(game, std::string(command_id), peer, data_val);
+            } else if (command == "lobby_password") {
+                on_lobby_password(game, std::string(command_id), peer, data_val);
             } else {
                 on_error(game, std::string(command_id), message.id,
                          ERROR_UNKOWN_COMMAND + " " + std::string(command), true);
@@ -1105,13 +1111,10 @@ void GameThread::set_lobby_ready(GameData &game, LobbyData &lobby, PeerData &pee
         notification_others = notification_peer_unready(peer.id, EMPTY_STRING);
     }
     for (auto lobby_peer_id : lobby.peer_ids) {
-        if (lobby_peer_id == peer.id && command_id != "") {
+        if (lobby_peer_id == peer.id) {
             continue;
         }
         send(game, lobby_peer_id, notification_others, uWS::OpCode::TEXT);
-    }
-    if (command_id == "") {
-        return;
     }
     std::string notification_self = notification_peer_ready(peer.id, command_id);
     if (!ready) {
@@ -1176,6 +1179,100 @@ void GameThread::on_unseal_lobby(GameData &game, std::string command_id, PeerDat
         }
     }
     set_lobby_sealed(game, lobby, peer.id, command_id, false);
+}
+
+
+void GameThread::on_lobby_max_players(GameData &game, std::string command_id, PeerData &peer,
+    yyjson_val *data_val) {
+    logger.debug_log("[GameThread] on_lobby_max_players ", command_id, " ", peer.id);
+    // PRECONDITIONS
+    if (peer.lobby_id == "") {
+        return on_error(game, command_id, peer.id, ERROR_PEER_NOT_IN_A_LOBBY);
+    }
+    auto &lobby = game.lobbies[peer.lobby_id];
+    auto max_players = decode_int_or_default(data_val, "max_players", 0);
+    // SCRIPTED CALL
+    if (game.enabled_callbacks.find("_can_resize") != game.enabled_callbacks.end()) {
+        bool has_error = false;
+        boost::container::vector<AnyElement> args(1);
+        args[0] = AnyElement{max_players};
+        auto func_result = scripted_function_call(peer.id, peer.lobby_id, game, "_can_resize", true,
+                            args, has_error);
+        if (std::holds_alternative<std::string>(func_result.value)) {
+            return on_error(game, command_id, peer.id, std::get<std::string>(func_result.value),
+            false, has_error);
+        }
+    }
+    // CHANGES
+    lobby.max_players = max_players;
+    // NOTIFICATION
+    std::string notification_others = notification_lobby_max_players(max_players, EMPTY_STRING);
+    for (auto lobby_peer_id : lobby.peer_ids) {
+        if (lobby_peer_id == peer.id && command_id != "") {
+            continue;
+        }
+        send(game, lobby_peer_id, notification_others, uWS::OpCode::TEXT);
+    }
+    std::string notification_self = notification_lobby_max_players(max_players, command_id);
+    send(game, peer.id, notification_self, uWS::OpCode::TEXT);
+}
+
+void GameThread::on_lobby_title(GameData &game, std::string command_id, PeerData &peer,
+    yyjson_val *data_val) {
+    logger.debug_log("[GameThread] on_lobby_title ", command_id, " ", peer.id);
+    // PRECONDITIONS
+    if (peer.lobby_id == "") {
+        return on_error(game, command_id, peer.id, ERROR_PEER_NOT_IN_A_LOBBY);
+    }
+    auto &lobby = game.lobbies[peer.lobby_id];
+    auto title = decode_string_or_default(data_val, "name", "");
+    // SCRIPTED CALL
+    if (game.enabled_callbacks.find("_on_title") != game.enabled_callbacks.end()) {
+        bool has_error = false;
+        boost::container::vector<AnyElement> args(1);
+        args[0] = AnyElement{title};
+        auto func_result = scripted_function_call(peer.id, peer.lobby_id, game, "_on_title", true,
+                            args, has_error);
+        if (std::holds_alternative<std::string>(func_result.value)) {
+            return on_error(game, command_id, peer.id, std::get<std::string>(func_result.value),
+            false, has_error);
+        }
+    }
+    // CHANGES
+    lobby.name = title;
+    // NOTIFICATION
+    std::string notification_others = notification_lobby_title(title, EMPTY_STRING);
+    for (auto lobby_peer_id : lobby.peer_ids) {
+        if (lobby_peer_id == peer.id && command_id != "") {
+            continue;
+        }
+        send(game, lobby_peer_id, notification_others, uWS::OpCode::TEXT);
+    }
+    std::string notification_self = notification_lobby_title(title, command_id);
+    send(game, peer.id, notification_self, uWS::OpCode::TEXT);
+}
+
+void GameThread::on_lobby_password(GameData &game, std::string command_id, PeerData &peer,
+    yyjson_val *data_val) {
+    logger.debug_log("[GameThread] on_lobby_password ", command_id, " ", peer.id);
+    // PRECONDITIONS
+    if (peer.lobby_id == "") {
+        return on_error(game, command_id, peer.id, ERROR_PEER_NOT_IN_A_LOBBY);
+    }
+    auto &lobby = game.lobbies[peer.lobby_id];
+    auto password = decode_string_or_default(data_val, "password", "");
+    // CHANGES
+    lobby.password = password;
+    // NOTIFICATION
+    std::string notification_others = notification_lobby_password_protected(password != "", EMPTY_STRING);
+    for (auto lobby_peer_id : lobby.peer_ids) {
+        if (lobby_peer_id == peer.id && command_id != "") {
+            continue;
+        }
+        send(game, lobby_peer_id, notification_others, uWS::OpCode::TEXT);
+    }
+    std::string notification_self = notification_lobby_password_protected(password != "", command_id);
+    send(game, peer.id, notification_self, uWS::OpCode::TEXT);
 }
 
 void GameThread::on_lobby_data(GameData &game, std::string command_id, PeerData &peer,
@@ -1479,13 +1576,10 @@ void GameThread::set_lobby_sealed(GameData &game, LobbyData &lobby, std::string 
         notification_others = notification_lobby_sealed(EMPTY_STRING);
     }
     for (auto lobby_peer_id : lobby.peer_ids) {
-        if (lobby_peer_id == peer_id && command_id != "") {
+        if (lobby_peer_id == peer_id) {
             continue;
         }
         send(game, lobby_peer_id, notification_others, uWS::OpCode::TEXT);
-    }
-    if (command_id == "") {
-        return;
     }
     std::string notification_self = notification_lobby_unsealed(command_id);
     if (sealed) {
