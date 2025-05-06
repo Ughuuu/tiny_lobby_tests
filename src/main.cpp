@@ -157,7 +157,7 @@ int main(int argc, char *argv[]) {
         std::cerr << "Login succeded." << std::endl;
         // exit(1);
     } else {
-        //max_users = 10;
+        // max_users = 10;
         std::cout << "Login skipped or failed. Locked to 10 players." << std::endl;
     }
 

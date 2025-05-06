@@ -30,8 +30,9 @@ struct AnalyticsEvent {
     std::string sub_event;
 };
 
-
-static std::string send_request(const boost::beast::http::verb &verb, const std::string &url, const std::string &target, const std::string &body, http::fields &headers) {
+static std::string send_request(const boost::beast::http::verb &verb, const std::string &url,
+                                const std::string &target, const std::string &body,
+                                http::fields &headers) {
     try {
         auto pos = url.find("://");
         std::string host = url.substr(pos + 3);
@@ -87,7 +88,6 @@ static std::string send_request(const boost::beast::http::verb &verb, const std:
     }
     return "";
 }
-
 
 struct POGRClient {
     moodycamel::BlockingReaderWriterQueue<AnalyticsEvent> &analytics_queue;
@@ -235,14 +235,15 @@ struct POGRClient {
         data_map["tags"] = AnyElement{boost::container::flat_map<std::string, AnyElement>{
             {"association_id", AnyElement{association_id}}}};
 
-        send_request(boost::beast::http::verb::post, pogr_url, "/v1/intake/data", AnyElement{data_map}.to_string(), headers);
+        send_request(boost::beast::http::verb::post, pogr_url, "/v1/intake/data",
+                     AnyElement{data_map}.to_string(), headers);
     }
 
     void event(const std::string &event,
                const boost::container::flat_map<std::string, AnyElement> &event_data,
                const std::string &event_flag, const std::string &event_key,
                const std::string &event_type, const std::string &sub_event) {
-                if (!enabled) return;
+        if (!enabled) return;
         http::fields headers;
         headers.set("INTAKE_SESSION_ID", session_id);
 
@@ -256,7 +257,8 @@ struct POGRClient {
         data_map["tags"] = AnyElement{boost::container::flat_map<std::string, AnyElement>{
             {"association_id", AnyElement{association_id}}}};
 
-        send_request(boost::beast::http::verb::post, pogr_url, "/v1/intake/event", AnyElement{data_map}.to_string(), headers);
+        send_request(boost::beast::http::verb::post, pogr_url, "/v1/intake/event",
+                     AnyElement{data_map}.to_string(), headers);
     }
 
     void run() {

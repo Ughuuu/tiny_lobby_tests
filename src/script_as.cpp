@@ -15,11 +15,11 @@
 #include <variant>
 
 #include "game_thread.h"
-#include "script_lua_functions.h"
 #include "script_as_functions.h"
 #include "script_as_http.h"
 #include "script_as_json.h"
 #include "script_as_scriptfile.h"
+#include "script_lua_functions.h"
 
 void as_start_timer_wrapper(asIScriptGeneric *gen) {
     // Retrieve the ScriptAS instance from the engine's user data
