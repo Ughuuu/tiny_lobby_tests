@@ -1,4 +1,5 @@
 #include "websocket_server.h"
+#include "login_client.h"
 #include "any_type.h"
 
 #include <string>
@@ -60,6 +61,13 @@ void WebSocketServer<SSL>::on_upgrade(uWS::HttpResponse<SSL> *res,uWS::HttpReque
     if (protocols_split.size() > 2) {
         user_data.reconnection_token = protocols_split[2];
     }
+    /*
+    if (user_data.reconnection_token.length() != 0) {
+        LoginClient client("login.blazium.app", "f3c31f25-b3b4-4241-908a-bab2509e0a61");
+        std::string error_msg;
+        std::cout << client.verify_jwt(user_data.reconnection_token, error_msg);
+    }
+    */
     logger.debug_log("[WebSocketServer] on_upgrade: ", user_data.uid, " ", user_data.id, " ", user_data.game_id, protocol);
     res->template upgrade<PerSocketData>(std::move(user_data),
         req->getHeader("sec-websocket-key"),

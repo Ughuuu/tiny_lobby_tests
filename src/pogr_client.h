@@ -30,6 +30,65 @@ struct AnalyticsEvent {
     std::string sub_event;
 };
 
+
+static std::string send_request(const boost::beast::http::verb &verb, const std::string &url, const std::string &target, const std::string &body, http::fields &headers) {
+    try {
+        auto pos = url.find("://");
+        std::string host = url.substr(pos + 3);
+        std::string port = "443";
+        auto slash = host.find('/');
+        if (slash != std::string::npos) host = host.substr(0, slash);
+
+        net::io_context ioc;
+        ssl::context ctx(ssl::context::tlsv12_client);
+        ctx.set_default_verify_paths();
+
+        tcp::resolver resolver(ioc);
+        auto const results = resolver.resolve(host, port);
+
+        beast::tcp_stream tcp_stream(ioc);
+        tcp_stream.connect(results);
+
+        ssl::stream<beast::tcp_stream> stream(std::move(tcp_stream), ctx);
+        if (!SSL_set_tlsext_host_name(stream.native_handle(), host.c_str())) {
+            throw beast::system_error(beast::error_code(static_cast<int>(::ERR_get_error()),
+                                                        net::error::get_ssl_category()),
+                                      "Failed to set SNI Hostname");
+        }
+        stream.handshake(ssl::stream_base::client);
+
+        http::request<http::string_body> req{verb, target, 11};
+        req.set(http::field::host, host);
+        req.set(http::field::content_type, "application/json");
+        req.body() = body;
+        req.prepare_payload();
+
+        for (const auto &header : headers) {
+            req.set(header.name_string(), header.value());
+        }
+
+        http::write(stream, req);
+
+        beast::flat_buffer buffer;
+        http::response<http::string_body> res;
+        http::read(stream, buffer, res);
+
+        if (res.result() != http::status::ok) {
+            std::cerr << "Error: " << res.result_int() << " " << res.reason() << std::endl;
+        } else {
+            // Optionally handle response
+        }
+
+        beast::error_code ec;
+        stream.shutdown(ec);
+        return res.body();
+    } catch (const std::exception &e) {
+        std::cerr << "Exception: " << e.what() << target << std::endl;
+    }
+    return "";
+}
+
+
 struct POGRClient {
     moodycamel::BlockingReaderWriterQueue<AnalyticsEvent> &analytics_queue;
     std::string client_id;
@@ -68,64 +127,8 @@ struct POGRClient {
 #endif
     }
 
-    void send_request(const std::string &target, const std::string &body, http::fields &headers) {
-        if (!enabled) return;
-        try {
-            auto pos = pogr_url.find("://");
-            std::string host = pogr_url.substr(pos + 3);
-            std::string port = "443";
-            auto slash = host.find('/');
-            if (slash != std::string::npos) host = host.substr(0, slash);
-
-            net::io_context ioc;
-            ssl::context ctx(ssl::context::tlsv12_client);
-            ctx.set_default_verify_paths();
-
-            tcp::resolver resolver(ioc);
-            auto const results = resolver.resolve(host, port);
-
-            beast::tcp_stream tcp_stream(ioc);
-            tcp_stream.connect(results);
-
-            ssl::stream<beast::tcp_stream> stream(std::move(tcp_stream), ctx);
-            if (!SSL_set_tlsext_host_name(stream.native_handle(), host.c_str())) {
-                throw beast::system_error(beast::error_code(static_cast<int>(::ERR_get_error()),
-                                                            net::error::get_ssl_category()),
-                                          "Failed to set SNI Hostname");
-            }
-            stream.handshake(ssl::stream_base::client);
-
-            http::request<http::string_body> req{http::verb::post, target, 11};
-            req.set(http::field::host, host);
-            req.set(http::field::content_type, "application/json");
-            req.body() = body;
-            req.prepare_payload();
-
-            for (const auto &header : headers) {
-                req.set(header.name_string(), header.value());
-            }
-
-            http::write(stream, req);
-
-            beast::flat_buffer buffer;
-            http::response<http::string_body> res;
-            http::read(stream, buffer, res);
-
-            if (res.result() != http::status::ok) {
-                std::cerr << "Error: " << res.result_int() << " " << res.reason() << std::endl;
-            } else {
-                // Optionally handle response
-            }
-
-            beast::error_code ec;
-            stream.shutdown(ec);
-        } catch (const std::exception &e) {
-            std::cerr << "Exception: " << e.what() << target << std::endl;
-        }
-    }
-
     void init() {
-        if (client_id.empty() || build_id.empty()) return;
+        if (client_id.empty() || build_id.empty() || !enabled) return;
 
         http::fields headers;
         if (!access_key.empty() && !secret_key.empty()) {
@@ -223,6 +226,7 @@ struct POGRClient {
     }
 
     void data(const boost::container::flat_map<std::string, AnyElement> &data) {
+        if (!enabled) return;
         http::fields headers;
         headers.set("INTAKE_SESSION_ID", session_id);
 
@@ -231,13 +235,14 @@ struct POGRClient {
         data_map["tags"] = AnyElement{boost::container::flat_map<std::string, AnyElement>{
             {"association_id", AnyElement{association_id}}}};
 
-        send_request("/v1/intake/data", AnyElement{data_map}.to_string(), headers);
+        send_request(boost::beast::http::verb::post, pogr_url, "/v1/intake/data", AnyElement{data_map}.to_string(), headers);
     }
 
     void event(const std::string &event,
                const boost::container::flat_map<std::string, AnyElement> &event_data,
                const std::string &event_flag, const std::string &event_key,
                const std::string &event_type, const std::string &sub_event) {
+                if (!enabled) return;
         http::fields headers;
         headers.set("INTAKE_SESSION_ID", session_id);
 
@@ -251,7 +256,7 @@ struct POGRClient {
         data_map["tags"] = AnyElement{boost::container::flat_map<std::string, AnyElement>{
             {"association_id", AnyElement{association_id}}}};
 
-        send_request("/v1/intake/event", AnyElement{data_map}.to_string(), headers);
+        send_request(boost::beast::http::verb::post, pogr_url, "/v1/intake/event", AnyElement{data_map}.to_string(), headers);
     }
 
     void run() {

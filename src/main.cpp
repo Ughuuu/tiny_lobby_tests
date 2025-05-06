@@ -249,6 +249,8 @@ int main(int argc, char *argv[]) {
                         std::cout << "Listening on port " << port << std::endl;
                     } else {
                         std::cout << "Failed to listen on port" << port << std::endl;
+                        stop = true;
+                        exit(1);
                     }
                 });
         app.get("/health", [](auto *res, auto *req) { res->writeStatus("200 OK")->end("OK"); });
@@ -321,6 +323,8 @@ int main(int argc, char *argv[]) {
                         std::cout << "Listening on port " << port << std::endl;
                     } else {
                         std::cout << "Failed to listen on port" << port << std::endl;
+                        stop = true;
+                        exit(1);
                     }
                 });
         app.get("/health", [](auto *res, auto *req) { res->writeStatus("200 OK")->end("OK"); });

@@ -18,6 +18,14 @@
 #include "websocket_server.h"
 #include "yyjson.h"
 
+static std::vector<std::string> get_expected_functions(){
+    std::vector<std::string> expected_functions = {"_can_create", "_on_create", "_on_join",
+        "_on_chat",    "_on_tags",   "_on_kick",
+        "_on_ready",   "_on_seal",   "_on_left",
+        "_can_resize", "_on_resize", "_on_title"};
+    return expected_functions;
+}
+
 class GameThread {
     int messages_sent = 0;
     int messages_received = 0;
@@ -97,6 +105,12 @@ class GameThread {
                        yyjson_val *data_val);
     void on_unseal_lobby(GameData &game, std::string command_id, PeerData &peer,
                          yyjson_val *data_val);
+    void on_lobby_max_players(GameData &game, std::string command_id, PeerData &peer,
+                               yyjson_val *data_val);
+    void on_lobby_title(GameData &game, std::string command_id, PeerData &peer,
+                        yyjson_val *data_val);
+    void on_lobby_password(GameData &game, std::string command_id, PeerData &peer,
+                            yyjson_val *data_val);
 
     void set_lobby_sealed(GameData &game, LobbyData &lobby, std::string peer_id,
                           std::string command_id, bool sealed);

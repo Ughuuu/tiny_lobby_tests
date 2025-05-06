@@ -478,9 +478,7 @@ boost::container::flat_set<std::string> run_lua_file(lua_State *L, std::string n
             return enabled_functions;
         }
 
-        std::vector<std::string> expected_functions = {"_can_create", "_on_create", "_on_join",
-                                                       "_on_chat",    "_on_tags",   "_on_kick",
-                                                       "_on_ready",   "_on_seal",   "_on_left"};
+        std::vector<std::string> expected_functions = get_expected_functions();
 
         for (const auto &func_name : expected_functions) {
             lua_getfield(L, -1, func_name.c_str());
