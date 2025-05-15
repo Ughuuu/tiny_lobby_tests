@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cctype>
 #include <atomic>
+#include <variant>
 
 // 1 second
 const int64_t RATE_LIMIT_WINDOW = 1000;
@@ -24,6 +25,145 @@ static inline std::string trim(const std::string& s) {
     }).base();
     if (start >= end) return "";
     return std::string(start, end);
+}
+
+template <bool SSL>
+WebAuthenticationThread<SSL>::WebAuthenticationThread(moodycamel::BlockingReaderWriterQueue<WebSocketAuthenticationMessage<SSL>> &authentication_queue,
+    bool verbose,
+    std::string log_folder,
+    struct uWS::Loop *loop) :
+    authentication_queue(authentication_queue), logger(verbose, log_folder + "/websocket.txt"), loop(loop) {
+}
+
+template <bool SSL>
+void WebAuthenticationThread<SSL>::run() {
+    while (true) {
+        WebSocketAuthenticationMessage<SSL> auth_message;
+        authentication_queue.wait_dequeue(auth_message);
+        PerSocketData user_data = auth_message.user_data;
+        auto &res = auth_message.res;
+        auto &context = auth_message.context;
+        auto &abort_shared = auth_message.abort;
+        auto &websocket_key = auth_message.websocket_key;
+        auto &websocket_extensions = auth_message.websocket_extensions;
+        // probably not a jwt.
+        if (!user_data.reconnection_token.contains(".")) {
+            loop->defer([res, user_data = std::move(user_data), websocket_key, websocket_extensions, context, abort_shared, this]() mutable{
+                if (abort_shared->load()) {
+                    return;
+                }
+                logger.error_log("[WebSocketServer] upgraded anon user: ", user_data.game_id, " ", user_data.id);
+                res->template upgrade<PerSocketData>(std::move(user_data),
+                websocket_key,
+                "blazium",
+                websocket_extensions,
+                context);
+            });
+            continue;
+        }
+        LoginClient client("login.blazium.app", user_data.game_id);
+        std::string error_msg;
+        std::string result = client.verify_jwt(user_data.reconnection_token, error_msg);
+        loop->defer([res, result, user_data = std::move(user_data), error_msg, websocket_key, websocket_extensions, context, abort_shared, this]() mutable{
+        if (abort_shared->load()) {
+            return;
+        }
+        if (error_msg != "") {
+            res->writeStatus("400 Bad Request")->write("Failed to authenticate. " + error_msg);
+            res->end();
+            this->logger.error_log("[WebSocketServer] error: ", error_msg);
+        } else{
+            yyjson_doc *doc = yyjson_read(result.c_str(), result.size(), 0);
+            if (!doc) {
+                res->writeStatus("400 Bad Request")->write("Failed to authenticate. Cannot read login doc result.");
+                res->end();
+                this->logger.error_log("[WebSocketServer] error: ", "Cannot read login doc result");
+                return;
+            }
+
+            yyjson_val *root = yyjson_doc_get_root(doc);
+            if (!root) {
+                res->writeStatus("400 Bad Request")->write("Failed to authenticate. Cannot read login root result.");
+                res->end();
+                this->logger.error_log("[WebSocketServer] error: ", "Cannot read login root result");
+                return;
+            }
+            boost::container::flat_map<std::string, AnyElement> auth_result;
+            std::string decode_error = decode_object(root, auth_result);
+            yyjson_doc_free(doc);
+            if (!decode_error.empty()) {
+                res->writeStatus("400 Bad Request")->write("Failed to authenticate. Cannot decode login result. " + decode_error);
+                res->end();
+                this->logger.error_log("[WebSocketServer] error: ", decode_error);
+                return;
+            }
+            if (auth_result.find("success") == auth_result.end()) {
+                res->writeStatus("400 Bad Request")->write("Failed to authenticate. Cannot find success in login result.");
+                res->end();
+                this->logger.error_log("[WebSocketServer] error: ", "Cannot find success in login result");
+                return;
+            }
+            auto &sucess_value = auth_result["success"];
+            if (std::holds_alternative<bool>(sucess_value.value)) {
+                bool success = std::get<bool>(sucess_value.value);
+                if (!success) {
+                    res->writeStatus("400 Bad Request")->write("Failed to authenticate. Failed to login.");
+                    res->end();
+                    this->logger.error_log("[WebSocketServer] error: ", "Failed to login");
+                    return;
+                }
+            } else {
+                res->writeStatus("400 Bad Request")->write("Failed to authenticate. Success is not a boolean.");
+                res->end();
+                this->logger.error_log("[WebSocketServer] error: ", "Success is not a boolean");
+                return;
+            }
+            if (auth_result.find("data") == auth_result.end()) {
+                res->writeStatus("400 Bad Request")->write("Failed to authenticate. Cannot find data in login result.");
+                res->end();
+                this->logger.error_log("[WebSocketServer] error: ", "Cannot find data in login result");
+                return;
+            }
+            if (auto auth_data = std::get_if<boost::container::flat_map<std::string, AnyElement>>(&auth_result["data"].value)) {
+                if (auth_data->find("token") == auth_data->end()) {
+                    res->writeStatus("400 Bad Request")->write("Failed to authenticate. Cannot find token in login result.");
+                    res->end();
+                    this->logger.error_log("[WebSocketServer] error: ", "Cannot find token in login result");
+                    return;
+                }
+                if (auto token = std::get_if<boost::container::flat_map<std::string, AnyElement>>(&(*auth_data)["token"].value)) {
+                    if (token->find("name") == token->end()) {
+                        res->writeStatus("400 Bad Request")->write("Failed to authenticate. Cannot find name in login result.");
+                        res->end();
+                        this->logger.error_log("[WebSocketServer] error: ", "Cannot find name in login result");
+                        return;
+                    }
+                    if (token->find("platform") == token->end()) {
+                        res->writeStatus("400 Bad Request")->write("Failed to authenticate. Cannot find platform in login result.");
+                        res->end();
+                        this->logger.error_log("[WebSocketServer] error: ", "Cannot find platform in login result");
+                        return;
+                    }
+                    if (token->find("platform_id") == token->end()) {
+                        res->writeStatus("400 Bad Request")->write("Failed to authenticate. Cannot find platform_id in login result.");
+                        res->end();
+                        this->logger.error_log("[WebSocketServer] error: ", "Cannot find platform_id in login result");
+                        return;
+                    }
+                    user_data.platform = std::get<std::string>((*token)["platform"].value);
+                    user_data.name = std::get<std::string>((*token)["name"].value);
+                    user_data.platform_id = std::get<std::string>((*token)["platform_id"].value);
+                }
+            }
+            this->logger.error_log("[WebSocketServer] upgraded authenticated user: ", user_data.game_id, " ", user_data.id);
+            res->template upgrade<PerSocketData>(std::move(user_data),
+            websocket_key,
+            "blazium",
+            websocket_extensions,
+            context);
+        }
+        });
+    }
 }
 
 template <bool SSL>
@@ -61,19 +201,28 @@ void WebSocketServer<SSL>::on_upgrade(uWS::HttpResponse<SSL> *res,uWS::HttpReque
     if (protocols_split.size() > 2) {
         user_data.reconnection_token = protocols_split[2];
     }
-    /*
-    if (user_data.reconnection_token.length() != 0) {
-        LoginClient client("login.blazium.app", "f3c31f25-b3b4-4241-908a-bab2509e0a61");
-        std::string error_msg;
-        std::cout << client.verify_jwt(user_data.reconnection_token, error_msg);
+    std::shared_ptr<std::atomic<bool>> abort_shared = std::make_shared<std::atomic<bool>>(false);
+    WebSocketAuthenticationMessage<SSL> auth_message {
+        .user_data = user_data,
+        .res = res,
+        .req = req,
+        .context = context,
+        .abort = abort_shared,
+        .websocket_key = std::string(req->getHeader("sec-websocket-key")),
+        .websocket_extensions = std::string(req->getHeader("sec-websocket-extensions"))
+    };
+    if (!authentication_queue.try_enqueue(auth_message)) {
+        logger.error_log("[WebSocketServer] error: cannot authenticate");
+        res->writeStatus("400 Bad Request")->write("Out of memory.");
+        res->end();
+        return;
+    } else {
+        res->onAborted([&]() {
+            abort_shared->store(true);
+            logger.error_log("[WebSocketServer] error: closed before authenticating");
+        });
     }
-    */
     logger.debug_log("[WebSocketServer] on_upgrade: ", user_data.uid, " ", user_data.id, " ", user_data.game_id, protocol);
-    res->template upgrade<PerSocketData>(std::move(user_data),
-        req->getHeader("sec-websocket-key"),
-        "blazium",
-        req->getHeader("sec-websocket-extensions"),
-        context);
 }
 
 template <bool SSL>
@@ -124,7 +273,10 @@ void WebSocketServer<SSL>::on_open(uWS::WebSocket<SSL, true, PerSocketData> *ws)
         .event = WebSocketEvent::OPEN,
         .message = std::string(),
         .game_id = data->game_id,
-        .reconnection_token = data->reconnection_token
+        .reconnection_token = data->reconnection_token,
+        .platform = data->platform,
+        .name = data->name,
+        .platform_id = data->platform_id
     })) {
         logger.error_log("[WebSocketServer] on_open error out of memory: ", data->uid, " ", data->id, " ", data->game_id);
         send(data->id, "Out of memory", uWS::OpCode::CLOSE);
@@ -232,7 +384,13 @@ template <bool SSL>
 WebSocketServer<SSL>::WebSocketServer(bool verbose,
     std::string log_folder,
     moodycamel::BlockingReaderWriterQueue<WebSocketReceivedMessage>& receive_queue,
-    int max_messages_per_second, int max_users) :
-    logger(verbose, log_folder + "/websocket.txt"), receive_queue(receive_queue), max_messages_per_second(max_messages_per_second), max_users(max_users) {
+    int max_messages_per_second, int max_users,
+    struct uWS::Loop *loop) :
+    logger(verbose, log_folder + "/websocket.txt"), receive_queue(receive_queue), max_messages_per_second(max_messages_per_second), max_users(max_users),
+    authentication_thread(authentication_queue, verbose, log_folder, loop),
+    authentication_queue(max_users),
+    loop(loop) {
     logger.debug_log("[WebSocketServer] on_start");
+    authentication_thread_handle = std::thread([&]() { authentication_thread.run(); });
+    authentication_thread_handle.detach();
 }

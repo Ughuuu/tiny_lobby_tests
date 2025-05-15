@@ -17,8 +17,8 @@ local callbacks = require("callbacks")
 main._on_create = function() return callbacks.on_create(1, 99) end
 main._on_left = callbacks.on_left
 main._on_join = callbacks.on_join
-main._on_tags = callbacks.on_tags
-main._on_ready = callbacks.on_ready
+main._can_tags = callbacks.on_tags
+main._can_ready = callbacks.on_ready
 main._on_tick = callbacks.on_tick
 
 return main

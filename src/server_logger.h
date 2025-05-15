@@ -5,6 +5,7 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <mutex>
 #include <sstream>
 
 class ServerLogger {
@@ -18,6 +19,7 @@ class ServerLogger {
     const size_t BUFFER_LIMIT = 0;                 // 4KB buffer limit before flushing
 
     std::ostringstream buffer;
+    std::mutex mutex;
 
     std::string cached_time;
     std::time_t last_time_t = 0;
@@ -27,7 +29,7 @@ class ServerLogger {
     // Get cached time, updated once per second
     std::string get_cached_time() {
         auto now = std::chrono::steady_clock::now();
-        if (now - last_time_check > TIME_UPDATE_INTERVAL) {
+        if (now - last_time_check > TIME_UPDATE_INTERVAL || cached_time.empty()) {
             last_time_check = now;
             auto now_time_t =
                 std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
@@ -69,6 +71,7 @@ class ServerLogger {
     // Internal file logging with retries, size check, and buffer flushing
     template <typename... Args>
     void log_to_file(const Args&... args) {
+        std::lock_guard<std::mutex> lock(mutex);
         if (!log_file.is_open() && !reopen_file()) {
             return;  // Give up if cannot reopen
         }
@@ -104,6 +107,17 @@ class ServerLogger {
         if (!log_file.is_open()) {
             std::cerr << "Error opening log file: " << file_name << std::endl;
         }
+    }
+
+    ServerLogger(const ServerLogger& other)
+        : file_name(other.file_name), verbose(other.verbose), retries(0) {
+        std::filesystem::path path(file_name);
+        std::filesystem::create_directories(path.parent_path());
+        log_file.open(file_name, std::ios::app);
+        if (!log_file.is_open()) {
+            std::cerr << "Error opening log file (copy): " << file_name << std::endl;
+        }
+        buffer.clear();
     }
 
     // Destructor flushes buffer and closes file

@@ -52,11 +52,11 @@ namespace main {
     void _on_join() {
         player::_init_peer();
     }
-    void _on_chat(string message) {}
-    void _on_tags(dictionary tags) {}
-    void _on_kick(string kicked_peer_id) {}
-    void _on_ready(bool ready) {}
-    void _on_seal(bool seal) {}
+    void _can_chat(string message) {}
+    void _can_tags(dictionary tags) {}
+    void _can_kick(string kicked_peer_id) {}
+    void _can_ready(bool ready) {}
+    void _can_seal(bool seal) {}
     void _on_left() {}
     Vector2i _dir_code_to_vector(int64 dir_code) {
         switch(dir_code) {

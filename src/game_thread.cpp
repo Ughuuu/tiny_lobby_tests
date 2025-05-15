@@ -55,7 +55,11 @@ void GameThread::load_games() {
     auto sections = config_reader.Sections();
     for (const auto &section : sections) {
         std::string folder_name = config_reader.GetString(section, "folder", "");
-        logger.debug_log("[GameThread] on_load_game ", folder_name);
+        if (folder_name.empty()) {
+            logger.debug_log("[GameThread] on_load_game relay");
+        } else {
+            logger.debug_log("[GameThread] on_load_game ", folder_name);
+        }
         int tickrate = config_reader.GetInteger(section, "tickrate", 0);
         if (tickrate < 16) {
             tickrate = 0;
@@ -304,7 +308,8 @@ bool GameThread::handle_events() {
     auto &game = games[message.game_id];
     switch (message.event) {
         case WebSocketEvent::OPEN:
-            on_connect(game, message.id, message.game_id, message.reconnection_token);
+            on_connect(game, message.id, message.game_id, message.reconnection_token,
+                       message.platform, message.platform_id, message.name);
             break;
         case WebSocketEvent::CLOSE:
             on_close(game, message.id);
@@ -345,7 +350,8 @@ bool GameThread::handle_events() {
             }
             if (game.peers.find(message.id) == game.peers.end()) {
                 yyjson_doc_free(doc);
-                on_error(game, std::string(command_id), message.id, ERROR_PEER_NOT_FOUND, true);
+                on_error(game, command_id, message.id, ERROR_PEER_NOT_FOUND + " when reading input",
+                         true);
                 break;
             }
             auto &peer = game.peers[message.id];
@@ -562,7 +568,8 @@ void GameThread::send(GameData &game, const std::string &peer_id, const std::str
 }
 
 void GameThread::on_connect(GameData &game, std::string &peer_id, std::string &game_id,
-                            std::string &reconnection_token) {
+                            std::string &reconnection_token, std::string &platform,
+                            std::string &platform_id, std::string &name) {
     logger.debug_log("[GameThread] on_connect ", peer_id, " ", game_id);
     if (game.peers.find(peer_id) != game.peers.end()) {
         auto &peer = game.peers[peer_id];
@@ -573,6 +580,8 @@ void GameThread::on_connect(GameData &game, std::string &peer_id, std::string &g
                                         .id = peer_id,
                                         .game_id = game_id,
                                         .reconnection_token = reconnection_token,
+                                        .platform = platform,
+                                        .platform_id = platform_id,
                                     });
     }
     auto &peer = game.peers[peer_id];
@@ -646,6 +655,21 @@ void GameThread::on_lobby_call(GameData &game, std::string command_id, PeerData 
     }
 }
 
+bool lobby_contains_tags(const boost::container::flat_map<std::string, AnyElement> &joining_tags,
+                         const boost::container::flat_map<std::string, AnyElement> &lobby_tags) {
+    for (auto &tag : joining_tags) {
+        if (lobby_tags.find(tag.first) == lobby_tags.end()) {
+            return false;
+        }
+        auto &lobby_tag_value = lobby_tags.at(tag.first).value;
+        auto &joining_tag_value = tag.second.value;
+        if (lobby_tag_value != joining_tag_value) {
+            return false;
+        }
+    }
+    return true;
+}
+
 void GameThread::on_quick_join(GameData &game, std::string command_id, PeerData &peer,
                                yyjson_val *data_val) {
     logger.debug_log("[GameThread] on_quick_join ", command_id, " ", peer.id);
@@ -654,21 +678,28 @@ void GameThread::on_quick_join(GameData &game, std::string command_id, PeerData 
             return;
         }
     }
+    boost::container::flat_map<std::string, AnyElement> lobby_tags;
+    std::string decode_error = decode_object(yyjson_obj_get(data_val, "tags"), lobby_tags);
+    if (decode_error != "") {
+        return on_error(game, command_id, peer.id, "Invalid tags " + decode_error);
+    }
     // TODO optimization keep lobbies open
     for (auto &lobby_obj : game.lobbies) {
         auto &lobby = lobby_obj.second;
         if (lobby.max_players > lobby.peer_ids.size() && !lobby.sealed && !lobby.password.size() &&
-            !game.peers[lobby.host].disconnected) {
+            (lobby.host == "" || !game.peers[lobby.host].disconnected) &&
+            lobby_contains_tags(lobby_tags, lobby.tags)) {
             if (on_join_lobby(game, command_id, peer, data_val, lobby.id)) {
                 return;
             }
         }
     }
-    on_create_lobby(game, command_id, peer, data_val);
+    on_create_lobby(game, command_id, peer, data_val, &lobby_tags);
 }
 
-void GameThread::on_create_lobby(GameData &game, std::string command_id, PeerData &peer,
-                                 yyjson_val *data_val) {
+void GameThread::on_create_lobby(
+    GameData &game, std::string command_id, PeerData &peer, yyjson_val *data_val,
+    boost::container::flat_map<std::string, AnyElement> *previous_tags) {
     logger.debug_log("[GameThread] on_create_lobby ", command_id, " ", peer.id);
     // PRECONDITIONS
     if (peer.lobby_id != "") {
@@ -678,9 +709,13 @@ void GameThread::on_create_lobby(GameData &game, std::string command_id, PeerDat
     auto uuid = to_string(gen());
     auto small_uuid = uuid.substr(0, 8);
     boost::container::flat_map<std::string, AnyElement> lobby_tags;
-    std::string decode_error = decode_object(yyjson_obj_get(data_val, "tags"), lobby_tags);
-    if (decode_error != "") {
-        return on_error(game, command_id, peer.id, "Invalid tags " + decode_error);
+    if (previous_tags != nullptr) {
+        lobby_tags = *previous_tags;
+    } else {
+        std::string decode_error = decode_object(yyjson_obj_get(data_val, "tags"), lobby_tags);
+        if (decode_error != "") {
+            return on_error(game, command_id, peer.id, "Invalid tags " + decode_error);
+        }
     }
     peer.lobby_id = small_uuid;
     game.lobbies.emplace(small_uuid,
@@ -700,7 +735,7 @@ void GameThread::on_create_lobby(GameData &game, std::string command_id, PeerDat
     if (game.enabled_callbacks.find("_can_create") != game.enabled_callbacks.end()) {
         bool has_error = false;
         boost::container::vector<AnyElement> args;
-        auto func_result = scripted_function_call(peer.id, peer.lobby_id, game, "_on_create", true,
+        auto func_result = scripted_function_call(peer.id, peer.lobby_id, game, "_can_create", true,
                                                   args, has_error);
         if (has_error && std::holds_alternative<std::string>(func_result.value)) {
             // revert the changes
@@ -772,6 +807,17 @@ bool GameThread::on_join_lobby(GameData &game, std::string command_id, PeerData 
         }
         if (lobby.max_players != 0 && lobby.peer_ids.size() >= lobby.max_players) {
             on_error(game, command_id, peer.id, "Lobby is full");
+            return false;
+        }
+    }
+    if (game.enabled_callbacks.find("_can_join") != game.enabled_callbacks.end()) {
+        bool has_error = false;
+        boost::container::vector<AnyElement> args;
+        auto func_result =
+            scripted_function_call(peer.id, lobby_id, game, "_can_join", true, args, has_error);
+        if (has_error && std::holds_alternative<std::string>(func_result.value)) {
+            on_error(game, command_id, peer.id, std::get<std::string>(func_result.value), false,
+                     has_error);
             return false;
         }
     }
@@ -896,12 +942,12 @@ void GameThread::on_chat_lobby(GameData &game, std::string command_id, PeerData 
         return on_error(game, command_id, peer.id, "Invalid chat message");
     }
     // SCRIPTED CALL
-    if (game.enabled_callbacks.find("_on_chat") != game.enabled_callbacks.end()) {
+    if (game.enabled_callbacks.find("_can_chat") != game.enabled_callbacks.end()) {
         bool has_error = false;
         boost::container::vector<AnyElement> args(1);
         args[0] = AnyElement{message};
-        auto func_result =
-            scripted_function_call(peer.id, peer.lobby_id, game, "_on_chat", true, args, has_error);
+        auto func_result = scripted_function_call(peer.id, peer.lobby_id, game, "_can_chat", true,
+                                                  args, has_error);
         if (std::holds_alternative<std::string>(func_result.value)) {
             return on_error(game, command_id, peer.id, std::get<std::string>(func_result.value),
                             false, has_error);
@@ -945,12 +991,12 @@ void GameThread::on_lobby_tags(GameData &game, std::string command_id, PeerData 
         return on_error(game, command_id, peer.id, error);
     }
     // SCRIPTED CALL
-    if (game.enabled_callbacks.find("_on_tags") != game.enabled_callbacks.end()) {
+    if (game.enabled_callbacks.find("_can_tags") != game.enabled_callbacks.end()) {
         bool has_error = false;
         boost::container::vector<AnyElement> args(1);
         args[0] = AnyElement{new_tags};
-        auto func_result =
-            scripted_function_call(peer.id, peer.lobby_id, game, "_on_tags", true, args, has_error);
+        auto func_result = scripted_function_call(peer.id, peer.lobby_id, game, "_can_tags", true,
+                                                  args, has_error);
         if (std::holds_alternative<std::string>(func_result.value)) {
             return on_error(game, command_id, peer.id, std::get<std::string>(func_result.value),
                             false, has_error);
@@ -996,12 +1042,12 @@ void GameThread::on_kick_peer(GameData &game, std::string command_id, PeerData &
         return on_error(game, command_id, peer.id, ERROR_CANNOT_KICK_SELF);
     }
     // SCRIPTED CALL
-    if (game.enabled_callbacks.find("_on_kick") != game.enabled_callbacks.end()) {
+    if (game.enabled_callbacks.find("_can_kick") != game.enabled_callbacks.end()) {
         bool has_error = false;
         boost::container::vector<AnyElement> args(1);
         args[0] = AnyElement{kicked_peer_id};
-        auto func_result =
-            scripted_function_call(peer.id, peer.lobby_id, game, "_on_kick", true, args, has_error);
+        auto func_result = scripted_function_call(peer.id, peer.lobby_id, game, "_can_kick", true,
+                                                  args, has_error);
         if (std::holds_alternative<std::string>(func_result.value)) {
             return on_error(game, command_id, peer.id, std::get<std::string>(func_result.value),
                             false, has_error);
@@ -1063,11 +1109,11 @@ void GameThread::on_lobby_ready(GameData &game, std::string command_id, PeerData
         return on_error(game, command_id, peer.id, ERROR_PEER_IS_READY);
     }
     // SCRIPTED CALL
-    if (game.enabled_callbacks.find("_on_ready") != game.enabled_callbacks.end()) {
+    if (game.enabled_callbacks.find("_can_ready") != game.enabled_callbacks.end()) {
         bool has_error = false;
         boost::container::vector<AnyElement> args(1);
         args[0] = AnyElement{true};
-        auto func_result = scripted_function_call(peer.id, peer.lobby_id, game, "_on_ready", true,
+        auto func_result = scripted_function_call(peer.id, peer.lobby_id, game, "_can_ready", true,
                                                   args, has_error);
         if (std::holds_alternative<std::string>(func_result.value)) {
             return on_error(game, command_id, peer.id, std::get<std::string>(func_result.value),
@@ -1088,11 +1134,11 @@ void GameThread::on_lobby_unready(GameData &game, std::string command_id, PeerDa
         return on_error(game, command_id, peer.id, ERROR_PEER_IS_NOT_READY);
     }
     // SCRIPTED CALL
-    if (game.enabled_callbacks.find("_on_ready") != game.enabled_callbacks.end()) {
+    if (game.enabled_callbacks.find("_can_ready") != game.enabled_callbacks.end()) {
         bool has_error = false;
         boost::container::vector<AnyElement> args(1);
         args[0] = AnyElement{false};
-        auto func_result = scripted_function_call(peer.id, peer.lobby_id, game, "_on_ready", true,
+        auto func_result = scripted_function_call(peer.id, peer.lobby_id, game, "_can_ready", true,
                                                   args, has_error);
         if (std::holds_alternative<std::string>(func_result.value)) {
             return on_error(game, command_id, peer.id, std::get<std::string>(func_result.value),
@@ -1139,12 +1185,12 @@ void GameThread::on_seal_lobby(GameData &game, std::string command_id, PeerData 
         return on_error(game, command_id, peer.id, ERROR_LOBBY_SEALED);
     }
     // SCRIPTED CALL
-    if (game.enabled_callbacks.find("_on_seal") != game.enabled_callbacks.end()) {
+    if (game.enabled_callbacks.find("_can_seal") != game.enabled_callbacks.end()) {
         bool has_error = false;
         boost::container::vector<AnyElement> args(1);
         args[0] = AnyElement{true};
-        auto func_result =
-            scripted_function_call(peer.id, peer.lobby_id, game, "_on_seal", true, args, has_error);
+        auto func_result = scripted_function_call(peer.id, peer.lobby_id, game, "_can_seal", true,
+                                                  args, has_error);
         if (std::holds_alternative<std::string>(func_result.value)) {
             return on_error(game, command_id, peer.id, std::get<std::string>(func_result.value),
                             false, has_error);
@@ -1168,12 +1214,12 @@ void GameThread::on_unseal_lobby(GameData &game, std::string command_id, PeerDat
         return on_error(game, command_id, peer.id, ERROR_LOBBY_NOT_SEALED);
     }
     // SCRIPTED CALL
-    if (game.enabled_callbacks.find("_on_seal") != game.enabled_callbacks.end()) {
+    if (game.enabled_callbacks.find("_can_seal") != game.enabled_callbacks.end()) {
         bool has_error = false;
         boost::container::vector<AnyElement> args(1);
         args[0] = AnyElement{false};
-        auto func_result =
-            scripted_function_call(peer.id, peer.lobby_id, game, "_on_seal", true, args, has_error);
+        auto func_result = scripted_function_call(peer.id, peer.lobby_id, game, "_can_seal", true,
+                                                  args, has_error);
         if (std::holds_alternative<std::string>(func_result.value)) {
             return on_error(game, command_id, peer.id, std::get<std::string>(func_result.value),
                             false, has_error);
@@ -1227,11 +1273,11 @@ void GameThread::on_lobby_title(GameData &game, std::string command_id, PeerData
     auto &lobby = game.lobbies[peer.lobby_id];
     auto title = decode_string_or_default(data_val, "name", "");
     // SCRIPTED CALL
-    if (game.enabled_callbacks.find("_on_title") != game.enabled_callbacks.end()) {
+    if (game.enabled_callbacks.find("_can_title") != game.enabled_callbacks.end()) {
         bool has_error = false;
         boost::container::vector<AnyElement> args(1);
         args[0] = AnyElement{title};
-        auto func_result = scripted_function_call(peer.id, peer.lobby_id, game, "_on_title", true,
+        auto func_result = scripted_function_call(peer.id, peer.lobby_id, game, "_can_title", true,
                                                   args, has_error);
         if (std::holds_alternative<std::string>(func_result.value)) {
             return on_error(game, command_id, peer.id, std::get<std::string>(func_result.value),
@@ -1701,6 +1747,23 @@ void GameThread::notify_lobby_changes(GameData &game, std::string &lobby_id) {
         std::string tags_notification = notification_tags(AnyElement{lobby.tags}, EMPTY_STRING);
         for (auto &peer_id : lobby.peer_ids) {
             send(game, peer_id, tags_notification, uWS::OpCode::TEXT);
+        }
+    }
+
+    if (lobby.name_dirty) {
+        lobby.name_dirty = false;
+        std::string name_notification = notification_lobby_title(lobby.name, EMPTY_STRING);
+        for (auto &peer_id : lobby.peer_ids) {
+            send(game, peer_id, name_notification, uWS::OpCode::TEXT);
+        }
+    }
+
+    if (lobby.max_players_dirty) {
+        lobby.max_players_dirty = false;
+        std::string max_players_notification =
+            notification_lobby_max_players(lobby.max_players, EMPTY_STRING);
+        for (auto &peer_id : lobby.peer_ids) {
+            send(game, peer_id, max_players_notification, uWS::OpCode::TEXT);
         }
     }
 

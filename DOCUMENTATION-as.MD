@@ -17,22 +17,22 @@
 
 ## Lobby Methods
 ### Getters
-| Property | Returns |
-|----------|---------|
-| `string calling_peer_id const property` | Calling peer ID |
-| `string id const property` | Lobby ID |
-| `int64 tick_rate const property` | Tick rate |
-| `string name const property` | Lobby name |
-| `string host const property` | Host ID |
-| `int64 max_players const property` | Max players |
-| `int64 create_time const property` | Creation time |
-| `bool sealed const property` | Sealed state |
-| `string game_id const property` | Game ID |
-| `int64 peers_count const property` | Peer count |
-| `LobbyData@ public_data const property` | Public data |
-| `LobbyData@ private_data const property` | Private data |
-| `LobbyData@ tags const property` | Tags |
-| `dictionary@ peers const property` | Peer dictionary |
+| Property | Returns | Has Setter |
+|----------|---------|---------|
+| `string calling_peer_id const property` | Calling peer ID | |
+| `string id const property` | Lobby ID | |
+| `int64 tick_rate const property` | Tick rate | |
+| `string name const property` | Lobby name | true |
+| `string host const property` | Host ID | true |
+| `int64 max_players const property` | Max players | true |
+| `int64 create_time const property` | Creation time | |
+| `bool sealed const property` | Sealed state | true |
+| `string game_id const property` | Game ID | |
+| `int64 peers_count const property` | Peer count | |
+| `LobbyData@ public_data const property` | Public data | true |
+| `LobbyData@ private_data const property` | Private data | true |
+| `LobbyData@ tags const property` | Tags | true |
+| `dictionary@ peers const property` | Peer dictionary | |
 
 ### LobbyPeer
 | Property | Returns |
@@ -77,3 +77,20 @@
 | `void broadcast_chat(string message)` | Broadcasts chat | `asCALL_GENERIC` |
 | `int64 get_ticks_ms()` | Gets current time (ms) | `asCALL_GENERIC` |
 | `Lobby@ get()` | Gets current lobby | `asCALL_GENERIC` |
+
+## Callbacks
+
+| Function | Description | Convention |
+|----------|-------------|------------|
+| `_can_create` | If this returns error cannot create lobby.
+| `_on_create` | After the lobby is created, sets data.
+| `_can_join` | If this returns error you cannot join the lobby.
+| `_on_join` | After the peer joined, set data.
+| `_can_chat(string message)` | If this returns error the chat message is dropped.
+| `_can_tags(dictionry tags)` | If this returns error the tags are not updated.
+| `_can_kick(string peer_id)` | If this returns error the kick fails.
+| `_can_ready(bool ready)` | If this returns error the ready set fails.
+| `_can_seal(bool seal)` | If this returns error the seal fails.
+| `_on_left` | Called after a peer leaves.
+| `_can_resize(int max_players)` | Called before the lobby is resized.
+| `_can_title(string title)` | If this returns error the lobby title cannot be updated.

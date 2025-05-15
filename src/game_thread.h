@@ -20,8 +20,8 @@
 
 static std::vector<std::string> get_expected_functions() {
     std::vector<std::string> expected_functions = {
-        "_can_create", "_on_create", "_on_join", "_on_chat",    "_on_tags",   "_on_kick",
-        "_on_ready",   "_on_seal",   "_on_left", "_can_resize", "_on_resize", "_on_title"};
+        "_can_create", "_on_create", "_on_join", "_can_chat",   "_can_tags",  "_can_kick",
+        "_can_ready",  "_can_seal",  "_on_left", "_can_resize", "_on_resize", "_can_title"};
     return expected_functions;
 }
 
@@ -61,7 +61,8 @@ class GameThread {
     void handle_send();
     void handle_tick();
     void on_connect(GameData &game, std::string &peer_id, std::string &game_id,
-                    std::string &reconnection_token);
+                    std::string &reconnection_token, std::string &platform,
+                    std::string &platform_id, std::string &name);
     void on_close(GameData &game, std::string &peer_id);
     void on_error(GameData &game, std::string command_id, std::string peer_id, std::string message,
                   bool close = false, bool logical_error = false);
@@ -82,8 +83,9 @@ class GameThread {
                        yyjson_val *data_val);
     void on_quick_join(GameData &game, std::string command_id, PeerData &peer,
                        yyjson_val *data_val);
-    void on_create_lobby(GameData &game, std::string command_id, PeerData &peer,
-                         yyjson_val *data_val);
+    void on_create_lobby(
+        GameData &game, std::string command_id, PeerData &peer, yyjson_val *data_val,
+        boost::container::flat_map<std::string, AnyElement> *previous_tags = nullptr);
     bool on_join_lobby(GameData &game, std::string command_id, PeerData &peer, yyjson_val *data_val,
                        std::string lobby_id_override = "");
     void on_leave_lobby(GameData &game, std::string command_id, PeerData &peer,

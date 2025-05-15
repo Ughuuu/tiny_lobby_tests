@@ -340,6 +340,42 @@ int EncodeJSON_to_string(lua_State *L) {
     return 1;
 }
 
+int lua_read_file_as_string(lua_State *L) {
+    if (lua_gettop(L) < 1) {
+        luaL_error(L, "Expected 1 argument.");
+        return 0;
+    }
+    std::string filename = luaL_checkstring(L, 1);
+    std::ifstream file(filename);
+    if (!file.is_open()) {
+        lua_pushnil(L);
+        lua_pushstring(L, "");
+        return 1;
+    }
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    lua_pushstring(L, buffer.str().c_str());
+    return 1;
+}
+
+int lua_write_file_as_string(lua_State *L) {
+    if (lua_gettop(L) < 2) {
+        luaL_error(L, "Expected 2 arguments.");
+        return 0;
+    }
+    std::string filename = luaL_checkstring(L, 1);
+    std::string content = luaL_checkstring(L, 2);
+    std::ofstream file(filename);
+    if (!file.is_open()) {
+        lua_pushboolean(L, false);
+        return 1;
+    }
+    file << content;
+    file.close();
+    lua_pushboolean(L, true);
+    return 1;
+}
+
 int get_lobby(lua_State *L) {
     lua_getfield(L, LUA_REGISTRYINDEX, "peer_id");
     std::string caling_peer_id = lua_tostring(L, -1);
@@ -530,6 +566,11 @@ void luaopen_system(lua_State *L) {
     lua_setfield(L, -2, "decode_json");
     lua_pushcfunction(L, EncodeJSON_to_string, "encode_json");
     lua_setfield(L, -2, "encode_json");
+
+    lua_pushcfunction(L, lua_read_file_as_string, "read_file");
+    lua_setfield(L, -2, "read_file_as_string");
+    lua_pushcfunction(L, lua_write_file_as_string, "write_file");
+    lua_setfield(L, -2, "write_file_as_string");
 
     luaL_findtable(L, LUA_REGISTRYINDEX, "_MODULES", 1);
     lua_pushstring(L, "system");

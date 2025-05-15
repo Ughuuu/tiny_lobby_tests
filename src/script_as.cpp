@@ -187,10 +187,16 @@ boost::container::flat_set<std::string> ScriptAS::open() {
                                     asMETHOD(LobbyAS, get_tick_rate), asCALL_THISCALL);
     as_engine->RegisterObjectMethod("Lobby", "string get_name() const property",
                                     asMETHOD(LobbyAS, get_name), asCALL_THISCALL);
+    as_engine->RegisterObjectMethod("Lobby", "void set_name(string name)",
+                                    asMETHOD(LobbyAS, set_name), asCALL_THISCALL);
     as_engine->RegisterObjectMethod("Lobby", "string get_host() const property",
                                     asMETHOD(LobbyAS, get_host), asCALL_THISCALL);
+    as_engine->RegisterObjectMethod("Lobby", "void set_host(string host)",
+                                    asMETHOD(LobbyAS, set_host), asCALL_THISCALL);
     as_engine->RegisterObjectMethod("Lobby", "int64 get_max_players() const property",
                                     asMETHOD(LobbyAS, get_max_players), asCALL_THISCALL);
+    as_engine->RegisterObjectMethod("Lobby", "void set_max_players(int64 max_players)",
+                                    asMETHOD(LobbyAS, set_max_players), asCALL_THISCALL);
     as_engine->RegisterObjectMethod("Lobby", "int64 get_create_time() const property",
                                     asMETHOD(LobbyAS, get_create_time), asCALL_THISCALL);
     as_engine->RegisterObjectMethod("Lobby", "bool get_sealed() const property",
@@ -215,6 +221,10 @@ boost::container::flat_set<std::string> ScriptAS::open() {
                                     asMETHOD(LobbyAS, get_private_data), asCALL_THISCALL);
     as_engine->RegisterObjectMethod("LobbyPeer", "string get_id() const property",
                                     asMETHOD(LobbyAS, get_peer_id), asCALL_THISCALL);
+    as_engine->RegisterObjectMethod("LobbyPeer", "string get_platform() const property",
+                                    asMETHOD(LobbyAS, get_peer_platform), asCALL_THISCALL);
+    as_engine->RegisterObjectMethod("LobbyPeer", "string get_platform_id() const property",
+                                    asMETHOD(LobbyAS, get_peer_platform_id), asCALL_THISCALL);
     as_engine->RegisterObjectMethod("LobbyPeer", "int get_order_id() const property",
                                     asMETHOD(LobbyAS, get_peer_order_id), asCALL_THISCALL);
     as_engine->RegisterObjectMethod("LobbyPeer", "bool get_ready() const property",
@@ -540,15 +550,33 @@ std::string LobbyAS::get_name() {
     auto &lobby = game.lobbies[as_lobby_id];
     return lobby.name;
 }
+void LobbyAS::set_name(std::string &name) {
+    auto &game = game_thread->games[as_game_id];
+    auto &lobby = game.lobbies[as_lobby_id];
+    lobby.name = name;
+    lobby.name_dirty = true;
+}
 std::string LobbyAS::get_host() {
     auto &game = game_thread->games[as_game_id];
     auto &lobby = game.lobbies[as_lobby_id];
     return lobby.host;
 }
+void LobbyAS::set_host(std::string &host) {
+    auto &game = game_thread->games[as_game_id];
+    auto &lobby = game.lobbies[as_lobby_id];
+    lobby.host = host;
+}
 int64_t LobbyAS::get_max_players() {
     auto &game = game_thread->games[as_game_id];
     auto &lobby = game.lobbies[as_lobby_id];
     return lobby.max_players;
+}
+
+void LobbyAS::set_max_players(int64_t max_players) {
+    auto &game = game_thread->games[as_game_id];
+    auto &lobby = game.lobbies[as_lobby_id];
+    lobby.max_players = max_players;
+    lobby.max_players_dirty = true;
 }
 
 int64_t LobbyAS::get_create_time() {
@@ -851,6 +879,16 @@ void LobbyAS::setArray(std::string &key, CScriptArray *value) {
 }
 
 std::string LobbyAS::get_peer_id() { return as_peer_id; }
+std::string LobbyAS::get_peer_platform() {
+    auto &game = game_thread->games[as_game_id];
+    auto &peer = game.peers[as_peer_id];
+    return peer.platform;
+}
+std::string LobbyAS::get_peer_platform_id() {
+    auto &game = game_thread->games[as_game_id];
+    auto &peer = game.peers[as_peer_id];
+    return peer.platform_id;
+}
 int64_t LobbyAS::get_peer_order_id() {
     auto &game = game_thread->games[as_game_id];
     auto &peer = game.peers[as_peer_id];

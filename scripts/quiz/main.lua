@@ -16,8 +16,8 @@ main._on_timer_restart_game = api.on_timer_restart_game
 local callbacks = require("callbacks")
 main._can_create = function() return callbacks.can_create(2, 10) end
 main._on_create = function() return callbacks.on_create(2, 10) end
-main._on_tags = callbacks.on_tags
-main._on_ready = callbacks.on_ready
+main._can_tags = callbacks.on_tags
+main._can_ready = callbacks.on_ready
 main._on_join = callbacks.on_join
 
 return main

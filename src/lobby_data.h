@@ -25,7 +25,9 @@ struct LobbyData {
     bool public_data_dirty = false;
     bool private_data_dirty = false;
     bool tags_dirty = false;
+    bool max_players_dirty = false;
     bool sealed_dirty = false;
+    bool name_dirty = false;
 
     boost::container::flat_map<std::string, AnyElement> to_dict(bool include_private = false) {
         boost::container::flat_map<std::string, AnyElement> lobby_dict;

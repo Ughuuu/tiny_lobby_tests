@@ -16,6 +16,9 @@ struct PerSocketData {
     std::string id;
     std::string game_id;
     std::string reconnection_token;
+    std::string platform = "anon";
+    std::string name;
+    std::string platform_id;
     int message_count = 0;
     int64_t last_message_time = 0;
 };
@@ -36,11 +39,44 @@ struct WebSocketReceivedMessage {
     std::string message;
     std::string game_id;
     std::string reconnection_token;
+    std::string platform = "anon";
+
+    std::string name;
+    std::string platform_id;
+};
+
+template <bool SSL>
+struct WebSocketAuthenticationMessage {
+    PerSocketData user_data;
+    uWS::HttpResponse<SSL> *res;
+    uWS::HttpRequest *req;
+    struct us_socket_context_t *context;
+    std::shared_ptr<std::atomic<bool>> abort;
+    std::string websocket_key;
+    std::string websocket_extensions;
 };
 
 struct ReconnectionTokens {
     std::string peer_id;
     int64_t timestamp;
+};
+
+template <bool SSL>
+class WebSocketServer;
+
+template <bool SSL>
+class WebAuthenticationThread {
+    moodycamel::BlockingReaderWriterQueue<WebSocketAuthenticationMessage<SSL>>
+        &authentication_queue;
+    ServerLogger logger;
+    struct uWS::Loop *loop;
+
+   public:
+    void run();
+    WebAuthenticationThread(
+        moodycamel::BlockingReaderWriterQueue<WebSocketAuthenticationMessage<SSL>>
+            &authentication_queue,
+        bool verbose, std::string log_folder, struct uWS::Loop *loop);
 };
 
 template <bool SSL>
@@ -51,9 +87,13 @@ class WebSocketServer {
     int connected_users = 0;
     boost::uuids::random_generator gen;
     moodycamel::BlockingReaderWriterQueue<WebSocketReceivedMessage> &receive_queue;
+    moodycamel::BlockingReaderWriterQueue<WebSocketAuthenticationMessage<SSL>> authentication_queue;
     ServerLogger logger;
     std::unordered_map<std::string, PeerConnectionData<SSL>> connection_data;
     std::unordered_map<std::string, ReconnectionTokens> reconnections;
+    WebAuthenticationThread<SSL> authentication_thread;
+    std::thread authentication_thread_handle;
+    struct uWS::Loop *loop;
 
    public:
     void on_upgrade(uWS::HttpResponse<SSL> *res, uWS::HttpRequest *req,
@@ -70,7 +110,7 @@ class WebSocketServer {
 
     WebSocketServer(bool verbose, std::string log_folder,
                     moodycamel::BlockingReaderWriterQueue<WebSocketReceivedMessage> &receive_queue,
-                    int max_messages_per_second, int max_users);
+                    int max_messages_per_second, int max_users, struct uWS::Loop *loop);
 };
 
 #include "websocket_server.tpp"

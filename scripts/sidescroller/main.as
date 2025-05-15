@@ -65,11 +65,11 @@ namespace main {
     void _on_join() {
         main::_init_peer();
     }
-    void _on_chat(string message) {}
-    void _on_tags(dictionary tags) {}
-    void _on_kick(string kicked_peer_id) {}
-    void _on_ready(bool ready) {}
-    void _on_seal(bool seal) {}
+    void _can_chat(string message) {}
+    void _can_tags(dictionary tags) {}
+    void _can_kick(string kicked_peer_id) {}
+    void _can_ready(bool ready) {}
+    void _can_seal(bool seal) {}
     void _on_left() {}
     void _move_peer(LobbyPeer@ peer, Lobby@ l, double delta, double input_dir = 0.0, bool input_jump = false) {
         auto pos_x = peer.public_data.get_double("pos_x");

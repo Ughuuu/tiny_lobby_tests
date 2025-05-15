@@ -46,8 +46,11 @@ struct LobbyAS {
     std::string get_calling_peer_id();
     int64_t get_tick_rate();
     std::string get_name();
+    void set_name(std::string& name);
     std::string get_host();
+    void set_host(std::string& host);
     int64_t get_max_players();
+    void set_max_players(int64_t max_players);
     int64_t get_create_time();
     bool is_sealed();
     void set_sealed(bool sealed);
@@ -73,6 +76,8 @@ struct LobbyAS {
     LobbyAS* get_user_data();
 
     std::string get_peer_id();
+    std::string get_peer_platform();
+    std::string get_peer_platform_id();
     int64_t get_peer_order_id();
     bool get_peer_ready();
     bool get_peer_disconnected();

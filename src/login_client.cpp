@@ -143,6 +143,36 @@ std::string LoginClient::verify_jwt(const std::string& jwt, std::string& error) 
     headers.set("INTERNAL_SECRET", "frtZnC0L3IasO4AGLZFARFgdtdkc8W7p");
     auto result = send_request(boost::beast::http::verb::get, "https://login.blazium.app",
                                "/api/v1/internal/token/verify", "", headers);
-    std::cout << "Result: " << result << std::endl;
+    yyjson_doc* doc = yyjson_read(result.c_str(), result.size(), 0);
+    if (!doc) {
+        return result;
+    }
+    // temporary hack, check steam ticket also
+    yyjson_val* root = yyjson_doc_get_root(doc);
+    if (!root) {
+        return result;
+    }
+    boost::container::flat_map<std::string, AnyElement> auth_result;
+    std::string decode_error = decode_object(root, auth_result);
+    yyjson_doc_free(doc);
+    if (!decode_error.empty()) {
+        return result;
+    }
+    if (auth_result.find("success") == auth_result.end()) {
+        return result;
+    }
+    auto& sucess_value = auth_result["success"];
+    if (std::holds_alternative<bool>(sucess_value.value)) {
+        bool success = std::get<bool>(sucess_value.value);
+        if (!success) {
+            // try with steam ticket
+            auto steam_result =
+                send_request(boost::beast::http::verb::get, "https://login.blazium.app",
+                             "/api/v1/internal/steam/verify", "", headers);
+            return steam_result;
+        }
+    } else {
+        return result;
+    }
     return result;
 }

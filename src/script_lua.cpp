@@ -40,6 +40,23 @@ static int lobby_newindex(lua_State* L) {
                     lobby.sealed = new_sealed;
                     lobby.sealed_dirty = true;
                 }
+            } else if (strcmp(key, "name") == 0) {
+                const char* new_name = lua_tostring(L, 3);
+                if (new_name != lobby.name) {
+                    lobby.name = new_name;
+                    lobby.name_dirty = true;
+                }
+            } else if (strcmp(key, "host") == 0) {
+                const char* new_host = lua_tostring(L, 3);
+                if (new_host != lobby.host) {
+                    lobby.host = new_host;
+                }
+            } else if (strcmp(key, "max_players") == 0) {
+                int new_max_players = lua_tointegerx(L, 3, nullptr);
+                if (new_max_players != lobby.max_players) {
+                    lobby.max_players = new_max_players;
+                    lobby.max_players_dirty = true;
+                }
             } else if (strcmp(key, "public_data") == 0) {
                 AnyElement new_public_data = decode_luavalue(L, 3);
                 if (std::holds_alternative<boost::container::flat_map<std::string, AnyElement>>(
@@ -237,6 +254,12 @@ static int lobby_index(lua_State* L) {
                 return 1;
             } else if (strcmp(key, "order_id") == 0) {
                 lua_pushinteger(L, peer.order_id);
+                return 1;
+            } else if (strcmp(key, "platform") == 0) {
+                lua_pushstring(L, peer.platform.c_str());
+                return 1;
+            } else if (strcmp(key, "platform_id") == 0) {
+                lua_pushstring(L, peer.platform_id.c_str());
                 return 1;
             } else if (strcmp(key, "ready") == 0) {
                 lua_pushboolean(L, peer.ready);

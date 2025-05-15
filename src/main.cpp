@@ -202,57 +202,50 @@ int main(int argc, char *argv[]) {
         message_queue_length);
     if (config_reader.GetBoolean("ssl", "enabled", false)) {
         std::cout << "Starting webserver with SSL" << std::endl;
+        uWS::SSLApp app = uWS::SSLApp(uWS::SocketContextOptions{
+            .key_file_name = config_reader.Get("ssl", "key_filename", "").c_str(),
+            .cert_file_name = config_reader.Get("ssl", "cert_filename", "").c_str(),
+            .passphrase = config_reader.Get("ssl", "passphrase", "").c_str()});
         WebSocketServer<true> webserver(
             verbose, config_reader.GetString("webserverserver", "log_folder", "logs"),
             receive_queue,
-            config_reader.GetInteger("webserverserver", "max_messages_per_second", 5), max_users);
-        uWS::SSLApp app =
-            uWS::SSLApp(uWS::SocketContextOptions{
-                            .key_file_name = config_reader.Get("ssl", "key_filename", "").c_str(),
-                            .cert_file_name = config_reader.Get("ssl", "cert_filename", "").c_str(),
-                            .passphrase = config_reader.Get("ssl", "passphrase", "").c_str()})
-                .ws<PerSocketData>(
-                    "/connect",
-                    {/* Settings */
-                     .compression = static_cast<uWS::CompressOptions>(config_reader.GetUnsigned(
-                         "webserverserver", "compression", uWS::DISABLED)),
-                     // max 2 kb
-                     .maxPayloadLength = static_cast<unsigned int>(config_reader.GetUnsigned(
-                         "webserverserver", "max_payload_length", 2 * 1024)),
-                     // 2 minutes
-                     .idleTimeout = static_cast<unsigned short>(
-                         config_reader.GetUnsigned("webserverserver", "idle_timeout", 30)),
-                     // 64 kb
-                     .maxBackpressure = static_cast<unsigned int>(config_reader.GetUnsigned(
-                         "webserverserver", "max_backpressure", 64 * 1024)),
-                     .closeOnBackpressureLimit = true,
-                     .resetIdleTimeoutOnSend = config_reader.GetBoolean(
-                         "webserverserver", "reset_idle_timeout_on_send", true),
-                     .sendPingsAutomatically = true,
-                     /* Handlers */
-                     .upgrade = [&](auto *res, auto *req,
-                                    auto *context) { webserver.on_upgrade(res, req, context); },
-                     .open = [&](auto *ws) { webserver.on_open(ws); },
-                     .message =
-                         [&](auto *ws, std::string_view message, uWS::OpCode opCode) {
-                             webserver.on_message(ws, message, opCode);
-                         },
-                     //.drain = [](auto * /*ws*/) {},
-                     //.ping = [](auto * /*ws*/, std::string_view) {},
-                     //.pong = [](auto * /*ws*/, std::string_view) {},
-                     .close =
-                         [&](auto *ws, int code, std::string_view message) {
-                             webserver.on_close(ws, message, code);
-                         }})
-                .listen(port, [&](auto *listen_socket) {
-                    if (listen_socket) {
-                        std::cout << "Listening on port " << port << std::endl;
-                    } else {
-                        std::cout << "Failed to listen on port" << port << std::endl;
-                        stop = true;
-                        exit(1);
-                    }
-                });
+            config_reader.GetInteger("webserverserver", "max_messages_per_second", 5), max_users,
+            app.getLoop());
+        app.ws<PerSocketData>(
+               "/connect",
+               {/* Settings */
+                .compression = static_cast<uWS::CompressOptions>(
+                    config_reader.GetUnsigned("webserverserver", "compression", uWS::DISABLED)),
+                // max 2 kb
+                .maxPayloadLength = static_cast<unsigned int>(
+                    config_reader.GetUnsigned("webserverserver", "max_payload_length", 2 * 1024)),
+                // 30 seconds
+                .idleTimeout = static_cast<unsigned short>(
+                    config_reader.GetUnsigned("webserverserver", "idle_timeout", 30)),
+                // 64 kb
+                .maxBackpressure = static_cast<unsigned int>(
+                    config_reader.GetUnsigned("webserverserver", "max_backpressure", 64 * 1024)),
+                .closeOnBackpressureLimit = true,
+                .resetIdleTimeoutOnSend =
+                    config_reader.GetBoolean("webserverserver", "reset_idle_timeout_on_send", true),
+                .sendPingsAutomatically = true,
+                /* Handlers */
+                .upgrade = [&](auto *res, auto *req,
+                               auto *context) { webserver.on_upgrade(res, req, context); },
+                .open = [&](auto *ws) { webserver.on_open(ws); },
+                .message = [&](auto *ws, std::string_view message,
+                               uWS::OpCode opCode) { webserver.on_message(ws, message, opCode); },
+                .close = [&](auto *ws, int code,
+                             std::string_view message) { webserver.on_close(ws, message, code); }})
+            .listen(port, [&](auto *listen_socket) {
+                if (listen_socket) {
+                    std::cout << "Listening on port " << port << std::endl;
+                } else {
+                    std::cout << "Failed to listen on port" << port << std::endl;
+                    stop = true;
+                    exit(1);
+                }
+            });
         app.get("/health", [](auto *res, auto *req) { res->writeStatus("200 OK")->end("OK"); });
         app.post("/system/shutdown", [&stop](auto *res, auto *req) {
             stop = true;
@@ -279,54 +272,47 @@ int main(int argc, char *argv[]) {
         AnalyticsThread_thread.join();
     } else {
         std::cout << "Starting webserver without SSL" << std::endl;
+        uWS::App app = uWS::App();
         WebSocketServer<false> webserver(
             verbose, config_reader.GetString("webserverserver", "log_folder", "logs"),
             receive_queue,
-            config_reader.GetInteger("webserverserver", "max_messages_per_second", 5), max_users);
-        uWS::App app =
-            uWS::App()
-                .ws<PerSocketData>(
-                    "/connect",
-                    {/* Settings */
-                     .compression = static_cast<uWS::CompressOptions>(config_reader.GetUnsigned(
-                         "webserverserver", "compression", uWS::DISABLED)),
-                     // max 2 kb
-                     .maxPayloadLength = static_cast<unsigned int>(config_reader.GetUnsigned(
-                         "webserverserver", "max_payload_length", 2 * 1024)),
-                     // 2 minutes
-                     .idleTimeout = static_cast<unsigned short>(
-                         config_reader.GetUnsigned("webserverserver", "idle_timeout", 30)),
-                     // 64 kb
-                     .maxBackpressure = static_cast<unsigned int>(config_reader.GetUnsigned(
-                         "webserverserver", "max_backpressure", 64 * 1024)),
-                     .closeOnBackpressureLimit = true,
-                     .resetIdleTimeoutOnSend = config_reader.GetBoolean(
-                         "webserverserver", "reset_idle_timeout_on_send", true),
-                     .sendPingsAutomatically = true,
-                     /* Handlers */
-                     .upgrade = [&](auto *res, auto *req,
-                                    auto *context) { webserver.on_upgrade(res, req, context); },
-                     .open = [&](auto *ws) { webserver.on_open(ws); },
-                     .message =
-                         [&](auto *ws, std::string_view message, uWS::OpCode opCode) {
-                             webserver.on_message(ws, message, opCode);
-                         },
-                     //.drain = [](auto * /*ws*/) {},
-                     //.ping = [](auto * /*ws*/, std::string_view) {},
-                     //.pong = [](auto * /*ws*/, std::string_view) {},
-                     .close =
-                         [&](auto *ws, int code, std::string_view message) {
-                             webserver.on_close(ws, message, code);
-                         }})
-                .listen(port, [&](auto *listen_socket) {
-                    if (listen_socket) {
-                        std::cout << "Listening on port " << port << std::endl;
-                    } else {
-                        std::cout << "Failed to listen on port" << port << std::endl;
-                        stop = true;
-                        exit(1);
-                    }
-                });
+            config_reader.GetInteger("webserverserver", "max_messages_per_second", 5), max_users,
+            app.getLoop());
+        app.ws<PerSocketData>(
+               "/connect",
+               {/* Settings */
+                .compression = static_cast<uWS::CompressOptions>(
+                    config_reader.GetUnsigned("webserverserver", "compression", uWS::DISABLED)),
+                // max 2 kb
+                .maxPayloadLength = static_cast<unsigned int>(
+                    config_reader.GetUnsigned("webserverserver", "max_payload_length", 2 * 1024)),
+                // 30 seconds
+                .idleTimeout = static_cast<unsigned short>(
+                    config_reader.GetUnsigned("webserverserver", "idle_timeout", 30)),
+                // 64 kb
+                .maxBackpressure = static_cast<unsigned int>(
+                    config_reader.GetUnsigned("webserverserver", "max_backpressure", 64 * 1024)),
+                .closeOnBackpressureLimit = true,
+                .resetIdleTimeoutOnSend =
+                    config_reader.GetBoolean("webserverserver", "reset_idle_timeout_on_send", true),
+                .sendPingsAutomatically = true,
+                /* Handlers */
+                .upgrade = [&](auto *res, auto *req,
+                               auto *context) { webserver.on_upgrade(res, req, context); },
+                .open = [&](auto *ws) { webserver.on_open(ws); },
+                .message = [&](auto *ws, std::string_view message,
+                               uWS::OpCode opCode) { webserver.on_message(ws, message, opCode); },
+                .close = [&](auto *ws, int code,
+                             std::string_view message) { webserver.on_close(ws, message, code); }})
+            .listen(port, [&](auto *listen_socket) {
+                if (listen_socket) {
+                    std::cout << "Listening on port " << port << std::endl;
+                } else {
+                    std::cout << "Failed to listen on port" << port << std::endl;
+                    stop = true;
+                    exit(1);
+                }
+            });
         app.get("/health", [](auto *res, auto *req) { res->writeStatus("200 OK")->end("OK"); });
         app.post("/system/shutdown", [&stop](auto *res, auto *req) {
             stop = true;

@@ -11,6 +11,8 @@ struct PeerData {
     std::string game_id;
     std::string reconnection_token;
     std::string lobby_id;
+    std::string platform;
+    std::string platform_id;
     boost::container::flat_map<std::string, AnyElement> public_data;
     boost::container::flat_map<std::string, AnyElement> private_data;
     boost::container::flat_map<std::string, AnyElement> user_data;
@@ -36,6 +38,7 @@ struct PeerData {
         }
         peer_dict["lobby_id"] = AnyElement{lobby_id};
         peer_dict["public_data"] = AnyElement{public_data};
+        peer_dict["platform"] = AnyElement{platform};
         if (include_private) {
             peer_dict["private_data"] = AnyElement{private_data};
         }
