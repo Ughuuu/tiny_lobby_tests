@@ -40,6 +40,8 @@
 | `LobbyData@ user_data const property` | User data |
 | `LobbyData@ public_data const property` | Public data |
 | `LobbyData@ private_data const property` | Private data |
+| `string platform const property` | Platform |
+| `string platform_id const property` | Platform ID |
 | `string id const property` | Peer ID |
 | `int order_id const property` | Order ID |
 | `bool ready const property` | Ready state |

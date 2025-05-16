@@ -585,6 +585,7 @@ void GameThread::on_connect(GameData &game, std::string &peer_id, std::string &g
                                     });
     }
     auto &peer = game.peers[peer_id];
+    peer.user_data["name"] = AnyElement{name};
     std::string notification = notification_peer_state(AnyElement{peer.to_dict(true, true)});
     send(game, peer.id, notification, uWS::OpCode::TEXT);
 }

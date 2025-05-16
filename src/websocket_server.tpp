@@ -5,7 +5,6 @@
 #include <string>
 #include <algorithm>
 #include <cctype>
-#include <atomic>
 #include <variant>
 
 // 1 second
@@ -49,7 +48,7 @@ void WebAuthenticationThread<SSL>::run() {
         // probably not a jwt.
         if (!user_data.reconnection_token.contains(".")) {
             loop->defer([res, user_data = std::move(user_data), websocket_key, websocket_extensions, context, abort_shared, this]() mutable{
-                if (abort_shared->load()) {
+                if (*abort_shared) {
                     return;
                 }
                 logger.error_log("[WebSocketServer] upgraded anon user: ", user_data.game_id, " ", user_data.id);
@@ -65,7 +64,7 @@ void WebAuthenticationThread<SSL>::run() {
         std::string error_msg;
         std::string result = client.verify_jwt(user_data.reconnection_token, error_msg);
         loop->defer([res, result, user_data = std::move(user_data), error_msg, websocket_key, websocket_extensions, context, abort_shared, this]() mutable{
-        if (abort_shared->load()) {
+        if (*abort_shared) {
             return;
         }
         if (error_msg != "") {
@@ -153,6 +152,7 @@ void WebAuthenticationThread<SSL>::run() {
                     user_data.platform = std::get<std::string>((*token)["platform"].value);
                     user_data.name = std::get<std::string>((*token)["name"].value);
                     user_data.platform_id = std::get<std::string>((*token)["platform_id"].value);
+                    user_data.reconnection_token = user_data.platform + ":" + user_data.platform_id;
                 }
             }
             this->logger.error_log("[WebSocketServer] upgraded authenticated user: ", user_data.game_id, " ", user_data.id);
@@ -201,7 +201,7 @@ void WebSocketServer<SSL>::on_upgrade(uWS::HttpResponse<SSL> *res,uWS::HttpReque
     if (protocols_split.size() > 2) {
         user_data.reconnection_token = protocols_split[2];
     }
-    std::shared_ptr<std::atomic<bool>> abort_shared = std::make_shared<std::atomic<bool>>(false);
+    std::shared_ptr<bool> abort_shared = std::make_shared<bool>(false);
     WebSocketAuthenticationMessage<SSL> auth_message {
         .user_data = user_data,
         .res = res,
@@ -218,7 +218,7 @@ void WebSocketServer<SSL>::on_upgrade(uWS::HttpResponse<SSL> *res,uWS::HttpReque
         return;
     } else {
         res->onAborted([&]() {
-            abort_shared->store(true);
+            *abort_shared = true;
             logger.error_log("[WebSocketServer] error: closed before authenticating");
         });
     }
@@ -229,8 +229,8 @@ template <bool SSL>
 void WebSocketServer<SSL>::on_open(uWS::WebSocket<SSL, true, PerSocketData> *ws) {
     PerSocketData* data = ws->getUserData();
     logger.debug_log("[WebSocketServer] on_open: ", data->uid, " ", data->id, " ", data->game_id);
-    if (data->reconnection_token != "" &&
-        reconnections.find(data->reconnection_token) != reconnections.end()) {
+    if ((data->reconnection_token != "" &&
+        reconnections.find(data->reconnection_token) != reconnections.end())) {
         auto &old_reconnection = reconnections[data->reconnection_token];
         if (old_reconnection.timestamp < get_time_now() - MAX_RECONNECTION_TIME) {
             reconnections.erase(data->reconnection_token);
@@ -255,7 +255,11 @@ void WebSocketServer<SSL>::on_open(uWS::WebSocket<SSL, true, PerSocketData> *ws)
         reconnections.erase(data->reconnection_token);
     }
     auto uuid = to_string(gen());
-    data->reconnection_token = uuid;
+    if (data->platform_id != "") {
+        data->reconnection_token = data->platform + ":" + data->platform_id;
+    } else {
+        data->reconnection_token = uuid;
+    }
     // write to sockets map
     reconnections.emplace(data->reconnection_token, ReconnectionTokens {
         .peer_id = data->id,

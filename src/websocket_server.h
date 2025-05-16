@@ -51,7 +51,7 @@ struct WebSocketAuthenticationMessage {
     uWS::HttpResponse<SSL> *res;
     uWS::HttpRequest *req;
     struct us_socket_context_t *context;
-    std::shared_ptr<std::atomic<bool>> abort;
+    std::shared_ptr<bool> abort;
     std::string websocket_key;
     std::string websocket_extensions;
 };
