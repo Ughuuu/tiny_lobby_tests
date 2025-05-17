@@ -541,7 +541,8 @@ void GameThread::remove_peer_from_lobby(GameData &game, LobbyData &lobby, std::s
 void GameThread::send(GameData &game, const std::string &peer_id, const std::string &message,
                       uWS::OpCode opCode) {
     // check if peer is disconnected
-    if (game.disconnected_peers.find(peer_id) != game.disconnected_peers.end()) {
+    if (game.disconnected_peers.find(peer_id) != game.disconnected_peers.end() &&
+        opCode != uWS::OpCode::CLOSE) {
         return;
     }
     // send immediately or batch

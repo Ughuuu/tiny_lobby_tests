@@ -26,6 +26,9 @@ struct PeerData {
         lobby_id = "";
         ready = false;
         order_id = 0;
+        public_data = {};
+        private_data = {};
+        disconnected = false;
     }
 
     boost::container::flat_map<std::string, AnyElement> to_dict(bool include_private = false,

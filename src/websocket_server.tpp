@@ -255,10 +255,12 @@ void WebSocketServer<SSL>::on_open(uWS::WebSocket<SSL, true, PerSocketData> *ws)
         reconnections.erase(data->reconnection_token);
     }
     auto uuid = to_string(gen());
-    if (data->platform_id != "") {
+    if (data->platform != "anon") {
         data->reconnection_token = data->platform + ":" + data->platform_id;
     } else {
         data->reconnection_token = uuid;
+        // put an id here so it's easier in ifs in scripting
+        data->platform_id = data->id;
     }
     // write to sockets map
     reconnections.emplace(data->reconnection_token, ReconnectionTokens {

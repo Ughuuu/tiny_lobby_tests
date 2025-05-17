@@ -206,7 +206,8 @@ function api.on_timer_restart_game()
     local game_ended = false
     for k, _ in pairs(l.peers) do
         l.peers[k].private_data["word"] = nil
-        if l.peers[k].public_data["total_points"] >= l.tags["max_points"] and l.tags["max_points"] ~= 0 then
+        local total_points = (l.peers[k].public_data["total_points"] or 0)
+        if total_points >= l.tags["max_points"] and l.tags["max_points"] ~= 0 then
             game_ended = true
         end
     end

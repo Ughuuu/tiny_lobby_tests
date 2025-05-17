@@ -11,6 +11,7 @@ function callbacks.can_create(minPlayers, maxPlayers)
     if max_players < minPlayers or max_players > maxPlayers then
         return { error = ("Max players must be between " .. tostring(minPlayers) .. " and " .. tostring(maxPlayers)) }
     end
+    return
 end
 
 function callbacks.on_create()
