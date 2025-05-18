@@ -8,6 +8,7 @@
 struct PeerData {
     std::string id;
     int order_id = 0;
+    int64_t last_message_time = 0;
     std::string game_id;
     std::string reconnection_token;
     std::string lobby_id;

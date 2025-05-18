@@ -1,6 +1,9 @@
 #include "game_thread.h"
 
+#include <ctime>
+#include <iomanip>
 #include <regex>
+#include <sstream>
 
 #include "INIReader.h"
 #include "any_type.h"
@@ -117,6 +120,14 @@ void GameThread::unload_games() {
     games.clear();
 }
 
+std::string get_current_date() {
+    std::time_t t = std::time(nullptr);
+    std::tm tm = *std::localtime(&t);
+    std::ostringstream oss;
+    oss << std::put_time(&tm, "%Y_%m_%d");
+    return oss.str();
+}
+
 void GameThread::run() {
     now = get_time_now();
     load_games();
@@ -124,8 +135,10 @@ void GameThread::run() {
     int64_t last_listing = now;
     int64_t last_disconnect = now;
     int64_t last_timers = now;
+    int64_t last_stats = now;
     int64_t disconnect_interval = max_reconnection_time / 10;
     int64_t timer_interval = 500;
+    int64_t stats_interval = 10000;
     int min_process_size = 100;
     int last_time = 0;
     while (!stop) {
@@ -142,15 +155,70 @@ void GameThread::run() {
             continue;
         }
         last_time = now;
+        if (last_stats + stats_interval < now && logger.verbose) {
+            last_stats = now;
+            // open stats file and append to it. use date format YYYY-MM-DD for filename
+            time_t timestamp = time(&timestamp);
+
+            // check if file is empty and write header if it is
+            std::ifstream stats_file_check(logs_folder + "/stats_" + get_current_date() + ".csv");
+            if (stats_file_check.peek() == std::ifstream::traits_type::eof()) {
+                stats_file_check.close();
+                std::ofstream stats_file(logs_folder + "/stats_" + get_current_date() + ".csv");
+                stats_file
+                    << "timestamp,messages_received,messages_sent,total_users_count,peers_in_game,"
+                       "disconnected_peers,anon_users,discord_users,steam_users,total_lobbies_"
+                       "count\n";
+                stats_file.close();
+            } else {
+                stats_file_check.close();
+            }
+            std::ofstream stats_file(logs_folder + "/stats_" + get_current_date() + ".csv",
+                                     std::ios::app);
+            int total_users_count = 0;
+            int anon_users = 0;
+            int steam_users = 0;
+            int discord_users = 0;
+            for (auto &game : games) {
+                total_users_count += game.second.peers.size();
+                for (auto &peer : game.second.peers) {
+                    if (peer.second.platform == "anon") {
+                        anon_users++;
+                    } else if (peer.second.platform == "steam") {
+                        steam_users++;
+                    } else if (peer.second.platform == "discord") {
+                        discord_users++;
+                    }
+                }
+            }
+            int total_lobbies_count = 0;
+            int peers_in_game = 0;
+            for (auto &game : games) {
+                total_lobbies_count += game.second.lobbies.size();
+                for (auto &lobby : game.second.lobbies) {
+                    peers_in_game += lobby.second.peer_ids.size();
+                }
+            }
+            int disconnected_peers = 0;
+            for (auto &game : games) {
+                disconnected_peers += game.second.disconnected_peers.size();
+            }
+            stats_file << now << "," << messages_received << "," << messages_sent << ","
+                       << total_users_count << "," << peers_in_game << "," << disconnected_peers
+                       << "," << anon_users << "," << discord_users << "," << steam_users << ","
+                       << total_lobbies_count << "\n";
+            stats_file.close();
+            messages_received = 0;
+            messages_sent = 0;
+        }
         handle_tick();
         handle_send();
         if (now - last_disconnect > disconnect_interval) {
             last_disconnect = now;
             handle_disconnects();
+            handle_afk();
         }
         if (now - last_listing > listing_interval) {
-            messages_received = 0;
-            messages_sent = 0;
             last_listing = now;
             handle_lobby_list();
         }
@@ -355,6 +423,8 @@ bool GameThread::handle_events() {
                 break;
             }
             auto &peer = game.peers[message.id];
+            // set last message time
+            peer.last_message_time = now;
             // relay
             if (command == "lobby_data") {
                 on_lobby_data(game, std::string(command_id), peer, data_val);
@@ -419,8 +489,9 @@ void GameThread::handle_disconnects() {
         for (auto &peer : game_data.disconnected_peers) {
             auto &peer_obj = game_data.peers[peer.first];
             // peer no longer in lobby
-            if (peer_obj.lobby_id == EMPTY_STRING ||
-                game_data.lobbies.find(peer_obj.lobby_id) == game_data.lobbies.end()) {
+            if ((peer_obj.lobby_id == EMPTY_STRING ||
+                 game_data.lobbies.find(peer_obj.lobby_id) == game_data.lobbies.end()) &&
+                (now - peer.second > max_reconnection_time)) {
                 peer_obj.leave_lobby();
                 to_erase.insert(peer.first);
                 continue;
@@ -444,6 +515,36 @@ void GameThread::handle_disconnects() {
         // clear them from game data
         for (auto &peer_id : to_erase) {
             game_data.disconnected_peers.erase(peer_id);
+        }
+        for (auto &peer_id : to_erase) {
+            game_data.peers.erase(peer_id);
+        }
+    }
+}
+
+void GameThread::handle_afk() {
+    for (auto &game : games) {
+        auto &game_data = game.second;
+        boost::container::flat_set<std::string> to_erase;
+        for (auto &peer : game_data.peers) {
+            auto &peer_obj = peer.second;
+            if (game_data.lobbies.find(peer_obj.lobby_id) == game_data.lobbies.end()) {
+                continue;
+            }
+            auto &lobby = game_data.lobbies[peer_obj.lobby_id];
+            bool destroy_lobby = true;
+            for (auto &peer_id : lobby.peer_ids) {
+                auto &lobby_peer = game_data.peers[peer_id];
+                // if peer is not afk, do not destroy lobby
+                if (now - peer_obj.last_message_time < max_reconnection_time) {
+                    destroy_lobby = false;
+                    break;
+                }
+            }
+            if (destroy_lobby) {
+                remove_peer_from_lobby(game_data, game_data.lobbies[lobby.id], lobby.host,
+                                       EMPTY_STRING, false);
+            }
         }
     }
 }

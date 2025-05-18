@@ -11,7 +11,6 @@
 class ServerLogger {
     std::ofstream log_file;
     std::string file_name;
-    bool verbose;
     int retries = 0;
     const int MAX_RETRIES = 3;
 
@@ -85,6 +84,7 @@ class ServerLogger {
     }
 
    public:
+    bool verbose;
     // Public log method for debug-level logs
     template <typename... Args>
     void debug_log(const Args&... args) {

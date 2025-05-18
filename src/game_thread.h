@@ -54,6 +54,7 @@ class GameThread {
     void reload_game(std::string folder_name);
     void run();
     void time_run();
+    void handle_afk();
     bool handle_events();
     void handle_disconnects();
     void handle_lobby_list();
