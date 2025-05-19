@@ -140,7 +140,7 @@ void GameThread::run() {
     int64_t timer_interval = 500;
     int64_t stats_interval = 10000;
     int min_process_size = 100;
-    int last_time = 0;
+    int64_t last_time = 0;
     while (!stop) {
         // Process min_process_size messages
         int messages_processed = 0;
@@ -338,7 +338,7 @@ void GameThread::handle_timers() {
                 if (game.second.lobbies.find(timer_data.second.lobby_id) ==
                     game.second.lobbies.end()) {
                     on_error(game.second, EMPTY_STRING, timer_data.second.peer_id,
-                             ERROR_LOBBY_NOT_FOUND, true);
+                             ERROR_LOBBY_NOT_FOUND, false, true);
                     game.second.timer_data.erase(timer_data.first);
                     continue;
                 }
@@ -355,7 +355,7 @@ void GameThread::handle_timers() {
                     true, timer_data_obj.args, has_error);
                 if (has_error || std::holds_alternative<std::string>(result.value)) {
                     on_error(game.second, EMPTY_STRING, timer_data_obj.peer_id,
-                             std::get<std::string>(result.value), true);
+                             std::get<std::string>(result.value), false, true);
                 }
             }
         }
@@ -536,7 +536,7 @@ void GameThread::handle_afk() {
             for (auto &peer_id : lobby.peer_ids) {
                 auto &lobby_peer = game_data.peers[peer_id];
                 // if peer is not afk, do not destroy lobby
-                if (now - peer_obj.last_message_time < max_reconnection_time) {
+                if (now - peer_obj.last_message_time < max_reconnection_time * 2) {
                     destroy_lobby = false;
                     break;
                 }

@@ -10,18 +10,23 @@ main.guess_letter = api.guess_letter
 main.guess_word = api.guess_word
 main.me_command = api.me_command
 main.skip = api.skip
+main.show_hint = api.show_hint
+main.show_letter_hint = api.show_letter_hint
+main.take_damage = api.take_damage
 
 -- Private Function
 main._on_timer_restart_game = api.on_timer_restart_game
 main._on_timer_word_timeout = api.on_timer_word_timeout
 main._on_timer_guess_timeout = api.on_timer_guess_timeout
+main._on_timer_next_round = api.on_timer_next_round
+main._on_timer_recreate_body = api.on_timer_recreate_body
 
 -- Callback functions
 local callbacks = require("callbacks")
-main._can_create = function() return callbacks.can_create(2, 10) end
-main._on_create = function() return callbacks.on_create() end
+main._can_create = function() return callbacks.on_create(2, 10) end
 main._can_tags = callbacks.on_tags
 main._can_ready = callbacks.on_ready
 main._on_left = callbacks.on_left
+main._on_join = callbacks.on_join
 
 return main
