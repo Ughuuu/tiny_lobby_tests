@@ -104,9 +104,9 @@ namespace main {
         return true;
     }
     void _on_tick(int64 tickrate) {
+        return;
         auto l = lobby::get();
         auto current_time_ms = lobby::get_ticks_ms();
-        auto val = peer.public_data.get_int("val");
         auto peerKeys = l.peers.getKeys();
         for (uint64 i=0; i < peerKeys.length(); i++) {
             auto peer = cast<LobbyPeer@>(l.peers[peerKeys[i]]);

@@ -69,9 +69,31 @@ void as_broadcast_chat_wrapper(asIScriptGeneric *gen) {
 
     // Extract arguments
     std::string message = *static_cast<std::string *>(gen->GetArgObject(0));
+    // Call the actual function
+    self->as_broadcast_chat(message, nullptr);
+}
+
+void as_broadcast_chat_wrapper_with_metadata(asIScriptGeneric *gen) {
+    // Retrieve the ScriptAS instance from the engine's user data
+    asIScriptEngine *engine = gen->GetEngine();
+    ScriptAS *self = static_cast<ScriptAS *>(engine->GetUserData());
+
+    // Extract arguments
+    std::string message = *static_cast<std::string *>(gen->GetArgObject(0));
+    CScriptDictionary *metadata_dict = static_cast<CScriptDictionary *>(gen->GetArgObject(1));
+    self->as_broadcast_chat(message, metadata_dict);
+}
+
+void as_kick_peer_wrapper(asIScriptGeneric *gen) {
+    // Retrieve the ScriptAS instance from the engine's user data
+    asIScriptEngine *engine = gen->GetEngine();
+    ScriptAS *self = static_cast<ScriptAS *>(engine->GetUserData());
+
+    // Extract arguments
+    std::string peer_id = *static_cast<std::string *>(gen->GetArgObject(0));
 
     // Call the actual function
-    self->as_broadcast_chat(message);
+    self->as_kick_peer(peer_id);
 }
 
 void as_get_lobby_wrapper(asIScriptGeneric *gen) {
@@ -280,8 +302,13 @@ boost::container::flat_set<std::string> ScriptAS::open() {
                                       asFUNCTION(as_notifty_wrapper), asCALL_GENERIC);
     as_engine->RegisterGlobalFunction("void broadcast_chat(string message)",
                                       asFUNCTION(as_broadcast_chat_wrapper), asCALL_GENERIC);
+    as_engine->RegisterGlobalFunction("void broadcast_chat(string message, dictionary@ metadata)",
+                                      asFUNCTION(as_broadcast_chat_wrapper_with_metadata),
+                                      asCALL_GENERIC);
     as_engine->RegisterGlobalFunction("int64 get_ticks_ms()", asFUNCTION(as_get_ticks_ms_wrapper),
                                       asCALL_GENERIC);
+    as_engine->RegisterGlobalFunction("void kick_peer(string peer_id)",
+                                      asFUNCTION(as_kick_peer_wrapper), asCALL_GENERIC);
     as_engine->RegisterGlobalFunction("Lobby@ get()", asFUNCTION(as_get_lobby_wrapper),
                                       asCALL_GENERIC);
     as_engine->SetDefaultNamespace("");
@@ -386,9 +413,19 @@ void ScriptAS::as_notifty(std::string &peer_id, CScriptAny *message) {
     game_thread->notify_peer(game, as_lobby_id, as_peer_id, message_obj);
 }
 
-void ScriptAS::as_broadcast_chat(std::string &message) {
+void ScriptAS::as_broadcast_chat(std::string &message, CScriptDictionary *metadata_dict) {
+    boost::container::flat_map<std::string, AnyElement> chat_metadata;
+    if (metadata_dict) {
+        chat_metadata = ConvertFromDictionary(as_engine, metadata_dict);
+    }
+    // Call the actual function
     auto &game = game_thread->games[as_game_id];
-    game_thread->send_message(game, as_lobby_id, message);
+    game_thread->send_message(game, as_lobby_id, message, chat_metadata);
+}
+
+void ScriptAS::as_kick_peer(std::string &peer_id) {
+    auto &game = game_thread->games[as_game_id];
+    game_thread->kick_peer(game, as_lobby_id, peer_id);
 }
 
 AnyElement ScriptAS::func_call(std::string &func_name, boost::container::vector<AnyElement> &args,

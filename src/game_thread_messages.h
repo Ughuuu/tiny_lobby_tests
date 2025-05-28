@@ -179,14 +179,16 @@ std::string notification_tags(const AnyElement& tags, const std::string& command
         .to_string();
 }
 
-std::string notification_chat(const std::string& from_peer, const std::string& chat_data,
-                              const std::string& command_id) {
+std::string notification_chat(
+    const std::string& from_peer, const std::string& chat_data, const std::string& command_id,
+    const boost::container::flat_map<std::string, AnyElement>& chat_metadata) {
     return AnyElement{boost::container::flat_map<std::string, AnyElement>{
                           {"command", AnyElement{"peer_chat"}},
                           {"message", AnyElement{"Chat"}},
                           {"data", AnyElement{boost::container::flat_map<std::string, AnyElement>{
                                        {"from_peer", AnyElement{from_peer}},
                                        {"chat_data", AnyElement{chat_data}},
+                                       {"chat_metadata", AnyElement{chat_metadata}},
                                        {"id", AnyElement{command_id}}}}}}}
         .to_string();
 }

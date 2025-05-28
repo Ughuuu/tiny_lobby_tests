@@ -196,6 +196,56 @@ jobs:
         run: |
           ./build_release_macos-${{ matrix.arch }}.sh
 
+
+      # https://docs.github.com/en/actions/deployment/deploying-xcode-applications/installing-an-apple-certificate-on-macos-runners-for-xcode-development
+      - name: Install the Apple certificate and provisioning profile for macOS
+        shell: bash
+        env:
+          # Developer ID Certificate
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          # create variables
+          CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+
+          # import certificate and provisioning profile from secrets
+          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
+
+          # create temporary keychain
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          # import certificate to keychain
+          security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+
+          SIGNING_IDENTITY=$(security find-identity -p codesigning -v | awk -F'"' 'NR==1 {print $2}')
+          echo "APPLE_SIGNING_IDENTITY=$SIGNING_IDENTITY" >> $GITHUB_ENV
+
+      - name: Sign for macos
+        shell: bash
+        working-directory: build
+        run: |
+
+          # Set permissions and sign the application
+          chmod +x lobby_server
+          
+          codesign --deep --force --options=runtime --verbose --timestamp \
+            --entitlements ../signing/mac/entitlements.plist --sign "${{ env.APPLE_SIGNING_IDENTITY }}" \
+            lobby_server
+          codesign --verify --strict --deep --verbose lobby_server
+          # Package the application into a zip file
+          ditto -c -k --keepParent lobby_server lobby_server.zip
+
+          /Applications/Xcode.app/Contents/Developer/usr/bin/notarytool store-credentials "AppleID" --apple-id "${{ secrets.APPLE_ID }}" --password "${{ secrets.APP_SPECIFIC_PASSWORD }}" --team-id "${{ secrets.APPLE_TEAM_ID }}"
+
+          /Applications/Xcode.app/Contents/Developer/usr/bin/notarytool submit lobby_server.zip --wait --keychain-profile "AppleID"
+
+          rm lobby_server.zip
+
       - name: Archive build artifacts
         uses: actions/upload-artifact@v4
         with:

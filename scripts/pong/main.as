@@ -1,16 +1,15 @@
 namespace main {
     void move(int dir) {
-        print(dir);
         Lobby@ l = lobby::get();
         auto peer = cast<LobbyPeer@>(l.peers[l.calling_peer_id]);
         auto pad_y = peer.public_data.get_int("pad_y");
         switch(dir) {
             case -1:
-                print("up");
+                //print(lobby::get_ticks_ms());
+                peer.public_data.set("timestamp", lobby::get_ticks_ms());
                 peer.public_data.set("pad_y", pad_y - 1);
                 break;
             case 1:
-                print("down");
                 peer.public_data.set("pad_y", pad_y + 1);
                 break;
             default:

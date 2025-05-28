@@ -20,8 +20,9 @@
 
 static std::vector<std::string> get_expected_functions() {
     std::vector<std::string> expected_functions = {
-        "_can_create", "_on_create", "_on_join", "_can_chat",   "_can_tags",  "_can_kick",
-        "_can_ready",  "_can_seal",  "_on_left", "_can_resize", "_on_resize", "_can_title"};
+        "_can_create", "_on_create", "_on_join",  "_can_chat",  "_can_tags",
+        "_can_kick",   "_can_ready", "_can_seal", "_on_left",   "_can_resize",
+        "_on_resize",  "_can_title", "_on_tick",  "_on_reload", "_on_init"};
     return expected_functions;
 }
 
@@ -126,7 +127,9 @@ class GameThread {
                                       std::string funcname, bool override,
                                       boost::container::vector<AnyElement> &args, bool &has_error);
 
-    void send_message(GameData &game, std::string &peer_id, std::string &message);
+    void send_message(GameData &game, std::string &peer_id, std::string &message,
+                      boost::container::flat_map<std::string, AnyElement> &chat_metadata);
+    void kick_peer(GameData &game, std::string &lobby_id, std::string &peer_id);
     void notify_lobby_changes(GameData &game, std::string &lobby_id);
     void notify_peer(GameData &game, std::string &lobby_id, std::string peer_id,
                      const AnyElement &notification);

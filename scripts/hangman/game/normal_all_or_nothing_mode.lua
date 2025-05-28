@@ -25,6 +25,7 @@ function CompetitiveAllOrNothing:start_game(l)
     end
     l.private_data["word"] = word
     l.public_data["hint"] = hint
+    l.public_data["announcement_message"] = ""
     lobby.start_timer("_on_timer_guess_timeout", 10)
     return self:set_initial_data(l)
 end
@@ -144,10 +145,29 @@ function CompetitiveAllOrNothing:show_hint(l, peerID)
 end
 
 function CompetitiveAllOrNothing:take_damage(l, peerID)
+    if l.public_data["health"] <= 0 then
+        return
+    end
     l.public_data["health"] = l.public_data["health"] - 1
-    if l.public_data["health"] == 0 then
+    if l.public_data["health"] <= 0 then
         l.public_data["game_state"] = "over"
-        lobby.start_timer("_on_timer_restart_game", 15)
+        l.public_data["word"] = l.private_data["word"]
+        local winning_message = "Players lost! Game over."
+        local players = {}
+        for k, _ in pairs(l.peers) do
+            table.insert(players, {
+                name = l.peers[k].user_data["name"],
+                total_points = l.peers[k].public_data["total_points"] or 0
+            })
+        end
+        table.sort(players, function(a, b)
+            return a.total_points > b.total_points
+        end)
+        for _, player in ipairs(players) do
+            winning_message = winning_message .. string.format("\n%s contributed %d letters", player.name, player.total_points)
+        end
+        l.public_data["announcement_message"] = winning_message
+        lobby.start_timer("_on_timer_restart_game", 10)
     end
     return
 end
@@ -177,6 +197,16 @@ function CompetitiveAllOrNothing:on_timer_guess_timeout(l)
     l.public_data["turn_timestamp"] = system.get_time_since_epoch()
     self:take_damage(l, "")
     lobby.start_timer("_on_timer_guess_timeout", 10)
+end
+
+function CompetitiveAllOrNothing:on_tick(l, tickrate)
+    local current_time = system.get_time_since_epoch()
+    for _, peer in pairs(l.peers) do
+        if current_time - peer.private_data["timer"] >= 10000 then
+            print(string.format("Peer %s timed out. Taking damage.", peer.user_data["name"]))
+            self:take_damage(l, peer.id)
+        end
+    end
 end
 
 function CompetitiveAllOrNothing:set_initial_data(l)

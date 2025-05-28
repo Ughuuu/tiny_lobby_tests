@@ -220,6 +220,17 @@ int broadcast_chat(lua_State *L) {
         return 0;
     }
     std::string message = luaL_checkstring(L, 1);
+    boost::container::flat_map<std::string, AnyElement> chat_metadata;
+    if (lua_gettop(L) >= 2) {
+        AnyElement new_chat_metadata_object = decode_luavalue(L, 2);
+        if (auto *metadata_map = std::get_if<boost::container::flat_map<std::string, AnyElement>>(
+                &new_chat_metadata_object.value)) {
+            chat_metadata = *metadata_map;
+        } else {
+            luaL_error(L, "Expected a dictionary for chat metadata.");
+            return 0;
+        }
+    }
     lua_getfield(L, LUA_REGISTRYINDEX, "game_id");
     std::string game_id = lua_tostring(L, -1);
     lua_pop(L, 1);
@@ -233,7 +244,30 @@ int broadcast_chat(lua_State *L) {
     lua_pop(L, 1);
 
     auto &game = game_thread->games[game_id];
-    game_thread->send_message(game, lobby_id, message);
+    game_thread->send_message(game, lobby_id, message, chat_metadata);
+    return 0;
+}
+
+int kick_peer(lua_State *L) {
+    if (lua_gettop(L) < 1) {
+        luaL_error(L, "Expected 1 arguments.");
+        return 0;
+    }
+    std::string peer_id = luaL_checkstring(L, 1);
+    lua_getfield(L, LUA_REGISTRYINDEX, "game_id");
+    std::string game_id = lua_tostring(L, -1);
+    lua_pop(L, 1);
+
+    lua_getfield(L, LUA_REGISTRYINDEX, "lobby_id");
+    std::string lobby_id = lua_tostring(L, -1);
+    lua_pop(L, 1);
+
+    lua_getfield(L, LUA_REGISTRYINDEX, "game_thread");
+    GameThread *game_thread = static_cast<GameThread *>(lua_touserdata(L, -1));
+    lua_pop(L, 1);
+
+    auto &game = game_thread->games[game_id];
+    game_thread->kick_peer(game, lobby_id, peer_id);
     return 0;
 }
 
@@ -542,6 +576,9 @@ void luaopen_lobby(lua_State *L) {
 
     lua_pushcfunction(L, notify, "notify");
     lua_setfield(L, -2, "notify");
+
+    lua_pushcfunction(L, kick_peer, "kick_peer");
+    lua_setfield(L, -2, "kick_peer");
 
     lua_pushcfunction(L, broadcast_chat, "broadcast_chat");
     lua_setfield(L, -2, "broadcast_chat");

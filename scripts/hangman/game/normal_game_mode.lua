@@ -121,7 +121,7 @@ function NormalGameMode:guess_letter(lobby_data, peerID, letter)
     local word = lobby_data.peers[dealerID].private_data["word"]
     if not string.find(word, letter, 1, true) then
         lobby_data.public_data["health"] = lobby_data.public_data["health"] - 1
-        if lobby_data.public_data["health"] == 0 then self:end_game(lobby_data, "lost") end
+        if lobby_data.public_data["health"] <= 0 then self:end_game(lobby_data, "lost") end
         lobby.broadcast_chat(string.format("%s guessed the wrong letter, %s", peer_name, letter))
         return { error = "Letter is not in the word." }
     end
@@ -160,7 +160,7 @@ end
 
 function NormalGameMode:take_damage(lobby_data, peerID)
     lobby_data.public_data["health"] = lobby_data.public_data["health"] - 1
-    if lobby_data.public_data["health"] == 0 then
+    if lobby_data.public_data["health"] <= 0 then
         self:end_game(lobby_data, "lost")
     end
     lobby_data.peers[peerID].private_data["timer"] = system.get_time_since_epoch()
@@ -246,6 +246,16 @@ function NormalGameMode:set_initial_data(lobby_data)
     lobby_data = turn.increment_turn(lobby_data, 1)
     lobby.start_timer("_on_timer_word_timeout", 180, lobby_data.public_data["dealer"])
     return lobby_data
+end
+
+function NormalGameMode:on_tick(l, tickrate)
+    local current_time = system.get_time_since_epoch()
+    for _, peer in pairs(l.peers) do
+        if current_time - peer.private_data["timer"] >= 10000 then
+            print(string.format("Peer %s timed out. Taking damage.", peer.user_data["name"]))
+            self:take_damage(l, peer.id)
+        end
+    end
 end
 
 function NormalGameMode:on_left(lobby_data, peerID)

@@ -15,8 +15,8 @@
 | `LobbyData` | Reference-counted lobby data object |
 | `LobbyPeer` | Reference-counted peer object |
 
-## Lobby Methods
-### Getters
+## Lobby
+
 | Property | Returns | Has Setter |
 |----------|---------|---------|
 | `string calling_peer_id const property` | Calling peer ID | |
@@ -71,19 +71,26 @@
 | `string get_string(string key)` | String |
 
 ## Lobby Namespace Functions
-| Function | Description | Convention |
+| Function | Description |
 |----------|-------------|------------|
-| `void start_timer(string timer_id, double duration, array<any>@ args = array<any>())` | Starts timer | `asCALL_GENERIC` |
-| `void stop_timer(string timer_id)` | Stops timer | `asCALL_GENERIC` |
-| `void notify(string peer_id, any@ message)` | Sends notification | `asCALL_GENERIC` |
-| `void broadcast_chat(string message)` | Broadcasts chat | `asCALL_GENERIC` |
-| `int64 get_ticks_ms()` | Gets current time (ms) | `asCALL_GENERIC` |
-| `Lobby@ get()` | Gets current lobby | `asCALL_GENERIC` |
+| `void start_timer(string timer_id, double duration, array<any>@ args = array<any>())` | Starts timer
+| `void stop_timer(string timer_id)` | Stops timer
+| `void notify(string peer_id, any@ message)` | Sends notification
+| `void broadcast_chat(string message)` | Broadcasts chat
+| `void broadcast_chat(string message, dictionary &metadata)` | Broadcasts chat with metadata
+| `void kick_peer(string peer_id)` | Kick a peer by id
+| `int64 get_ticks_ms()` | Gets current time (ms)
+| `Lobby@ get()` | Gets current lobby
 
-## Callbacks
+## Game Callbacks
 
-| Function | Description | Convention |
-|----------|-------------|------------|
+These are inside the `scripts/<game_id>/main.as` file.
+
+| Function | Description |
+|----------|-------------|
+| `_on_init` | When the game is created.
+| `_on_tick` | When the lobby tick happens.
+| `_on_reload` | When the game code reloads.
 | `_can_create` | If this returns error cannot create lobby.
 | `_on_create` | After the lobby is created, sets data.
 | `_can_join` | If this returns error you cannot join the lobby.

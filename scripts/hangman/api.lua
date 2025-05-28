@@ -1,16 +1,19 @@
 local lobby = require("lobby")
 local NormalGameMode = require("game/normal_game_mode")
 local CompetitiveAbunchHangingMode = require("game/competitive_abunch_hanging_mode")
-local CompetitiveAllOrNothingMode = require("game/competitive_all_or_nothing_mode")
-local CompetitiveLastWrongDiesMode = require("game/competitive_last_wrong_dies_mode")
+local NormalAbunchHangingMode = require("game/normal_abunch_hanging_mode")
+local NormalAllOrNothingMode = require("game/normal_all_or_nothing_mode")
+local NormalLastWrongDiesMode = require("game/normal_last_wrong_dies_mode")
 
 local function create_game_mode(game_mode_tag)
     if game_mode_tag == "competitive_abunch_hanging" then
         return CompetitiveAbunchHangingMode.new()
-    elseif game_mode_tag == "competitive_all_or_nothing" then
-        return CompetitiveAllOrNothingMode.new()
-    elseif game_mode_tag == "competitive_last_wrong_dies" then
-        return CompetitiveLastWrongDiesMode.new()
+    elseif game_mode_tag == "normal_abunch_hanging" then
+        return NormalAbunchHangingMode.new()
+    elseif game_mode_tag == "normal_all_or_nothing" then
+        return NormalAllOrNothingMode.new()
+    elseif game_mode_tag == "normal_last_wrong_dies" then
+        return NormalLastWrongDiesMode.new()
     else
         return NormalGameMode.new()
     end
@@ -91,10 +94,28 @@ function api.on_timer_next_round()
     return game_mode:on_timer_next_round(l)
 end
 
+function api.on_timer_next_word(peerID)
+    local l = lobby.get()
+    local game_mode = create_game_mode(l.tags["game_mode"])
+    return game_mode:on_timer_next_word(l, peerID)
+end
+
+function api.on_timer_kick_peer(peerID)
+    local l = lobby.get()
+    local game_mode = create_game_mode(l.tags["game_mode"])
+    return game_mode:on_timer_kick_peer(l, peerID)
+end
+
 function api.on_timer_restart_game()
     local l = lobby.get()
     local game_mode = create_game_mode(l.tags["game_mode"])
     return game_mode:on_timer_restart_game(l)
+end
+
+function api.on_timer_start_game()
+    local l = lobby.get()
+    local game_mode = create_game_mode(l.tags["game_mode"])
+    return game_mode:on_timer_start_game(l)
 end
 
 function api.on_timer_word_timeout(dealerID)
@@ -123,6 +144,12 @@ end
 function api.is_letter(letter)
     local b = letter:byte()
     return b >= string.byte('A') and b <= string.byte('Z')
+end
+
+function api.on_timer_broadcast_remaining_time()
+    local l = lobby.get()
+    local game_mode = create_game_mode(l.tags["game_mode"])
+    return game_mode:on_timer_broadcast_remaining_time(l)
 end
 
 return api

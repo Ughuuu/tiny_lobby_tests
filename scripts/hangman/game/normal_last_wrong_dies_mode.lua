@@ -47,6 +47,7 @@ function LastWrongDies:start_game(l)
     l.private_data["word"] = word
     l.public_data["hint"] = hint
     l.public_data["health"] = 6
+    l.public_data["announcement_message"] = ""
     lobby.start_timer("_on_timer_guess_timeout", 10)
     return self:set_initial_data(l)
 end
@@ -148,7 +149,7 @@ function LastWrongDies:guess_letter(l, peerID, letter)
         peer_name, letter, points, total_points
     ))
 
-    if l.public_data["guessed"] == word then
+    if l.public_data["guessed"] == word and l.public_data["game_state"] ~= "over" then
         lobby.broadcast_chat("Starting next round...")
         l.public_data["game_state"] = "new_round"
         lobby.start_timer("_on_timer_next_round", 1)
@@ -166,7 +167,7 @@ end
 
 function LastWrongDies:take_damage(l, peerID)
     l.public_data["health"] = l.public_data["health"] - 1
-    if l.public_data["health"] == 0 then
+    if l.public_data["health"] <= 0 then
         if peerID == "" then
             local players_which_did_not_guess = {}
             for k, _ in pairs(l.peers) do
@@ -181,9 +182,11 @@ function LastWrongDies:take_damage(l, peerID)
         self:check_game_end(l, peerID, "lost")
         local peer_name = string.upper(tostring(l.peers[peerID].user_data["name"]))
         lobby.broadcast_chat(string.format("%s is dead", peer_name))
-        lobby.broadcast_chat(string.format("recreating body"))
-        l.public_data["game_state"] = "recreating_body"
-        lobby.start_timer("_on_timer_recreate_body", 5)
+        if l.public_data["game_state"] ~= "over" then
+            lobby.broadcast_chat(string.format("recreating body"))
+            l.public_data["game_state"] = "recreating_body"
+            lobby.start_timer("_on_timer_recreate_body", 5)
+        end
     end
     return
 end
@@ -199,13 +202,26 @@ function LastWrongDies:check_game_end(l, peerID, newState)
     if alive_count == 1 then
         for k, _ in pairs(l.peers) do
             if l.peers[k].public_data["state"] == "alive" then
-                lobby.broadcast_chat(string.format("%s won!", l.peers[k].user_data["name"]))
+                local winning_message = string.format("%s won!", l.peers[k].user_data["name"])
+                lobby.broadcast_chat(winning_message)
+                l.public_data["announcement_message"] = winning_message
                 self:set_state(l, l.peers[k], "won")
                 break
             end
         end
+        l.public_data["word"] = l.private_data["word"]
         l.public_data["game_state"] = "over"
-        lobby.start_timer("_on_timer_restart_game", 15)
+        lobby.start_timer("_on_timer_restart_game", 10)
+    end
+end
+
+function LastWrongDies:on_tick(l, tickrate)
+    local current_time = system.get_time_since_epoch()
+    for _, peer in pairs(l.peers) do
+        if current_time - peer.private_data["timer"] >= 10000 then
+            print(string.format("Peer %s timed out. Taking damage.", peer.user_data["name"]))
+            self:take_damage(l, peer.id)
+        end
     end
 end
 
