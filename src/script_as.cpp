@@ -49,6 +49,18 @@ void as_stop_timer_wrapper(asIScriptGeneric *gen) {
     self->as_stop_timer(timer_id);
 }
 
+void as_notifty_all_wrapper(asIScriptGeneric *gen) {
+    // Retrieve the ScriptAS instance from the engine's user data
+    asIScriptEngine *engine = gen->GetEngine();
+    ScriptAS *self = static_cast<ScriptAS *>(engine->GetUserData());
+
+    // Extract arguments
+    CScriptDictionary *message = static_cast<CScriptDictionary *>(gen->GetArgObject(0));
+
+    // Call the actual function
+    self->as_notifty_all(message);
+}
+
 void as_notifty_wrapper(asIScriptGeneric *gen) {
     // Retrieve the ScriptAS instance from the engine's user data
     asIScriptEngine *engine = gen->GetEngine();
@@ -56,7 +68,7 @@ void as_notifty_wrapper(asIScriptGeneric *gen) {
 
     // Extract arguments
     std::string peer_id = *static_cast<std::string *>(gen->GetArgObject(0));
-    CScriptAny *message = static_cast<CScriptAny *>(gen->GetArgObject(1));
+    CScriptDictionary *message = static_cast<CScriptDictionary *>(gen->GetArgObject(1));
 
     // Call the actual function
     self->as_notifty(peer_id, message);
@@ -101,6 +113,10 @@ void as_get_lobby_wrapper(asIScriptGeneric *gen) {
     asIScriptEngine *engine = gen->GetEngine();
     ScriptAS *self = static_cast<ScriptAS *>(engine->GetUserData());
 
+    if (self->as_lobby_id.empty()) {
+        gen->SetReturnObject(nullptr);
+        return;
+    }
     gen->SetReturnObject(new LobbyAS{
         .type = LobbyAS::LOBBY_ROOT,
         .as_engine = self->as_engine,
@@ -298,8 +314,10 @@ boost::container::flat_set<std::string> ScriptAS::open() {
         asFUNCTION(as_start_timer_wrapper), asCALL_GENERIC);
     as_engine->RegisterGlobalFunction("void stop_timer(string timer_id)",
                                       asFUNCTION(as_stop_timer_wrapper), asCALL_GENERIC);
-    as_engine->RegisterGlobalFunction("void notify(string peer_id, any@ message)",
+    as_engine->RegisterGlobalFunction("void notify(string peer_id, dictionary@ message)",
                                       asFUNCTION(as_notifty_wrapper), asCALL_GENERIC);
+    as_engine->RegisterGlobalFunction("void notify_all(dictionary@ message)",
+                                      asFUNCTION(as_notifty_all_wrapper), asCALL_GENERIC);
     as_engine->RegisterGlobalFunction("void broadcast_chat(string message)",
                                       asFUNCTION(as_broadcast_chat_wrapper), asCALL_GENERIC);
     as_engine->RegisterGlobalFunction("void broadcast_chat(string message, dictionary@ metadata)",
@@ -402,17 +420,25 @@ void ScriptAS::as_stop_timer(std::string &timer_id) {
     game.timer_data.erase(timer_id);
 }
 
-void ScriptAS::as_notifty(std::string &peer_id, CScriptAny *message) {
+void ScriptAS::as_notifty(std::string &peer_id, CScriptDictionary *message) {
     auto &game = game_thread->games[as_game_id];
-    int typeId = message->GetTypeId();
-    void *value = nullptr;
-    message->Retrieve(&value, typeId);
+    boost::container::flat_map<std::string, AnyElement> dict;
+    if (message) {
+        dict = ConvertFromDictionary(as_engine, message);
+    }
 
-    // Now convert properly
-    auto message_obj = ConvertFromScriptType(as_engine, value, typeId);
-    game_thread->notify_peer(game, as_lobby_id, as_peer_id, message_obj);
+    game_thread->notify_peer(game, as_lobby_id, as_peer_id, AnyElement{dict});
 }
 
+void ScriptAS::as_notifty_all(CScriptDictionary *message) {
+    auto &game = game_thread->games[as_game_id];
+    boost::container::flat_map<std::string, AnyElement> dict;
+    if (message) {
+        dict = ConvertFromDictionary(as_engine, message);
+    }
+
+    game_thread->notify_all(game, as_lobby_id, AnyElement{dict});
+}
 void ScriptAS::as_broadcast_chat(std::string &message, CScriptDictionary *metadata_dict) {
     boost::container::flat_map<std::string, AnyElement> chat_metadata;
     if (metadata_dict) {
@@ -601,7 +627,7 @@ std::string LobbyAS::get_host() {
 void LobbyAS::set_host(std::string &host) {
     auto &game = game_thread->games[as_game_id];
     auto &lobby = game.lobbies[as_lobby_id];
-    lobby.host = host;
+    game_thread->set_lobby_host(game, lobby, host);
 }
 int64_t LobbyAS::get_max_players() {
     auto &game = game_thread->games[as_game_id];
@@ -850,29 +876,35 @@ void LobbyAS::assign(const std::string &key, AnyElement &value) {
         case LobbyType::LOBBY_PUBLIC_DATA:
             lobby.public_data[key] = value;
             lobby.public_data_dirty = true;
+            lobby.public_data_diff[key] = value;
             break;
         case LobbyType::LOBBY_PRIVATE_DATA:
             lobby.private_data[key] = value;
             lobby.private_data_dirty = true;
+            lobby.private_data_diff[key] = value;
             break;
         case LobbyType::LOBBY_TAGS:
             lobby.tags[key] = value;
             lobby.tags_dirty = true;
+            lobby.tags_diff[key] = value;
             break;
         case LobbyType::PEER_PUBLIC_DATA: {
             auto &peer = game.peers[as_peer_id];
             peer.public_data[key] = value;
             peer.public_data_dirty = true;
+            peer.public_data_diff[key] = value;
         } break;
         case LobbyType::PEER_PRIVATE_DATA: {
             auto &peer = game.peers[as_peer_id];
             peer.private_data[key] = value;
             peer.private_data_dirty = true;
+            peer.private_data_diff[key] = value;
         } break;
         case LobbyType::PEER_USER_DATA: {
             auto &peer = game.peers[as_peer_id];
             peer.user_data[key] = value;
             peer.user_data_dirty = true;
+            peer.user_data_diff[key] = value;
         } break;
         default:
             break;

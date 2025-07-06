@@ -32,21 +32,6 @@ GameThread::GameThread(
     file_watcher.watch();
     logger.debug_log("[GameThread] on_start");
 }
-std::vector<std::string> extract_bracketed_headers(const std::string &filename) {
-    std::vector<std::string> results;
-    std::ifstream file(filename);
-    std::string line;
-    std::regex bracket_regex(R"(\[([^\]]+)\])");
-
-    while (std::getline(file, line)) {
-        std::smatch match;
-        if (std::regex_search(line, match, bracket_regex)) {
-            results.push_back(match[1].str());
-        }
-    }
-
-    return results;
-}
 
 void GameThread::load_games() {
     logger.debug_log("[GameThread] on_load_games");
@@ -56,19 +41,15 @@ void GameThread::load_games() {
     }
     INIReader config_reader("games.ini");
     auto sections = config_reader.Sections();
+    std::unordered_set<std::string> games_to_open;
     for (const auto &section : sections) {
         std::string folder_name = config_reader.GetString(section, "folder", "");
-        if (folder_name.empty()) {
-            logger.debug_log("[GameThread] on_load_game relay");
-        } else {
-            logger.debug_log("[GameThread] on_load_game ", folder_name);
-        }
         int tickrate = config_reader.GetInteger(section, "tickrate", 0);
         if (tickrate < 16) {
             tickrate = 0;
         }
-        std::cout << "Loading game from " << folder_name << " with id " << section << std::endl;
-        int sendrate = config_reader.GetInteger(section, "sendrate", 50);
+        int sendrate = config_reader.GetInteger(section, "sendrate", 0);
+        bool seal = config_reader.GetBoolean(section, "seal", false);
         std::string lobby_control = config_reader.Get(section, "lobby_control", "lua");
         ScriptAS as;
         as.scripts_folder = scripts_folder;
@@ -83,10 +64,24 @@ void GameThread::load_games() {
         if (sendrate > 0) {
             check_time = std::min(check_time, sendrate);
         }
+        // Only add if new game
+        if (games.find(section) != games.end()) {
+            continue;
+        }
+        if (folder_name.empty()) {
+            logger.debug_log("[GameThread] on_load_game relay");
+        } else {
+            logger.debug_log("[GameThread] on_load_game ", folder_name);
+        }
+        std::cout << "Loading game from " << folder_name << " with id " << section << std::endl;
+        games_to_open.insert(section);
         games.emplace(section, GameData{.id = section,
                                         .lobby_control = lobby_control,
                                         .tick_rate = tickrate,
                                         .send_rate = sendrate,
+                                        .seal = seal,
+                                        .disband_on_leave = config_reader.GetBoolean(
+                                            section, "disband_on_leave", false),
                                         .folder_name = folder_name,
                                         .lua = ScriptLua{.scripts_folder = scripts_folder,
                                                          .folder_name = folder_name,
@@ -97,13 +92,17 @@ void GameThread::load_games() {
                                         .angelscript = as});
     }
     for (auto &game : games) {
+        if (!games_to_open.contains(game.first)) {
+            continue;
+        }
         game.second.open(now);
 
-        if (game.second.enabled_callbacks.find("_on_init") != game.second.enabled_callbacks.end()) {
+        if (game.second.enabled_callbacks.find("_on_server_init") !=
+            game.second.enabled_callbacks.end()) {
             bool has_error = false;
             boost::container::vector<AnyElement> args;
             auto func_result = scripted_function_call(EMPTY_STRING, EMPTY_STRING, game.second,
-                                                      "_on_init", true, args, has_error);
+                                                      "_on_server_init", true, args, has_error);
             if (has_error && std::holds_alternative<std::string>(func_result.value)) {
                 logger.error_log("[GameThread] on_error _on_init ",
                                  std::get<std::string>(func_result.value));
@@ -112,12 +111,17 @@ void GameThread::load_games() {
     }
 }
 
-void GameThread::unload_games() {
-    for (auto &game : games) {
-        game.second.close();
+void GameThread::unload_game(std::string game_id) {
+    logger.debug_log("[GameThread] on_unload_game ", game_id);
+    if (game_id.empty()) {
+        logger.error_log("[GameThread] on_unload_game empty game_id");
+        return;
     }
-    logger.debug_log("[GameThread] on_unload_games");
-    games.clear();
+    auto &game = games[game_id];
+    for (auto &peer : game.peers) {
+        on_error(game, "on_disconnect", peer.second.id, "Game is being unloaded.", true, false);
+    }
+    game.close();
 }
 
 std::string get_current_date() {
@@ -232,7 +236,6 @@ void GameThread::run() {
         }
         // handle tick if/when needed
     }
-    unload_games();
 }
 
 void GameThread::time_run() {
@@ -314,15 +317,16 @@ void GameThread::handle_tick() {
         game_data.last_tick_time += game_data.tick_rate;
         now = game_data.last_tick_time;
         // no on_tick callback enabled
-        if (game_data.enabled_callbacks.find("_on_tick") == game_data.enabled_callbacks.end()) {
+        if (game_data.enabled_callbacks.find("_on_lobby_tick") ==
+            game_data.enabled_callbacks.end()) {
             continue;
         }
 
         for (auto &lobby : game_data.lobbies) {
             auto &lobby_id = lobby.first;
             bool has_error = false;
-            auto result = scripted_function_call(EMPTY_STRING, lobby_id, game_data, "_on_tick",
-                                                 true, args, has_error);
+            auto result = scripted_function_call(EMPTY_STRING, lobby_id, game_data,
+                                                 "_on_lobby_tick", true, args, has_error);
             if (has_error || std::holds_alternative<std::string>(result.value)) {
                 on_error(game_data, EMPTY_STRING, EMPTY_STRING, std::get<std::string>(result.value),
                          false, true);
@@ -484,11 +488,14 @@ void GameThread::handle_disconnects() {
         auto &game_data = game.second;
         boost::container::flat_set<std::string> to_erase;
         for (auto &peer : game_data.disconnected_peers) {
+            if (game_data.peers.find(peer.first) == game_data.peers.end()) {
+                // peer already removed
+                to_erase.insert(peer.first);
+                continue;
+            }
             auto &peer_obj = game_data.peers[peer.first];
-            // peer no longer in lobby
-            if ((peer_obj.lobby_id == EMPTY_STRING ||
-                 game_data.lobbies.find(peer_obj.lobby_id) == game_data.lobbies.end()) &&
-                (now - peer.second > max_reconnection_time)) {
+            if (game_data.lobbies.find(peer_obj.lobby_id) == game_data.lobbies.end()) {
+                // peer no longer in lobby
                 peer_obj.leave_lobby();
                 to_erase.insert(peer.first);
                 continue;
@@ -512,9 +519,8 @@ void GameThread::handle_disconnects() {
         // clear them from game data
         for (auto &peer_id : to_erase) {
             game_data.disconnected_peers.erase(peer_id);
-        }
-        for (auto &peer_id : to_erase) {
             game_data.peers.erase(peer_id);
+            game_data.lobby_listing_peers.erase(peer_id);
         }
     }
 }
@@ -539,8 +545,10 @@ void GameThread::handle_afk() {
                 }
             }
             if (destroy_lobby) {
-                remove_peer_from_lobby(game_data, game_data.lobbies[lobby.id], lobby.host,
-                                       EMPTY_STRING, false);
+                for (auto &peer_id : lobby.peer_ids) {
+                    remove_peer_from_lobby(game_data, game_data.lobbies[lobby.id], peer_id,
+                                           EMPTY_STRING, false);
+                }
             }
         }
     }
@@ -555,7 +563,7 @@ void GameThread::handle_lobby_list() {
         }
         boost::container::vector<AnyElement> lobbies;
         for (const auto &lobby_id : game_data.lobbies_updated) {
-            // if deleted, only send id
+            // if deleted, only send id. Also delete private lobbies
             if (game_data.lobbies.find(lobby_id) == game_data.lobbies.end()) {
                 boost::container::flat_map<std::string, AnyElement> lobby_data;
                 lobby_data.insert({"id", AnyElement{lobby_id}});
@@ -563,6 +571,13 @@ void GameThread::handle_lobby_list() {
                 continue;
             }
             auto &lobby = game_data.lobbies[lobby_id];
+            // delete private lobbies also
+            if (lobby.sealed) {
+                boost::container::flat_map<std::string, AnyElement> lobby_data;
+                lobby_data.insert({"id", AnyElement{lobby_id}});
+                lobbies.push_back(AnyElement{lobby_data});
+                continue;
+            }
             lobbies.push_back(AnyElement{lobby.to_dict()});
         }
 
@@ -578,17 +593,50 @@ void GameThread::remove_peer_from_lobby(GameData &game, LobbyData &lobby, std::s
                                         const std::string &command_id, bool kicked) {
     bool is_host = peer_id == lobby.host;
     if (is_host) {
-        std::string notification_others = notification_lobby_kicked();
-        for (auto lobby_peer_id : lobby.peer_ids) {
-            auto &lobby_peer = game.peers[lobby_peer_id];
-            lobby_peer.leave_lobby();
-            if (lobby_peer_id == peer_id) {
-                continue;
+        // disband lobby if host leaves
+        if (game.disband_on_leave || game.lobby_control == "relay" || lobby.peer_ids.size() == 1) {
+            std::string notification_others = notification_lobby_kicked();
+            for (auto lobby_peer_id : lobby.peer_ids) {
+                auto &lobby_peer = game.peers[lobby_peer_id];
+                lobby_peer.leave_lobby();
+                if (lobby_peer_id == peer_id) {
+                    continue;
+                }
+                send(game, lobby_peer_id, notification_others, uWS::OpCode::TEXT);
             }
-            send(game, lobby_peer_id, notification_others, uWS::OpCode::TEXT);
+            std::string notification_self = notification_lobby_left(command_id);
+            send(game, peer_id, notification_self, uWS::OpCode::TEXT);
+        } else {
+            // notify all that host left
+
+            std::string notification_others = notification_peer_left(peer_id, EMPTY_STRING);
+            for (auto lobby_peer_id : lobby.peer_ids) {
+                auto &lobby_peer = game.peers[lobby_peer_id];
+                if (lobby_peer_id == peer_id) {
+                    lobby_peer.leave_lobby();
+                    continue;
+                }
+                send(game, lobby_peer_id, notification_others, uWS::OpCode::TEXT);
+            }
+            std::string notification_left = notification_lobby_left(command_id);
+            send(game, peer_id, notification_left, uWS::OpCode::TEXT);
+            // select a new host
+            std::string new_host;
+            for (auto lobby_peer_id : lobby.peer_ids) {
+                if (lobby_peer_id != peer_id) {
+                    new_host = lobby_peer_id;
+                    break;
+                }
+            }
+            lobby.host = new_host;
+            std::string notification_lobby_host = notification_lobby_host_changed(new_host);
+            for (auto lobby_peer_id : lobby.peer_ids) {
+                auto &lobby_peer = game.peers[lobby_peer_id];
+                if (lobby_peer_id != peer_id) {
+                    send(game, lobby_peer_id, notification_lobby_host, uWS::OpCode::TEXT);
+                }
+            }
         }
-        std::string notification_self = notification_lobby_left(command_id);
-        send(game, peer_id, notification_self, uWS::OpCode::TEXT);
     } else {
         std::string notification_others = notification_peer_left(peer_id, EMPTY_STRING);
         if (kicked) {
@@ -619,19 +667,22 @@ void GameThread::remove_peer_from_lobby(GameData &game, LobbyData &lobby, std::s
             send(game, lobby.host, notification_host, uWS::OpCode::TEXT);
         }
     }
-    lobby.peer_ids.erase(peer_id);
-    if (game.enabled_callbacks.find("_on_left") != game.enabled_callbacks.end()) {
+    if (game.enabled_callbacks.find("_on_peer_leave") != game.enabled_callbacks.end()) {
         bool has_error = false;
         boost::container::vector<AnyElement> args;
-        auto func_result =
-            scripted_function_call(peer_id, lobby.id, game, "_on_left", true, args, has_error);
+        auto func_result = scripted_function_call(peer_id, lobby.id, game, "_on_peer_leave", true,
+                                                  args, has_error);
         if (has_error && std::holds_alternative<std::string>(func_result.value)) {
             on_error(game, command_id, peer_id, std::get<std::string>(func_result.value), false,
                      has_error);
         }
     }
+    auto &peer = game.peers[peer_id];
+    peer.lobby_id = EMPTY_STRING;
+    peer.ready = false;
+    lobby.peer_ids.erase(peer_id);
     game.lobbies_updated.insert(lobby.id);
-    if (is_host || lobby.peer_ids.empty()) {
+    if ((is_host && (lobby.disband_on_leave || game.disband_on_leave)) || lobby.peer_ids.empty()) {
         game.lobbies.erase(lobby.id);
     }
 }
@@ -666,6 +717,18 @@ void GameThread::send(GameData &game, const std::string &peer_id, const std::str
     messages_sent++;
 }
 
+void GameThread::set_lobby_host(GameData &game, LobbyData &lobby, const std::string &new_host) {
+    if (lobby.host == new_host) {
+        return;
+    }
+    lobby.host = new_host;
+    std::string notification = notification_lobby_host_changed(new_host);
+    for (auto &peer_id : lobby.peer_ids) {
+        // Send notification to all peers except the new host
+        send(game, peer_id, notification, uWS::OpCode::TEXT);
+    }
+}
+
 void GameThread::on_connect(GameData &game, std::string &peer_id, std::string &game_id,
                             std::string &reconnection_token, std::string &platform,
                             std::string &platform_id, std::string &name) {
@@ -689,10 +752,22 @@ void GameThread::on_connect(GameData &game, std::string &peer_id, std::string &g
     }
     std::string notification = notification_peer_state(AnyElement{peer.to_dict(true, true)});
     send(game, peer.id, notification, uWS::OpCode::TEXT);
+
+    if (game.enabled_callbacks.find("_on_peer_connected") != game.enabled_callbacks.end()) {
+        bool has_error = false;
+        boost::container::vector<AnyElement> args;
+        auto func_result = scripted_function_call(peer_id, EMPTY_STRING, game, "_on_peer_connected",
+                                                  true, args, has_error);
+        if (has_error && std::holds_alternative<std::string>(func_result.value)) {
+            on_error(game, EMPTY_STRING, peer_id, std::get<std::string>(func_result.value), false,
+                     has_error);
+        }
+    }
 }
 
 void GameThread::on_close(GameData &game, std::string &peer_id) {
     logger.debug_log("[GameThread] on_close ", peer_id);
+    game.lobby_listing_peers.erase(peer_id);
     if (game.peers.find(peer_id) == game.peers.end()) {
         return;
     }
@@ -708,6 +783,16 @@ void GameThread::on_close(GameData &game, std::string &peer_id) {
                 continue;
             }
             send(game, lobby_peer_id, notification, uWS::OpCode::TEXT);
+        }
+    }
+    if (game.enabled_callbacks.find("_on_peer_disconnected") != game.enabled_callbacks.end()) {
+        bool has_error = false;
+        boost::container::vector<AnyElement> args;
+        auto func_result = scripted_function_call(peer_id, EMPTY_STRING, game,
+                                                  "_on_peer_disconnected", true, args, has_error);
+        if (has_error && std::holds_alternative<std::string>(func_result.value)) {
+            on_error(game, EMPTY_STRING, peer_id, std::get<std::string>(func_result.value), false,
+                     has_error);
         }
     }
 }
@@ -830,15 +915,16 @@ void GameThread::on_create_lobby(
                              .peer_ids = {peer.id},
                              .create_time = now,
                              .game_id = peer.game_id,
+                             .sealed = decode_bool_or_default(data_val, "sealed", game.seal),
                              .tags = lobby_tags,
                          });
     game.lobby_listing_peers.erase(peer.id);
     // SCRIPTED CALL
-    if (game.enabled_callbacks.find("_can_create") != game.enabled_callbacks.end()) {
+    if (game.enabled_callbacks.find("_can_create_lobby") != game.enabled_callbacks.end()) {
         bool has_error = false;
         boost::container::vector<AnyElement> args;
-        auto func_result = scripted_function_call(peer.id, peer.lobby_id, game, "_can_create", true,
-                                                  args, has_error);
+        auto func_result = scripted_function_call(peer.id, peer.lobby_id, game, "_can_create_lobby",
+                                                  true, args, has_error);
         if (has_error && std::holds_alternative<std::string>(func_result.value)) {
             // revert the changes
             peer.leave_lobby();
@@ -847,7 +933,6 @@ void GameThread::on_create_lobby(
                             false, has_error);
         }
     }
-    game.lobbies_updated.insert(peer.lobby_id);
     peer.disconnected = false;
     // NOTIFICATION
     std::string notification =
@@ -868,16 +953,17 @@ void GameThread::on_create_lobby(
         .sub_event = "",
     });
     // SCRIPTED CALL
-    if (game.enabled_callbacks.find("_on_create") != game.enabled_callbacks.end()) {
+    if (game.enabled_callbacks.find("_on_lobby_created") != game.enabled_callbacks.end()) {
         bool has_error = false;
         boost::container::vector<AnyElement> args;
-        auto func_result = scripted_function_call(peer.id, peer.lobby_id, game, "_on_create", true,
-                                                  args, has_error);
+        auto func_result = scripted_function_call(peer.id, peer.lobby_id, game, "_on_lobby_created",
+                                                  true, args, has_error);
         if (has_error && std::holds_alternative<std::string>(func_result.value)) {
             on_error(game, command_id, peer.id, std::get<std::string>(func_result.value), false,
                      has_error);
         }
     }
+    game.lobbies_updated.insert(peer.lobby_id);
 }
 
 bool GameThread::on_join_lobby(GameData &game, std::string command_id, PeerData &peer,
@@ -912,11 +998,11 @@ bool GameThread::on_join_lobby(GameData &game, std::string command_id, PeerData 
             return false;
         }
     }
-    if (game.enabled_callbacks.find("_can_join") != game.enabled_callbacks.end()) {
+    if (game.enabled_callbacks.find("_can_peer_join") != game.enabled_callbacks.end()) {
         bool has_error = false;
         boost::container::vector<AnyElement> args;
-        auto func_result =
-            scripted_function_call(peer.id, lobby_id, game, "_can_join", true, args, has_error);
+        auto func_result = scripted_function_call(peer.id, lobby_id, game, "_can_peer_join", true,
+                                                  args, has_error);
         if (has_error && std::holds_alternative<std::string>(func_result.value)) {
             on_error(game, command_id, peer.id, std::get<std::string>(func_result.value), false,
                      has_error);
@@ -959,11 +1045,11 @@ bool GameThread::on_join_lobby(GameData &game, std::string command_id, PeerData 
     send(game, peer.id, notification_self, uWS::OpCode::TEXT);
     // SCRIPTED CALL
     if (!reconnecting) {
-        if (game.enabled_callbacks.find("_on_join") != game.enabled_callbacks.end()) {
+        if (game.enabled_callbacks.find("_on_peer_joined") != game.enabled_callbacks.end()) {
             bool has_error = false;
             boost::container::vector<AnyElement> args;
-            auto func_result =
-                scripted_function_call(peer.id, lobby_id, game, "_on_join", true, args, has_error);
+            auto func_result = scripted_function_call(peer.id, lobby_id, game, "_on_peer_joined",
+                                                      true, args, has_error);
             if (has_error && std::holds_alternative<std::string>(func_result.value)) {
                 on_error(game, command_id, peer.id, std::get<std::string>(func_result.value), false,
                          has_error);
@@ -1053,12 +1139,12 @@ void GameThread::on_chat_lobby(GameData &game, std::string command_id, PeerData 
         on_error(game, command_id, peer.id, "Invalid chat metadata: " + error_when_decoding);
     }
     // SCRIPTED CALL
-    if (game.enabled_callbacks.find("_can_chat") != game.enabled_callbacks.end()) {
+    if (game.enabled_callbacks.find("_can_peer_chat") != game.enabled_callbacks.end()) {
         bool has_error = false;
         boost::container::vector<AnyElement> args(1);
         args[0] = AnyElement{message};
-        auto func_result = scripted_function_call(peer.id, peer.lobby_id, game, "_can_chat", true,
-                                                  args, has_error);
+        auto func_result = scripted_function_call(peer.id, peer.lobby_id, game, "_can_peer_chat",
+                                                  true, args, has_error);
         if (std::holds_alternative<std::string>(func_result.value)) {
             return on_error(game, command_id, peer.id, std::get<std::string>(func_result.value),
                             false, has_error);
@@ -1103,12 +1189,12 @@ void GameThread::on_lobby_tags(GameData &game, std::string command_id, PeerData 
         return on_error(game, command_id, peer.id, error);
     }
     // SCRIPTED CALL
-    if (game.enabled_callbacks.find("_can_tags") != game.enabled_callbacks.end()) {
+    if (game.enabled_callbacks.find("_can_host_set_tags") != game.enabled_callbacks.end()) {
         bool has_error = false;
         boost::container::vector<AnyElement> args(1);
         args[0] = AnyElement{new_tags};
-        auto func_result = scripted_function_call(peer.id, peer.lobby_id, game, "_can_tags", true,
-                                                  args, has_error);
+        auto func_result = scripted_function_call(peer.id, peer.lobby_id, game,
+                                                  "_can_host_set_tags", true, args, has_error);
         if (std::holds_alternative<std::string>(func_result.value)) {
             return on_error(game, command_id, peer.id, std::get<std::string>(func_result.value),
                             false, has_error);
@@ -1133,6 +1219,7 @@ void GameThread::on_lobby_tags(GameData &game, std::string command_id, PeerData 
     }
     std::string notification_self = notification_tags(AnyElement{lobby.tags}, command_id);
     send(game, peer.id, notification_self, uWS::OpCode::TEXT);
+    game.lobbies_updated.insert(peer.lobby_id);
 }
 
 void GameThread::on_kick_peer(GameData &game, std::string command_id, PeerData &peer,
@@ -1154,12 +1241,12 @@ void GameThread::on_kick_peer(GameData &game, std::string command_id, PeerData &
         return on_error(game, command_id, peer.id, ERROR_CANNOT_KICK_SELF);
     }
     // SCRIPTED CALL
-    if (game.enabled_callbacks.find("_can_kick") != game.enabled_callbacks.end()) {
+    if (game.enabled_callbacks.find("_can_host_kick") != game.enabled_callbacks.end()) {
         bool has_error = false;
         boost::container::vector<AnyElement> args(1);
         args[0] = AnyElement{kicked_peer_id};
-        auto func_result = scripted_function_call(peer.id, peer.lobby_id, game, "_can_kick", true,
-                                                  args, has_error);
+        auto func_result = scripted_function_call(peer.id, peer.lobby_id, game, "_can_host_kick",
+                                                  true, args, has_error);
         if (std::holds_alternative<std::string>(func_result.value)) {
             return on_error(game, command_id, peer.id, std::get<std::string>(func_result.value),
                             false, has_error);
@@ -1221,12 +1308,12 @@ void GameThread::on_lobby_ready(GameData &game, std::string command_id, PeerData
         return on_error(game, command_id, peer.id, ERROR_PEER_IS_READY);
     }
     // SCRIPTED CALL
-    if (game.enabled_callbacks.find("_can_ready") != game.enabled_callbacks.end()) {
+    if (game.enabled_callbacks.find("_can_peer_ready") != game.enabled_callbacks.end()) {
         bool has_error = false;
         boost::container::vector<AnyElement> args(1);
         args[0] = AnyElement{true};
-        auto func_result = scripted_function_call(peer.id, peer.lobby_id, game, "_can_ready", true,
-                                                  args, has_error);
+        auto func_result = scripted_function_call(peer.id, peer.lobby_id, game, "_can_peer_ready",
+                                                  true, args, has_error);
         if (std::holds_alternative<std::string>(func_result.value)) {
             return on_error(game, command_id, peer.id, std::get<std::string>(func_result.value),
                             false, has_error);
@@ -1246,12 +1333,12 @@ void GameThread::on_lobby_unready(GameData &game, std::string command_id, PeerDa
         return on_error(game, command_id, peer.id, ERROR_PEER_IS_NOT_READY);
     }
     // SCRIPTED CALL
-    if (game.enabled_callbacks.find("_can_ready") != game.enabled_callbacks.end()) {
+    if (game.enabled_callbacks.find("_can_peer_ready") != game.enabled_callbacks.end()) {
         bool has_error = false;
         boost::container::vector<AnyElement> args(1);
         args[0] = AnyElement{false};
-        auto func_result = scripted_function_call(peer.id, peer.lobby_id, game, "_can_ready", true,
-                                                  args, has_error);
+        auto func_result = scripted_function_call(peer.id, peer.lobby_id, game, "_can_peer_ready",
+                                                  true, args, has_error);
         if (std::holds_alternative<std::string>(func_result.value)) {
             return on_error(game, command_id, peer.id, std::get<std::string>(func_result.value),
                             false, has_error);
@@ -1297,12 +1384,12 @@ void GameThread::on_seal_lobby(GameData &game, std::string command_id, PeerData 
         return on_error(game, command_id, peer.id, ERROR_LOBBY_SEALED);
     }
     // SCRIPTED CALL
-    if (game.enabled_callbacks.find("_can_seal") != game.enabled_callbacks.end()) {
+    if (game.enabled_callbacks.find("_can_host_seal") != game.enabled_callbacks.end()) {
         bool has_error = false;
         boost::container::vector<AnyElement> args(1);
         args[0] = AnyElement{true};
-        auto func_result = scripted_function_call(peer.id, peer.lobby_id, game, "_can_seal", true,
-                                                  args, has_error);
+        auto func_result = scripted_function_call(peer.id, peer.lobby_id, game, "_can_host_seal",
+                                                  true, args, has_error);
         if (std::holds_alternative<std::string>(func_result.value)) {
             return on_error(game, command_id, peer.id, std::get<std::string>(func_result.value),
                             false, has_error);
@@ -1326,12 +1413,12 @@ void GameThread::on_unseal_lobby(GameData &game, std::string command_id, PeerDat
         return on_error(game, command_id, peer.id, ERROR_LOBBY_NOT_SEALED);
     }
     // SCRIPTED CALL
-    if (game.enabled_callbacks.find("_can_seal") != game.enabled_callbacks.end()) {
+    if (game.enabled_callbacks.find("_can_host_seal") != game.enabled_callbacks.end()) {
         bool has_error = false;
         boost::container::vector<AnyElement> args(1);
         args[0] = AnyElement{false};
-        auto func_result = scripted_function_call(peer.id, peer.lobby_id, game, "_can_seal", true,
-                                                  args, has_error);
+        auto func_result = scripted_function_call(peer.id, peer.lobby_id, game, "_can_host_seal",
+                                                  true, args, has_error);
         if (std::holds_alternative<std::string>(func_result.value)) {
             return on_error(game, command_id, peer.id, std::get<std::string>(func_result.value),
                             false, has_error);
@@ -1349,13 +1436,16 @@ void GameThread::on_lobby_max_players(GameData &game, std::string command_id, Pe
     }
     auto &lobby = game.lobbies[peer.lobby_id];
     auto max_players = decode_int_or_default(data_val, "max_players", 0);
+    if (max_players < lobby.peer_ids.size()) {
+        return on_error(game, command_id, peer.id, "Invalid max players");
+    }
     // SCRIPTED CALL
-    if (game.enabled_callbacks.find("_can_resize") != game.enabled_callbacks.end()) {
+    if (game.enabled_callbacks.find("_can_host_resize") != game.enabled_callbacks.end()) {
         bool has_error = false;
         boost::container::vector<AnyElement> args(1);
         args[0] = AnyElement{max_players};
-        auto func_result = scripted_function_call(peer.id, peer.lobby_id, game, "_can_resize", true,
-                                                  args, has_error);
+        auto func_result = scripted_function_call(peer.id, peer.lobby_id, game, "_can_host_resize",
+                                                  true, args, has_error);
         if (std::holds_alternative<std::string>(func_result.value)) {
             return on_error(game, command_id, peer.id, std::get<std::string>(func_result.value),
                             false, has_error);
@@ -1366,13 +1456,14 @@ void GameThread::on_lobby_max_players(GameData &game, std::string command_id, Pe
     // NOTIFICATION
     std::string notification_others = notification_lobby_max_players(max_players, EMPTY_STRING);
     for (auto lobby_peer_id : lobby.peer_ids) {
-        if (lobby_peer_id == peer.id && command_id != "") {
+        if (lobby_peer_id == peer.id) {
             continue;
         }
         send(game, lobby_peer_id, notification_others, uWS::OpCode::TEXT);
     }
     std::string notification_self = notification_lobby_max_players(max_players, command_id);
     send(game, peer.id, notification_self, uWS::OpCode::TEXT);
+    game.lobbies_updated.insert(lobby.id);
 }
 
 void GameThread::on_lobby_title(GameData &game, std::string command_id, PeerData &peer,
@@ -1385,12 +1476,12 @@ void GameThread::on_lobby_title(GameData &game, std::string command_id, PeerData
     auto &lobby = game.lobbies[peer.lobby_id];
     auto title = decode_string_or_default(data_val, "name", "");
     // SCRIPTED CALL
-    if (game.enabled_callbacks.find("_can_title") != game.enabled_callbacks.end()) {
+    if (game.enabled_callbacks.find("_can_host_set_title") != game.enabled_callbacks.end()) {
         bool has_error = false;
         boost::container::vector<AnyElement> args(1);
         args[0] = AnyElement{title};
-        auto func_result = scripted_function_call(peer.id, peer.lobby_id, game, "_can_title", true,
-                                                  args, has_error);
+        auto func_result = scripted_function_call(peer.id, peer.lobby_id, game,
+                                                  "_can_host_set_title", true, args, has_error);
         if (std::holds_alternative<std::string>(func_result.value)) {
             return on_error(game, command_id, peer.id, std::get<std::string>(func_result.value),
                             false, has_error);
@@ -1401,13 +1492,14 @@ void GameThread::on_lobby_title(GameData &game, std::string command_id, PeerData
     // NOTIFICATION
     std::string notification_others = notification_lobby_title(title, EMPTY_STRING);
     for (auto lobby_peer_id : lobby.peer_ids) {
-        if (lobby_peer_id == peer.id && command_id != "") {
+        if (lobby_peer_id == peer.id) {
             continue;
         }
         send(game, lobby_peer_id, notification_others, uWS::OpCode::TEXT);
     }
     std::string notification_self = notification_lobby_title(title, command_id);
     send(game, peer.id, notification_self, uWS::OpCode::TEXT);
+    game.lobbies_updated.insert(lobby.id);
 }
 
 void GameThread::on_lobby_password(GameData &game, std::string command_id, PeerData &peer,
@@ -1425,7 +1517,7 @@ void GameThread::on_lobby_password(GameData &game, std::string command_id, PeerD
     std::string notification_others =
         notification_lobby_password_protected(password != "", EMPTY_STRING);
     for (auto lobby_peer_id : lobby.peer_ids) {
-        if (lobby_peer_id == peer.id && command_id != "") {
+        if (lobby_peer_id == peer.id) {
             continue;
         }
         send(game, lobby_peer_id, notification_others, uWS::OpCode::TEXT);
@@ -1433,6 +1525,7 @@ void GameThread::on_lobby_password(GameData &game, std::string command_id, PeerD
     std::string notification_self =
         notification_lobby_password_protected(password != "", command_id);
     send(game, peer.id, notification_self, uWS::OpCode::TEXT);
+    game.lobbies_updated.insert(lobby.id);
 }
 
 void GameThread::on_lobby_data(GameData &game, std::string command_id, PeerData &peer,
@@ -1465,19 +1558,23 @@ void GameThread::on_lobby_data(GameData &game, std::string command_id, PeerData 
         if (std::holds_alternative<std::monostate>(lobbydata_pair.second.value)) {
             if (is_private) {
                 lobby.private_data_dirty = true;
+                lobby.private_data_diff[lobbydata_pair.first] = AnyElement{std::monostate{}};
                 lobby.private_data.erase(lobbydata_pair.first);
             } else {
                 lobby.public_data_dirty = true;
+                lobby.public_data_diff[lobbydata_pair.first] = AnyElement{std::monostate{}};
                 lobby.public_data.erase(lobbydata_pair.first);
             }
-            continue;
-        }
-        if (is_private) {
-            lobby.private_data_dirty = true;
-            lobby.private_data[lobbydata_pair.first] = lobbydata_pair.second;
         } else {
-            lobby.public_data_dirty = true;
-            lobby.public_data[lobbydata_pair.first] = lobbydata_pair.second;
+            if (is_private) {
+                lobby.private_data_dirty = true;
+                lobby.private_data_diff[lobbydata_pair.first] = lobbydata_pair.second;
+                lobby.private_data[lobbydata_pair.first] = lobbydata_pair.second;
+            } else {
+                lobby.public_data_dirty = true;
+                lobby.public_data_diff[lobbydata_pair.first] = lobbydata_pair.second;
+                lobby.public_data[lobbydata_pair.first] = lobbydata_pair.second;
+            }
         }
     }
     // NOTIFICATION
@@ -1485,7 +1582,7 @@ void GameThread::on_lobby_data(GameData &game, std::string command_id, PeerData 
         lobby.public_data_dirty = false;
         // Notify lobby public data update
         std::string public_data_notification_others =
-            notification_lobby_public_data(AnyElement{lobby.public_data}, EMPTY_STRING);
+            notification_lobby_public_data(AnyElement{lobby.public_data_diff}, EMPTY_STRING);
         // send to others
         for (const auto &peer_id : lobby.peer_ids) {
             if (peer_id == peer.id) {
@@ -1495,15 +1592,17 @@ void GameThread::on_lobby_data(GameData &game, std::string command_id, PeerData 
         }
         // send to self
         std::string public_data_notification_self =
-            notification_lobby_public_data(AnyElement{lobby.public_data}, command_id);
+            notification_lobby_public_data(AnyElement{lobby.public_data_diff}, command_id);
         send(game, peer.id, public_data_notification_self, uWS::OpCode::TEXT);
+        lobby.public_data_diff.clear();
     }
     if (lobby.private_data_dirty) {
         lobby.private_data_dirty = false;
         // Notify lobby private data update, send only to self
         std::string private_data_notification =
-            notification_lobby_private_data(AnyElement{lobby.private_data}, command_id);
+            notification_lobby_private_data(AnyElement{lobby.private_data_diff}, command_id);
         send(game, peer.id, private_data_notification, uWS::OpCode::TEXT);
+        lobby.private_data_diff.clear();
     }
 }
 void GameThread::on_data_to(GameData &game, std::string command_id, PeerData &peer,
@@ -1541,18 +1640,22 @@ void GameThread::on_data_to(GameData &game, std::string command_id, PeerData &pe
         if (std::holds_alternative<std::monostate>(data_pair.second.value)) {
             if (is_private) {
                 target_peer.private_data_dirty = true;
+                target_peer.private_data_diff[data_pair.first] = AnyElement{std::monostate{}};
                 target_peer.private_data.erase(data_pair.first);
             } else {
                 target_peer.public_data_dirty = true;
+                target_peer.public_data_diff[data_pair.first] = AnyElement{std::monostate{}};
                 target_peer.public_data.erase(data_pair.first);
             }
             continue;
         }
         if (is_private) {
             target_peer.private_data_dirty = true;
+            target_peer.private_data_diff[data_pair.first] = data_pair.second;
             target_peer.private_data[data_pair.first] = data_pair.second;
         } else {
             target_peer.public_data_dirty = true;
+            target_peer.public_data_diff[data_pair.first] = data_pair.second;
             target_peer.public_data[data_pair.first] = data_pair.second;
         }
     }
@@ -1561,18 +1664,20 @@ void GameThread::on_data_to(GameData &game, std::string command_id, PeerData &pe
         target_peer.public_data_dirty = false;
         // Notify peer public data update
         std::string public_data_notification = notification_peer_public_data(
-            AnyElement{target_peer.public_data}, peer.id, target_peer_id);
+            AnyElement{target_peer.public_data_diff}, peer.id, target_peer_id);
         // send to others
         for (const auto &peer_id : lobby.peer_ids) {
             send(game, peer_id, public_data_notification, uWS::OpCode::TEXT);
         }
+        target_peer.public_data_diff.clear();
     }
     if (target_peer.private_data_dirty) {
         target_peer.private_data_dirty = false;
         // Notify peer private data update, send only to self
         std::string private_data_notification = notification_peer_private_data(
-            AnyElement{target_peer.private_data}, peer.id, target_peer_id);
+            AnyElement{target_peer.private_data_diff}, peer.id, target_peer_id);
         send(game, target_peer_id, private_data_notification, uWS::OpCode::TEXT);
+        target_peer.private_data_diff.clear();
     }
     // send to self
     std::string data_sent_notification = notification_data_to_sent(command_id);
@@ -1611,18 +1716,22 @@ void GameThread::on_data_to_all(GameData &game, std::string command_id, PeerData
             if (std::holds_alternative<std::monostate>(data_pair.second.value)) {
                 if (is_private) {
                     target_peer.private_data_dirty = true;
+                    target_peer.private_data_diff[data_pair.first] = AnyElement{std::monostate{}};
                     target_peer.private_data.erase(data_pair.first);
                 } else {
                     target_peer.public_data_dirty = true;
+                    target_peer.public_data_diff[data_pair.first] = AnyElement{std::monostate{}};
                     target_peer.public_data.erase(data_pair.first);
                 }
                 continue;
             }
             if (is_private) {
                 target_peer.private_data_dirty = true;
+                target_peer.private_data_diff[data_pair.first] = data_pair.second;
                 target_peer.private_data[data_pair.first] = data_pair.second;
             } else {
                 target_peer.public_data_dirty = true;
+                target_peer.public_data_diff[data_pair.first] = data_pair.second;
                 target_peer.public_data[data_pair.first] = data_pair.second;
             }
         }
@@ -1631,18 +1740,20 @@ void GameThread::on_data_to_all(GameData &game, std::string command_id, PeerData
             target_peer.public_data_dirty = false;
             // Notify peer public data update
             std::string public_data_notification = notification_peer_public_data(
-                AnyElement{target_peer.public_data}, peer.id, target_peer.id);
+                AnyElement{target_peer.public_data_diff}, peer.id, target_peer.id);
             // send to others
             for (const auto &peer_id : lobby.peer_ids) {
                 send(game, peer_id, public_data_notification, uWS::OpCode::TEXT);
             }
+            target_peer.public_data_diff.clear();
         }
         if (target_peer.private_data_dirty) {
             target_peer.private_data_dirty = false;
             // Notify peer private data update, send only to self
             std::string private_data_notification = notification_peer_private_data(
-                AnyElement{target_peer.private_data}, peer.id, target_peer.id);
+                AnyElement{target_peer.private_data_diff}, peer.id, target_peer.id);
             send(game, target_peer.id, private_data_notification, uWS::OpCode::TEXT);
+            target_peer.private_data_diff.clear();
         }
     }
     // send to self
@@ -1746,6 +1857,7 @@ void GameThread::set_lobby_sealed(GameData &game, LobbyData &lobby, std::string 
         notification_self = notification_lobby_sealed(command_id);
     }
     send(game, peer_id, notification_self, uWS::OpCode::TEXT);
+    game.lobbies_updated.insert(lobby.id);
 }
 
 void GameThread::reload_game(std::string folder_name) {
@@ -1755,11 +1867,13 @@ void GameThread::reload_game(std::string folder_name) {
             if (game.lua.enabled) {
                 game.close();
                 game.open(get_time_now());
-                if (game.enabled_callbacks.find("_on_reload") != game.enabled_callbacks.end()) {
+                if (game.enabled_callbacks.find("_on_server_reload") !=
+                    game.enabled_callbacks.end()) {
                     bool has_error = false;
                     boost::container::vector<AnyElement> args;
-                    auto func_result = scripted_function_call(EMPTY_STRING, EMPTY_STRING, game,
-                                                              "_on_reload", true, args, has_error);
+                    auto func_result =
+                        scripted_function_call(EMPTY_STRING, EMPTY_STRING, game,
+                                               "_on_server_reload", true, args, has_error);
                     if (has_error && std::holds_alternative<std::string>(func_result.value)) {
                         logger.error_log("[GameThread] on_error _on_reload ",
                                          std::get<std::string>(func_result.value));
@@ -1769,11 +1883,13 @@ void GameThread::reload_game(std::string folder_name) {
             if (game.angelscript.enabled) {
                 game.close();
                 game.open(get_time_now());
-                if (game.enabled_callbacks.find("_on_reload") != game.enabled_callbacks.end()) {
+                if (game.enabled_callbacks.find("_on_server_reload") !=
+                    game.enabled_callbacks.end()) {
                     bool has_error = false;
                     boost::container::vector<AnyElement> args;
-                    auto func_result = scripted_function_call(EMPTY_STRING, EMPTY_STRING, game,
-                                                              "_on_reload", true, args, has_error);
+                    auto func_result =
+                        scripted_function_call(EMPTY_STRING, EMPTY_STRING, game,
+                                               "_on_server_reload", true, args, has_error);
                     if (has_error && std::holds_alternative<std::string>(func_result.value)) {
                         logger.error_log("[GameThread] on_error _on_reload ",
                                          std::get<std::string>(func_result.value));
@@ -1826,12 +1942,12 @@ void GameThread::kick_peer(GameData &game, std::string &lobby_id, std::string &p
     }
     auto &lobby = game.lobbies[lobby_id];
     // SCRIPTED CALL
-    if (game.enabled_callbacks.find("_can_kick") != game.enabled_callbacks.end()) {
+    if (game.enabled_callbacks.find("_can_host_kick") != game.enabled_callbacks.end()) {
         bool has_error = false;
         boost::container::vector<AnyElement> args(1);
         args[0] = AnyElement{peer_id};
-        auto func_result = scripted_function_call(EMPTY_STRING, lobby_id, game, "_can_kick", true,
-                                                  args, has_error);
+        auto func_result = scripted_function_call(EMPTY_STRING, lobby_id, game, "_can_host_kick",
+                                                  true, args, has_error);
         if (std::holds_alternative<std::string>(func_result.value)) {
             return on_error(game, EMPTY_STRING, EMPTY_STRING,
                             std::get<std::string>(func_result.value), false, has_error);
@@ -1861,27 +1977,32 @@ void GameThread::notify_lobby_changes(GameData &game, std::string &lobby_id) {
         if (peer.private_data_dirty) {
             peer.private_data_dirty = false;
             std::string private_data_notification = notification_peer_private_data(
-                AnyElement{peer.private_data}, EMPTY_STRING, peer_id);
+                AnyElement{peer.private_data_diff}, EMPTY_STRING, peer_id);
             // only send to self
             send(game, peer_id, private_data_notification, uWS::OpCode::TEXT);
+            peer.private_data_diff.clear();
         }
         if (peer.public_data_dirty) {
             peer.public_data_dirty = false;
             // Notify peer public data update
-            std::string public_data_notification =
-                notification_peer_public_data(AnyElement{peer.public_data}, EMPTY_STRING, peer_id);
+            std::string public_data_notification = notification_peer_public_data(
+                AnyElement{peer.public_data_diff}, EMPTY_STRING, peer_id);
             for (const auto &lobby_peer_id : lobby.peer_ids) {
                 send(game, lobby_peer_id, public_data_notification, uWS::OpCode::TEXT);
             }
+            peer.public_data_diff.clear();
         }
     }
 
     if (lobby.tags_dirty) {
         lobby.tags_dirty = false;
-        std::string tags_notification = notification_tags(AnyElement{lobby.tags}, EMPTY_STRING);
+        std::string tags_notification =
+            notification_tags(AnyElement{lobby.tags_diff}, EMPTY_STRING);
         for (auto &peer_id : lobby.peer_ids) {
             send(game, peer_id, tags_notification, uWS::OpCode::TEXT);
         }
+        lobby.tags_diff.clear();
+        game.lobbies_updated.insert(lobby.id);
     }
 
     if (lobby.name_dirty) {
@@ -1890,6 +2011,7 @@ void GameThread::notify_lobby_changes(GameData &game, std::string &lobby_id) {
         for (auto &peer_id : lobby.peer_ids) {
             send(game, peer_id, name_notification, uWS::OpCode::TEXT);
         }
+        game.lobbies_updated.insert(lobby.id);
     }
 
     if (lobby.max_players_dirty) {
@@ -1899,6 +2021,7 @@ void GameThread::notify_lobby_changes(GameData &game, std::string &lobby_id) {
         for (auto &peer_id : lobby.peer_ids) {
             send(game, peer_id, max_players_notification, uWS::OpCode::TEXT);
         }
+        game.lobbies_updated.insert(lobby.id);
     }
 
     if (lobby.sealed_dirty) {
@@ -1914,26 +2037,29 @@ void GameThread::notify_lobby_changes(GameData &game, std::string &lobby_id) {
                 send(game, peer_id, unsealed_notification, uWS::OpCode::TEXT);
             }
         }
+        game.lobbies_updated.insert(lobby.id);
     }
 
     if (lobby.public_data_dirty) {
         lobby.public_data_dirty = false;
         // Notify lobby public data update
         std::string public_data_notification =
-            notification_lobby_public_data(AnyElement{lobby.public_data}, EMPTY_STRING);
+            notification_lobby_public_data(AnyElement{lobby.public_data_diff}, EMPTY_STRING);
         for (const auto &peer_id : lobby.peer_ids) {
             send(game, peer_id, public_data_notification, uWS::OpCode::TEXT);
         }
+        lobby.public_data_diff.clear();
     }
     // DO NOT SEND PRIVATE DATA FOR SCRIPTED LOBBY
     if (lobby.private_data_dirty && game.lobby_control == "relay") {
         lobby.private_data_dirty = false;
         // Notify lobby private data update
         std::string private_data_notification =
-            notification_lobby_private_data(AnyElement{lobby.private_data}, EMPTY_STRING);
+            notification_lobby_private_data(AnyElement{lobby.private_data_diff}, EMPTY_STRING);
         for (const auto &peer_id : lobby.peer_ids) {
             send(game, peer_id, private_data_notification, uWS::OpCode::TEXT);
         }
+        lobby.private_data_diff.clear();
     }
 }
 
@@ -1942,4 +2068,12 @@ void GameThread::notify_peer(GameData &game, std::string &lobby_id, std::string 
     auto &lobby = game.lobbies[lobby_id];
     std::string notification_message = notification_peer_notify(notification, peer_id);
     send(game, peer_id, notification_message, uWS::OpCode::TEXT);
+}
+
+void GameThread::notify_all(GameData &game, std::string &lobby_id, const AnyElement &notification) {
+    std::string notification_message = notification_peer_notify(notification, EMPTY_STRING);
+    auto &lobby = game.lobbies[lobby_id];
+    for (const auto &lobby_peer_id : lobby.peer_ids) {
+        send(game, lobby_peer_id, notification_message, uWS::OpCode::TEXT);
+    }
 }

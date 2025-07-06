@@ -1,11 +1,12 @@
 local lobby = require("lobby")
+local helper = require("helper")
 local NormalGameMode = require("game/normal_game_mode")
 local CompetitiveAbunchHangingMode = require("game/competitive_abunch_hanging_mode")
 local NormalAbunchHangingMode = require("game/normal_abunch_hanging_mode")
 local NormalAllOrNothingMode = require("game/normal_all_or_nothing_mode")
 local NormalLastWrongDiesMode = require("game/normal_last_wrong_dies_mode")
 
-local function create_game_mode(game_mode_tag)
+local function create_game_mode(game_mode_tag: string): any
     if game_mode_tag == "competitive_abunch_hanging" then
         return CompetitiveAbunchHangingMode.new()
     elseif game_mode_tag == "normal_abunch_hanging" then
@@ -28,18 +29,28 @@ function api.start_game()
 end
 
 function api.set_word(word)
+    if not helper.is_array_of_strings(word) then
+        return { error = "Invalid word format." }
+    end
     local l = lobby.get()
     local game_mode = create_game_mode(l.tags["game_mode"])
     return game_mode:set_word(l, word)
 end
 
 function api.guess_word(word)
+    if not helper.is_array_of_strings(word) then
+        return { error = "Invalid word format." }
+    end
+    -- Check that word is array of letters
     local l = lobby.get()
     local game_mode = create_game_mode(l.tags["game_mode"])
     return game_mode:guess_word(l, word)
 end
 
 function api.guess_letter(letter)
+    if type(letter) ~= "string" then
+        return { error = "Invalid letter format." }
+    end
     local l = lobby.get()
     local game_mode = create_game_mode(l.tags["game_mode"])
     return game_mode:guess_letter(l, l.calling_peer_id, letter)
@@ -64,6 +75,9 @@ function api.take_damage()
 end
 
 function api.me_command(action)
+    if type(action) ~= "string" then
+        return { error = "Invalid action format." }
+    end
     local l = lobby.get()
     local peer_name = l.peers[l.calling_peer_id].user_data["name"]
     lobby.broadcast_chat(string.format("* %s %s", peer_name, action))
@@ -139,11 +153,6 @@ end
 function api.set_initial_data(l)
     local game_mode = create_game_mode(l.tags["game_mode"])
     return game_mode:set_initial_data(l)
-end
-
-function api.is_letter(letter)
-    local b = letter:byte()
-    return b >= string.byte('A') and b <= string.byte('Z')
 end
 
 function api.on_timer_broadcast_remaining_time()

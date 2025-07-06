@@ -2,10 +2,10 @@
 #include "player.as"
 #include "math.as"
 namespace main {
-    void _on_init() {
+    void _on_server_init() {
         print("init");
     }
-    void _on_reload() {
+    void _on_server_reload() {
         print("reload");
     }
     const int64 MAX_PREV_TICKS = 5;
@@ -53,7 +53,7 @@ namespace main {
         peer.private_data.set("input_jump", false);
         peer.private_data.set("tick_count", 0);
     }
-    void _on_create() {
+    void _can_create_lobby() {
         Lobby@ l = lobby::get();
         if (l.max_players != 1000) {
             throw("max players needs to be 1000");
@@ -62,15 +62,15 @@ namespace main {
         l.public_data.set("tick_rate", l.tick_rate);
         main::_init_peer();
     }
-    void _on_join() {
+    void _on_peer_joined() {
         main::_init_peer();
     }
-    void _can_chat(string message) {}
-    void _can_tags(dictionary tags) {}
-    void _can_kick(string kicked_peer_id) {}
-    void _can_ready(bool ready) {}
-    void _can_seal(bool seal) {}
-    void _on_left() {}
+    void _can_peer_chat(string message) {}
+    void _can_host_set_tags(dictionary tags) {}
+    void _can_host_kick(string kicked_peer_id) {}
+    void _can_peer_ready(bool ready) {}
+    void _can_host_seal(bool seal) {}
+    void _on_peer_leave() {}
     void _move_peer(LobbyPeer@ peer, Lobby@ l, double delta, double input_dir = 0.0, bool input_jump = false) {
         auto pos_x = peer.public_data.get_double("pos_x");
         auto pos_y = peer.public_data.get_double("pos_y");
@@ -91,7 +91,7 @@ namespace main {
         peer.private_data.set("input_dir", 0.0);
         peer.private_data.set("input_jump", false);
     }
-    void _on_tick(int64 game_tickrate) {
+    void _on_lobby_tick(int64 game_tickrate) {
         Lobby@ l = lobby::get();
         int64 tick = l.public_data.get_int("tick_count");
         auto peer = cast<LobbyPeer@>(l.peers[l.calling_peer_id]);

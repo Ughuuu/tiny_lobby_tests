@@ -11,6 +11,7 @@ void push_lua_value(lua_State *L, const AnyElement &value);
 int start_timer(lua_State *L);
 int stop_timer(lua_State *L);
 int notify(lua_State *L);
+int notify_all(lua_State *L);
 int broadcast_chat(lua_State *L);
 int get_time(lua_State *L);
 int get_lobby(lua_State *L);

@@ -39,25 +39,25 @@ namespace main {
         auto peer = cast<LobbyPeer@>(l.peers[l.calling_peer_id]);
         peer.public_data.set("is_moving", false);
     }
-    void _can_create() {
+    void _can_create_lobby() {
         Lobby@ l = lobby::get();
         if (l.max_players != 1000) {
             throw("max players needs to be 1000");
         }
     }
-    void _on_create() {
+    void _on_lobby_created() {
         map::_read_map();
         player::_init_peer();
     }
-    void _on_join() {
+    void _on_peer_joined() {
         player::_init_peer();
     }
-    void _can_chat(string message) {}
-    void _can_tags(dictionary tags) {}
-    void _can_kick(string kicked_peer_id) {}
-    void _can_ready(bool ready) {}
-    void _can_seal(bool seal) {}
-    void _on_left() {}
+    void _can_peer_chat(string message) {}
+    void _can_host_set_tags(dictionary tags) {}
+    void _can_host_kick(string kicked_peer_id) {}
+    void _can_peer_ready(bool ready) {}
+    void _can_host_seal(bool seal) {}
+    void _on_peer_leave() {}
     Vector2i _dir_code_to_vector(int64 dir_code) {
         switch(dir_code) {
             case player::PLAYER_DIR::DIR_LEFT:
@@ -103,8 +103,7 @@ namespace main {
         moving_peer.public_data.set("is_moving", true);
         return true;
     }
-    void _on_tick(int64 tickrate) {
-        return;
+    void _on_lobby_tick(int64 tickrate) {
         auto l = lobby::get();
         auto current_time_ms = lobby::get_ticks_ms();
         auto peerKeys = l.peers.getKeys();

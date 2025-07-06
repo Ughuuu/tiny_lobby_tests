@@ -1,6 +1,18 @@
+--!strict
 local helper = {}
 
-function helper.peers_ordered(l)
+helper.max_word_length= 20
+
+function helper.peers_length(l)
+	local count = 0
+    -- Collect all peer IDs
+    for _, _ in pairs(l.peers) do
+		count += 1
+    end
+	return count
+end
+
+function helper.peers_ordered(l: any)
     local peerIDs = {}
     -- Collect all peer IDs
     for peerID, _ in pairs(l.peers) do
@@ -12,6 +24,88 @@ function helper.peers_ordered(l)
     end)
 
     return peerIDs
+end
+function helper.is_letter(letter: string, lang: string)
+    local alphabets = {
+        ar = { "ا","ب","ت","ث","ج","ح","خ","د","ذ","ر","ز","س","ش","ص","ض","ط","ظ","ع","غ","ف","ق","ك","ل","م","ن","ه","و","ي" },
+        bg = { "А","Б","В","Г","Д","Е","Ж","З","И","Й","К","Л","М","Н","О","П","Р","С","Т","У","Ф","Х","Ц","Ч","Ш","Щ","Ъ","Ь","Ю","Я" },
+        cs = { "A","Á","B","C","Č","D","Ď","E","É","Ě","F","G","H","I","Í","J","K","L","M","N","Ň","O","Ó","P","Q","R","Ř","S","Š","T","Ť","U","Ú","Ů","V","W","X","Y","Ý","Z","Ž" },
+        da = { "A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z","Æ","Ø","Å" },
+        de = { "A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z","Ä","Ö","Ü","ß" },
+        el = { "Α","Β","Γ","Δ","Ε","Ζ","Η","Θ","Ι","Κ","Λ","Μ","Ν","Ξ","Ο","Π","Ρ","Σ","Τ","Υ","Φ","Χ","Ψ","Ω" },
+        en = { "A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z" },
+        es = { "A","Á","B","C","D","E","É","F","G","H","I","Í","J","K","L","M","N","Ñ","O","Ó","P","Q","R","S","T","U","Ú","Ü","V","W","X","Y","Z" },
+        fi = { "A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z","Å","Ä","Ö" },
+        fr = { "A","Â","À","Æ","B","C","Ç","D","E","É","È","Ê","Ë","F","G","H","I","Î","Ï","J","K","L","M","N","O","Ô","Œ","P","Q","R","S","T","U","Ù","Û","Ü","V","W","X","Y","Ÿ","Z" },
+        hu = { "A","Á","B","C","D","E","É","F","G","H","I","Í","J","K","L","M","N","O","Ó","Ö","Ő","P","Q","R","S","T","U","Ú","Ü","Ű","V","W","X","Y","Z" },
+        id = { "A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z" },
+        it = { "A","B","C","D","E","F","G","H","I","L","M","N","O","P","Q","R","S","T","U","V","Z" },
+        ja = { "あ","い","う","え","お","か","き","く","け","こ","さ","し","す","せ","そ","た","ち","つ","て","と","な","に","ぬ","ね","の","ま","み","む","め","も","や","ゆ","よ","ら","り","る","れ","ろ","わ","を","ん" },
+        ko = { "가","나","다","라","마","바","사","아","자","차","카","타","파","하" },
+        nl = { "A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z" },
+        no = { "A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z","Æ","Ø","Å" },
+        pl = { "A","Ą","B","C","Ć","D","E","Ę","F","G","H","I","J","K","L","Ł","M","N","Ń","O","Ó","P","Q","R","S","Ś","T","U","V","W","X","Y","Z","Ź","Ż" },
+        pt = { "A","Á","Â","Ã","À","B","C","D","E","É","Ê","F","G","H","I","Í","J","K","L","M","N","O","Ó","Ô","Õ","P","Q","R","S","T","U","Ú","V","W","X","Y","Z" },
+        ro = { "A","Ă","Â","B","C","D","E","F","G","H","I","Î","J","K","L","M","N","O","P","Q","R","S","Ș","T","Ț","U","V","W","X","Y","Z" },
+        ru = { "А","Б","В","Г","Д","Е","Ё","Ж","З","И","Й","К","Л","М","Н","О","П","Р","С","Т","У","Ф","Х","Ц","Ч","Ш","Щ","Ъ","Ы","Ь","Э","Ю","Я" },
+        sv = { "A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z","Å","Ä","Ö" },
+        th = { "ก","ข","ฃ","ค","ฅ","ฆ","ง","จ","ฉ","ช","ซ","ฌ","ญ","ฎ","ฏ","ฐ","ฑ","ฒ","ณ","ด","ต","ถ","ทธ","น","บ","ป","ผ","ฝ","พ","ฟ","ภ","ม","ย","ร","ล","ว","ศ","ษ","ส","ห","ฬ","อ","ฮ" },
+        tr = { "A","B","C","Ç","D","E","F","G","Ğ","H","I","İ","J","K","L","M","N","O","Ö","P","R","S","Ş","T","U","Ü","V","Y","Z" },
+        uk = { "А","Б","В","Г","Ґ","Д","Е","Є","Ж","З","И","І","Ї","Й","К","Л","М","Н","О","П","Р","С","Т","У","Ф","Х","Ц","Ч","Ш","Щ","Ь","Ю","Я" },
+        vi = { "A","Ă","Â","B","C","D","Đ","E","Ê","G","H","I","K","L","M","N","O","Ô","Ơ","P","Q","R","S","T","U","Ư","V","X","Y" },
+        zh = { "的","一","是","不","了","人","我","在","有","他","这","为","之","大","来","以","个","中","上","们" }
+    }
+
+    local alphabet = alphabets[lang] or alphabets["en"]
+
+    for _, ch in ipairs(alphabet) do
+        if ch == letter then
+            return true
+        end
+    end
+    return false
+end
+
+function helper.array_contains(array, value)
+	for _, v in ipairs(array) do
+		if v == value then
+			return true
+		end
+	end
+	return false
+end
+
+function helper.arrays_equal(a, b)
+    if #a ~= #b then return false end
+    for i = 1, #a do
+        if a[i] ~= b[i] then return false end
+    end
+    return true
+end
+
+function helper.is_array_of_strings(value)
+    if type(value) ~= "table" then
+        return false
+    end
+
+    local i = 1
+    for k, v in pairs(value) do
+        -- Check that keys are sequential integers starting from 1 (array-like)
+        if k ~= i or type(v) ~= "string" then
+            return false
+        end
+        i = i + 1
+    end
+
+    return true
+end
+
+function helper.string_to_array(word)
+    local letters = {}
+    for i = 1, #word do
+        letters[i] = word:sub(i, i)
+    end
+    return letters
 end
 
 return helper

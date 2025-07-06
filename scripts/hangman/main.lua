@@ -1,5 +1,6 @@
 -- Load Modules
 local api = require("api")
+local lobby = require("lobby")
 
 local main = {}
 
@@ -12,6 +13,13 @@ main.me_command = api.me_command
 main.skip = api.skip
 main.show_hint = api.show_hint
 main.show_letter_hint = api.show_letter_hint
+main.ripple = function (pos_x, pos_y)
+    lobby.notify_all({
+        type = "ripple",
+        pos_x = pos_x,
+        pos_y = pos_y
+    })
+end
 
 -- Private Function
 main._on_timer_restart_game = api.on_timer_restart_game
@@ -26,11 +34,13 @@ main._on_timer_start_game = api.on_timer_start_game
 
 -- Callback functions
 local callbacks = require("callbacks")
-main._can_create = function() return callbacks.on_create(2, 10) end
-main._can_tags = callbacks.on_tags
-main._can_ready = callbacks.on_ready
-main._on_left = callbacks.on_left
-main._on_join = callbacks.on_join
-main._on_tick = callbacks.on_tick
+main._can_create_lobby = function() return callbacks.on_create(2, 10) end
+main._can_host_set_tags = callbacks.on_tags
+main._can_peer_ready = callbacks.on_ready
+main._on_peer_leave = callbacks.on_left
+main._on_peer_joined = callbacks.on_join
+main._on_lobby_tick = callbacks.on_tick
+main._on_server_init = callbacks.on_init
+main._on_server_reload = callbacks.on_reload
 
 return main

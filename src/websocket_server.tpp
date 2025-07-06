@@ -155,7 +155,7 @@ void WebAuthenticationThread<SSL>::run() {
                     user_data.reconnection_token = user_data.platform + ":" + user_data.platform_id;
                 }
             }
-            this->logger.error_log("[WebSocketServer] upgraded authenticated user: ", user_data.game_id, " ", user_data.id);
+            this->logger.debug_log("[WebSocketServer] upgraded authenticated user: ", user_data.game_id, " ", user_data.id);
             res->template upgrade<PerSocketData>(std::move(user_data),
             websocket_key,
             "blazium",
@@ -234,21 +234,25 @@ void WebSocketServer<SSL>::on_open(uWS::WebSocket<SSL, true, PerSocketData> *ws)
         auto &old_reconnection = reconnections[data->reconnection_token];
         if (old_reconnection.timestamp < get_time_now() - MAX_RECONNECTION_TIME) {
             reconnections.erase(data->reconnection_token);
-            send(data->id, std::string("Reconnect expired"), uWS::OpCode::CLOSE);
+            logger.error_log("[WebSocketServer] Reconnect expired: ", data->uid, " ", data->id, " ", data->game_id);
+            ws->end(1002, "Reconnect expired");
             return;
         }
         auto &old_id = old_reconnection.peer_id;
         if (connection_data.find(old_id) == connection_data.end()) {
             reconnections.erase(data->reconnection_token);
-            send(data->id, std::string("Reconnect Peer ID Mismatch"), uWS::OpCode::CLOSE);
+            logger.error_log("[WebSocketServer] Reconnect Peer ID not found: ", data->uid, " ", data->id, " ", data->game_id);
+            ws->end(1002, "Reconnect Peer ID not found");
             return;
         }
         auto &old_connection_data = connection_data[old_id];
         // game id doesn't match, close new connection
         if (old_connection_data.game_id != data->game_id) {
-            send(data->id, std::string("Reconnect Game ID Mismatch"), uWS::OpCode::CLOSE);
+            logger.error_log("[WebSocketServer] Reconnect Game ID Mismatch: ", data->uid, " ", data->id, " ", data->game_id, " ", old_connection_data.game_id);
+            ws->end(1002, "Reconnect Game ID Mismatch");
             return;
         }
+        logger.debug_log("[WebSocketServer] Reconnect Peer ID found, closing old instance: ", data->uid, " ", data->id, " ", data->game_id, " ", old_id);
         // old reconnection id exists, delete id
         send(old_id, std::string("Reconnect Close"), uWS::OpCode::CLOSE);
         data->id = old_id;
@@ -318,9 +322,10 @@ void WebSocketServer<SSL>::on_message(uWS::WebSocket<SSL, true, PerSocketData> *
 template <bool SSL>
 void WebSocketServer<SSL>::on_close(uWS::WebSocket<SSL, true, PerSocketData> *ws, const std::string_view &message, int opCode) {
     PerSocketData* data = ws->getUserData();
-    // delete websocket only if reconnection_token matches
+    // delete websocket only if reconnection_token matches and it has same websocket
     if (connection_data.find(data->id) != connection_data.end()) {
-        if (data->reconnection_token == connection_data[data->id].reconnection_token) {
+        if (data->reconnection_token == connection_data[data->id].reconnection_token &&
+            connection_data[data->id].ws == ws) {
             connection_data[data->id].ws = nullptr;
         }
     }

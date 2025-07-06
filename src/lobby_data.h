@@ -18,12 +18,16 @@ struct LobbyData {
     int64_t create_time;
     std::string game_id;
     bool sealed = false;
+    bool disband_on_leave = false;
     boost::container::flat_map<std::string, AnyElement> public_data;
     boost::container::flat_map<std::string, AnyElement> private_data;
     boost::container::flat_map<std::string, AnyElement> tags;
     int64_t order_id_counter = 0;
+    boost::container::flat_map<std::string, AnyElement> public_data_diff;
     bool public_data_dirty = false;
+    boost::container::flat_map<std::string, AnyElement> private_data_diff;
     bool private_data_dirty = false;
+    boost::container::flat_map<std::string, AnyElement> tags_diff;
     bool tags_dirty = false;
     bool max_players_dirty = false;
     bool sealed_dirty = false;

@@ -3,6 +3,7 @@
 #include <uwebsockets/App.h>
 
 #include <atomic>
+#include <boost/container/map.hpp>
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
@@ -20,9 +21,11 @@
 
 static std::vector<std::string> get_expected_functions() {
     std::vector<std::string> expected_functions = {
-        "_can_create", "_on_create", "_on_join",  "_can_chat",  "_can_tags",
-        "_can_kick",   "_can_ready", "_can_seal", "_on_left",   "_can_resize",
-        "_on_resize",  "_can_title", "_on_tick",  "_on_reload", "_on_init"};
+        "_on_peer_connected", "_on_peer_disconnected", "_can_create_lobby", "_on_lobby_created",
+        "_can_peer_join",     "_on_peer_joined",       "_can_peer_chat",    "_can_host_set_tags",
+        "_can_host_kick",     "_can_peer_ready",       "_can_host_seal",    "_on_peer_leave",
+        "_can_host_resize",   "_can_host_set_title",   "_on_lobby_tick",    "_on_server_reload",
+        "_on_server_init"};
     return expected_functions;
 }
 
@@ -46,12 +49,14 @@ class GameThread {
     GamesListener games_listener;
     efsw::FileWatcher file_watcher;
     moodycamel::ReaderWriterQueue<std::string> file_watcher_queue;
+    std::mutex mutex;
 
    public:
+    boost::container::map<std::string, GameData> games;
     int64_t get_time() { return now; }
-    boost::container::flat_map<std::string, GameData> games;
+
     void load_games();
-    void unload_games();
+    void unload_game(std::string game_id);
     void reload_game(std::string folder_name);
     void run();
     void time_run();
@@ -133,9 +138,11 @@ class GameThread {
     void notify_lobby_changes(GameData &game, std::string &lobby_id);
     void notify_peer(GameData &game, std::string &lobby_id, std::string peer_id,
                      const AnyElement &notification);
+    void notify_all(GameData &game, std::string &lobby_id, const AnyElement &notification);
     void send(GameData &game, const std::string &peer_id, const std::string &message,
               uWS::OpCode opCode = uWS::OpCode::TEXT);
-    void send_all(GameData &game);
+    void set_lobby_host(GameData &game, LobbyData &lobby, const std::string &new_host);
+
     GameThread(bool verbose, std::string log_folder, std::string scripts_folder,
                moodycamel::BlockingReaderWriterQueue<AnalyticsEvent> &analytics_queue,
                moodycamel::BlockingReaderWriterQueue<WebSocketReceivedMessage> &receive_queue,

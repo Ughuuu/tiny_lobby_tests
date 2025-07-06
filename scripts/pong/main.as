@@ -17,19 +17,19 @@ namespace main {
                 break;
         }
     }
-    void _can_create() {
+    void _can_create_lobby() {
         Lobby@ l = lobby::get();
         if (l.max_players != 2) {
             throw("Invalid max players: 2");
         }
     }
-    void _on_create() {
+    void _on_lobby_created() {
         Lobby@ l = lobby::get();
         l.public_data.set("ball_x", int64(1));
         l.public_data.set("ball_y", int64(2));
         _init_player();
     }
-    void _on_join() {
+    void _on_peer_joined() {
         _init_player();
     }
     void _init_player() {
@@ -38,13 +38,13 @@ namespace main {
         peer.public_data.set("pad_x", 3);
         peer.public_data.set("pad_y", 4);
     }
-    void _can_chat(string message) {}
-    void _can_tags(dictionary tags) {}
-    void _can_kick(string kicked_peer_id) {}
-    void _can_ready(bool ready) {}
-    void _can_seal(bool seal) {}
-    void _on_left() {}
-    void _on_tick(int64 delta) {
+    void _can_peer_chat(string message) {}
+    void _can_host_set_tags(dictionary tags) {}
+    void _can_host_kick(string kicked_peer_id) {}
+    void _can_peer_ready(bool ready) {}
+    void _can_host_seal(bool seal) {}
+    void _on_peer_leave() {}
+    void _on_lobby_tick(int64 delta) {
         Lobby@ l = lobby::get();
         auto ball_x = l.public_data.get_int("ball_x");
         l.public_data.set("ball_x", ball_x + 1);

@@ -1,4 +1,5 @@
 -- Load modules
+local system = require("system")
 local turn = require("turn")
 local lobby = require("lobby")
 local NormalGameMode = require("game/normal_game_mode")
@@ -23,6 +24,17 @@ local function create_game_mode(game_mode_tag)
 end
 
 local callbacks = {}
+
+function callbacks.on_init()
+    local messages = system.read_file_as_string("messages.json")
+    local _messages_data = system.decode_json(messages)
+    return
+end
+
+function callbacks.on_reload()
+    callbacks.on_init()
+    return
+end
 
 function callbacks.on_create(minPlayers, maxPlayers)
     local l = lobby.get()
@@ -70,8 +82,13 @@ end
 
 function callbacks.on_tags(tags)
     local l = lobby.get()
-    if tags["game_mode"] ~= l.tags["game_mode"] then
+    if l.public_data["game_state"] ~= "setup" then
         return { error = "Game mode cannot be changed after the game has started." }
+    end
+    if tags["game_mode"] ~= "competitive_abunch_hanging" and tags["game_mode"] ~= "normal_abunch_hanging" and
+       tags["game_mode"] ~= "normal_all_or_nothing" and tags["game_mode"] ~= "normal_last_wrong_dies" and
+       tags["game_mode"] ~= "normal_mode" then
+        return { error = "Invalid game mode." }
     end
     return turn.validate_game_state_is("setup")
 end

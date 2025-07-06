@@ -1,6 +1,7 @@
 local turn = require("turn")
 local lobby = require("lobby")
 local system = require("system")
+local helper = require("helper")
 local GameMode = require("game/game_mode")
 
 local LastWrongDies = setmetatable({}, { __index = GameMode })
@@ -81,22 +82,25 @@ function LastWrongDies:get_competitive_word(l)
             end
 
             local question_data = questions
-            local word = string.upper(tostring(question_data[1]["answer"]))
-            local hint = string.upper(tostring(question_data[1]["question"]))
+            local word = helper.string_to_array(string.upper(question_data[1]["answer"]))
+            local hint = string.upper(question_data[1]["question"])
             local is_valid = true
-            for i = 1, #word do
-                local char = word:sub(i, i)
-                if char ~= " " and not char:match("[A-Za-z]") then
+            for _, char in ipairs(word) do
+                if char ~= " " and not helper.is_letter(char, l.tags["lang"]) then
                     is_valid = false
                     break
                 end
             end
             if is_valid then
-                l.public_data["guessed"] = ""
-                for i = 1, #word do
-                    local letter = word:sub(i, i)
-                    l.public_data["guessed"] = l.public_data["guessed"] .. (letter == " " and " " or "_")
+                local guessed = {}
+                for i, letter in ipairs(word) do
+                    if letter == " " then
+                        table.insert(guessed, " ")
+                    else
+                        table.insert(guessed, "_")
+                    end
                 end
+                l.public_data["guessed"] = guessed
                 return l, word, hint
             else
                 retry = true
@@ -106,9 +110,7 @@ function LastWrongDies:get_competitive_word(l)
 end
 
 function LastWrongDies:guess_letter(l, peerID, letter)
-    letter = string.upper(tostring(letter))
-    if #letter ~= 1 then return { error = "Too many letters." } end
-    if not self:is_letter(letter) then return { error = "Invalid letter." } end
+    if not helper.is_letter(letter, l.tags["lang"]) then return { error = "Invalid letter." } end
     local err = turn.validate_game_state_is("playing")
     if err then return err end
 
@@ -126,7 +128,7 @@ function LastWrongDies:guess_letter(l, peerID, letter)
 
     local peer_name = string.upper(tostring(l.peers[peerID].user_data["name"]))
     local word = l.private_data["word"]
-    if not string.find(word, letter, 1, true) then
+    if not helper.array_contains(word, letter) then
         lobby.broadcast_chat(string.format("%s guessed the wrong letter, %s", peer_name, letter))
         self:take_damage(l, peerID)
     return { error = "Letter is not in the word." }
@@ -134,10 +136,10 @@ function LastWrongDies:guess_letter(l, peerID, letter)
 
     local points = 0
     local guessed = l.public_data["guessed"]
-    for i = 1, #word do
-        if word:sub(i, i) == letter then
+    for i, char in ipairs(word) do
+        if char == letter then
             points = points + 1
-            guessed = guessed:sub(1, i - 1) .. letter .. guessed:sub(i + 1)
+            guessed[i] = letter
         end
     end
     l.public_data["guessed"] = guessed
@@ -149,7 +151,7 @@ function LastWrongDies:guess_letter(l, peerID, letter)
         peer_name, letter, points, total_points
     ))
 
-    if l.public_data["guessed"] == word and l.public_data["game_state"] ~= "over" then
+    if helper.arrays_equal(l.public_data["guessed"], word) and l.public_data["game_state"] ~= "over" then
         lobby.broadcast_chat("Starting next round...")
         l.public_data["game_state"] = "new_round"
         lobby.start_timer("_on_timer_next_round", 1)
@@ -286,6 +288,7 @@ function LastWrongDies:set_initial_data(l)
 end
 
 function LastWrongDies:on_left(l, peerID)
+    -- No-op
     return
 end
 
@@ -309,11 +312,6 @@ function LastWrongDies:on_join(l, peerID)
         l.peers[peerID].public_data["total_points"] = saved_player_points
     end
     return
-end
-
-function LastWrongDies:is_letter(letter)
-    local b = letter:byte()
-    return b >= string.byte('A') and b <= string.byte('Z')
 end
 
 return LastWrongDies

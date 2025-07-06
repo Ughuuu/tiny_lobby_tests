@@ -23,9 +23,11 @@ struct GameData {
     int64_t last_send_time = 0;
     int64_t last_tick_time = 0;
     std::string id;
-    std::string lobby_control = "peer";
+    std::string lobby_control = "relay";
     int tick_rate = 0;
     int send_rate = 0;
+    bool seal = false;
+    bool disband_on_leave = false;
     std::string folder_name;
     boost::container::flat_map<std::string, boost::container::vector<std::string>> peers_send_data;
     boost::container::flat_map<std::string, PeerData> peers;

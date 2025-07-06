@@ -3,7 +3,7 @@ local lobby = require("lobby")
 
 local turn = {}
 
-function turn.increment_dealer(l: any, increment: number)
+function turn.increment_dealer(l, increment)
     if l.public_data["dealer_idx"] == nil then
         l.public_data["dealer_idx"] = -1
     end
@@ -15,7 +15,7 @@ function turn.increment_dealer(l: any, increment: number)
     return l
 end
 
-function turn.increment_turn(l: any, increment: number)
+function turn.increment_turn(l, increment)
     if l.public_data["turn_idx"] == nil then
         l.public_data["turn_idx"] = -1
     end
@@ -27,7 +27,7 @@ function turn.increment_turn(l: any, increment: number)
     return l
 end
 
-function turn.validate_game_state_is(state_to_validate: string)
+function turn.validate_game_state_is(state_to_validate)
     local l = lobby.get()
     if l.public_data["game_state"] ~= state_to_validate then
         return { error = "Game state is not " .. state_to_validate }

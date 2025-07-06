@@ -103,6 +103,65 @@ bool login_server() {
     return true;
 }
 
+std::vector<std::string> get_game_data_without_game_id(const std::string &game_id) {
+    std::vector<std::string> lines;
+    // Open the file in append mode
+    std::ifstream games_file_check("games.ini");
+    if (!games_file_check.is_open()) {
+        return lines;
+    }
+    // Read all lines and erase existing game_id lines between [game_id] and next [other_game_id]
+    std::string line;
+    bool in_game_section = false;
+    while (std::getline(games_file_check, line)) {
+        if (line == "[" + game_id + "]") {
+            in_game_section = true;
+        } else if (in_game_section && line.starts_with("[")) {
+            in_game_section = false;  // End of the current game section
+        }
+        if (!in_game_section) {
+            lines.push_back(line);
+        }
+    }
+    return lines;
+}
+
+std::string extract_data_from_new_game(const std::string &resp, const std::string &game_id) {
+    yyjson_doc *doc = yyjson_read(resp.c_str(), resp.size(), 0);
+    if (!doc) {
+        return "Missing or invalid JSON data.";
+    }
+
+    yyjson_val *root = yyjson_doc_get_root(doc);
+    std::string lobby_control = decode_string_or_default(root, "lobby_control", "lua");
+    int send_rate = decode_int_or_default(root, "sendrate", 0);
+    bool seal = decode_int_or_default(root, "seal", false);
+    int tick_rate = decode_int_or_default(root, "tickrate", 0);
+
+    yyjson_doc_free(doc);
+    std::vector<std::string> lines = get_game_data_without_game_id(game_id);
+    // write lines back to the file
+    std::ofstream games_file("games.ini", std::ios::out);
+    if (!games_file.is_open()) {
+        return "Failed to open games.ini.";
+    }
+    lines.push_back("[" + game_id + "]");
+    lines.push_back("lobby_control=" + lobby_control);
+    if (send_rate > 0) {
+        lines.push_back("sendrate=" + std::to_string(send_rate));
+    }
+    if (seal > 0) {
+        lines.push_back("seal=" + std::to_string(seal));
+    }
+    if (tick_rate > 0) {
+        lines.push_back("tickrate=" + std::to_string(tick_rate));
+    }
+    for (const auto &l : lines) {
+        games_file << l << std::endl;
+    }
+    return "";
+}
+
 int main(int argc, char *argv[]) {
     INIReader config_reader("config.ini");
     if (config_reader.ParseError() < 0) {
@@ -246,10 +305,18 @@ int main(int argc, char *argv[]) {
                     exit(1);
                 }
             });
+
+        GameThread GameThread(
+            verbose, config_reader.GetString("games", "log_folder", "logs"),
+            config_reader.Get("games", "scripts_folder", "scripts"), analytics_queue, receive_queue,
+            app.getLoop(), &webserver, nullptr, stop,
+            config_reader.GetInteger("games", "listing_interval", 3000),
+            config_reader.GetInteger("games", "max_reconnection_time", 6 * 60 * 1000));
         app.get("/health", [](auto *res, auto *req) { res->writeStatus("200 OK")->end("OK"); });
         app.post("/system/shutdown", [&stop](auto *res, auto *req) {
-            stop = true;
             res->writeStatus("200 OK")->end("OK");
+            // No-op for now
+            stop = true;
             // TODO do it correctly
             exit(0);
         });
@@ -257,12 +324,48 @@ int main(int argc, char *argv[]) {
             webserver.send_all("notify", uWS::OpCode::TEXT);
             res->writeStatus("200 OK")->end("OK");
         });
-        GameThread GameThread(
-            verbose, config_reader.GetString("games", "log_folder", "logs"),
-            config_reader.Get("games", "scripts_folder", "scripts"), analytics_queue, receive_queue,
-            app.getLoop(), &webserver, nullptr, stop,
-            config_reader.GetInteger("games", "listing_interval", 3000),
-            config_reader.GetInteger("games", "max_reconnection_time", 6 * 60 * 1000));
+        app.post("/game/:game_id", [&webserver, &GameThread](auto *res, auto *req) {
+            std::string game_id{req->getParameter(0)};
+            if (game_id.empty()) {
+                res->writeStatus("400 Bad Request")->end("Game ID is required");
+                return;
+            }
+            auto body = std::make_shared<std::string>();
+            auto isAborted = std::make_shared<bool>(false);
+            res->onData([res, isAborted, body, &GameThread, game_id](std::string_view chunk,
+                                                                     bool isFin) mutable {
+                body->append(chunk);
+                if (isFin && !*isAborted) {
+                    std::string msg = extract_data_from_new_game(*body, game_id);
+                    if (msg.size() > 0) {
+                        res->writeStatus("200 OK")->end(msg);
+                        return;
+                    }
+                    GameThread.load_games();
+                    res->writeStatus("200 OK")->end("Game created");
+                }
+            });
+            res->onAborted([isAborted]() { *isAborted = true; });
+        });
+        app.del("/game/:game_id", [&webserver, &GameThread](auto *res, auto *req) {
+            std::string game_id{req->getParameter(0)};
+            if (game_id.empty()) {
+                res->writeStatus("400 Bad Request")->end("Game ID is required");
+                return;
+            }
+            GameThread.unload_game(game_id);
+            std::vector<std::string> lines = get_game_data_without_game_id(game_id);
+            // write lines back to the file
+            std::ofstream games_file("games.ini", std::ios::out);
+            if (!games_file.is_open()) {
+                res->writeStatus("500 Internal Server Error")->end("Failed to open games.ini.");
+                return;
+            }
+            for (const auto &l : lines) {
+                games_file << l << std::endl;
+            }
+            res->writeStatus("200 OK")->end("Game unloaded");
+        });
         std::thread GameThread_thread = std::thread([&]() { GameThread.run(); });
         std::thread GameThread_time_thread = std::thread([&]() { GameThread.time_run(); });
         std::thread AnalyticsThread_thread = std::thread([&]() { pogr_client.run(); });
@@ -313,10 +416,17 @@ int main(int argc, char *argv[]) {
                     exit(1);
                 }
             });
+        GameThread GameThread(
+            verbose, config_reader.GetString("games", "log_folder", "logs"),
+            config_reader.Get("games", "scripts_folder", "scripts"), analytics_queue, receive_queue,
+            app.getLoop(), nullptr, &webserver, stop,
+            config_reader.GetInteger("games", "listing_interval", 3000),
+            config_reader.GetInteger("games", "max_reconnection_time", 6 * 60 * 1000));
         app.get("/health", [](auto *res, auto *req) { res->writeStatus("200 OK")->end("OK"); });
         app.post("/system/shutdown", [&stop](auto *res, auto *req) {
-            stop = true;
             res->writeStatus("200 OK")->end("OK");
+            // No-op for now
+            stop = true;
             // TODO do it correctly
             exit(0);
         });
@@ -324,12 +434,48 @@ int main(int argc, char *argv[]) {
             webserver.send_all("notify", uWS::OpCode::TEXT);
             res->writeStatus("200 OK")->end("OK");
         });
-        GameThread GameThread(
-            verbose, config_reader.GetString("games", "log_folder", "logs"),
-            config_reader.Get("games", "scripts_folder", "scripts"), analytics_queue, receive_queue,
-            app.getLoop(), nullptr, &webserver, stop,
-            config_reader.GetInteger("games", "listing_interval", 3000),
-            config_reader.GetInteger("games", "max_reconnection_time", 6 * 60 * 1000));
+        app.post("/game/:game_id", [&webserver, &GameThread](auto *res, auto *req) {
+            std::string game_id{req->getParameter(0)};
+            if (game_id.empty()) {
+                res->writeStatus("400 Bad Request")->end("Game ID is required");
+                return;
+            }
+            auto body = std::make_shared<std::string>();
+            auto isAborted = std::make_shared<bool>(false);
+            res->onData([res, isAborted, body, &GameThread, game_id](std::string_view chunk,
+                                                                     bool isFin) mutable {
+                body->append(chunk);
+                if (isFin && !*isAborted) {
+                    std::string msg = extract_data_from_new_game(*body, game_id);
+                    if (msg.size() > 0) {
+                        res->writeStatus("200 OK")->end(msg);
+                        return;
+                    }
+                    GameThread.load_games();
+                    res->writeStatus("200 OK")->end("Game created");
+                }
+            });
+            res->onAborted([isAborted]() { *isAborted = true; });
+        });
+        app.del("/game/:game_id", [&webserver, &GameThread](auto *res, auto *req) {
+            std::string game_id{req->getParameter(0)};
+            if (game_id.empty()) {
+                res->writeStatus("400 Bad Request")->end("Game ID is required");
+                return;
+            }
+            GameThread.unload_game(game_id);
+            std::vector<std::string> lines = get_game_data_without_game_id(game_id);
+            // write lines back to the file
+            std::ofstream games_file("games.ini", std::ios::out);
+            if (!games_file.is_open()) {
+                res->writeStatus("500 Internal Server Error")->end("Failed to open games.ini.");
+                return;
+            }
+            for (const auto &l : lines) {
+                games_file << l << std::endl;
+            }
+            res->writeStatus("200 OK")->end("Game unloaded");
+        });
         std::thread GameThread_thread = std::thread([&]() { GameThread.run(); });
         std::thread GameThread_time_thread = std::thread([&]() { GameThread.time_run(); });
         std::thread AnalyticsThread_thread = std::thread([&]() { pogr_client.run(); });

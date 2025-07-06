@@ -49,7 +49,7 @@ static int lobby_newindex(lua_State* L) {
             } else if (strcmp(key, "host") == 0) {
                 const char* new_host = lua_tostring(L, 3);
                 if (new_host != lobby.host) {
-                    lobby.host = new_host;
+                    game_thread->set_lobby_host(game, lobby, new_host);
                 }
             } else if (strcmp(key, "max_players") == 0) {
                 int new_max_players = lua_tointegerx(L, 3, nullptr);
@@ -66,6 +66,7 @@ static int lobby_newindex(lua_State* L) {
                             new_public_data.value);
                     if (lobby.public_data_dirty || lobby.public_data != new_public_data_dict) {
                         lobby.public_data = new_public_data_dict;
+                        lobby.public_data_diff = new_public_data_dict;
                         lobby.public_data_dirty = true;
                     }
                 }
@@ -78,6 +79,7 @@ static int lobby_newindex(lua_State* L) {
                             new_private_data.value);
                     if (lobby.private_data_dirty || lobby.private_data != new_private_data_dict) {
                         lobby.private_data = new_private_data_dict;
+                        lobby.private_data_diff = new_private_data_dict;
                         lobby.private_data_dirty = true;
                     }
                 }
@@ -90,6 +92,7 @@ static int lobby_newindex(lua_State* L) {
                             new_tags.value);
                     if (lobby.tags_dirty || lobby.tags != new_tags_dict) {
                         lobby.tags = new_tags_dict;
+                        lobby.tags_diff = new_tags_dict;
                         lobby.tags_dirty = true;
                     }
                 }
@@ -99,16 +102,19 @@ static int lobby_newindex(lua_State* L) {
             auto new_tag = decode_luavalue(L, 3);
             lobby.tags[key] = new_tag;
             lobby.tags_dirty = true;
+            lobby.tags_diff[key] = new_tag;
         } break;
         case LobbyUserdata::LobbyType::LOBBY_PUBLIC_DATA: {
             auto new_public_data = decode_luavalue(L, 3);
             lobby.public_data[key] = new_public_data;
             lobby.public_data_dirty = true;
+            lobby.public_data_diff[key] = new_public_data;
         } break;
         case LobbyUserdata::LobbyType::LOBBY_PRIVATE_DATA: {
             auto new_private_data = decode_luavalue(L, 3);
             lobby.private_data[key] = new_private_data;
             lobby.private_data_dirty = true;
+            lobby.private_data_diff[key] = new_private_data;
         } break;
         case LobbyUserdata::LobbyType::PEER_ROOT: {
             auto& peer = game.peers[info->peer_id];
@@ -122,6 +128,7 @@ static int lobby_newindex(lua_State* L) {
                     if (peer.public_data_dirty || peer.public_data != new_public_data_dict) {
                         peer.public_data = new_public_data_dict;
                         peer.public_data_dirty = true;
+                        peer.public_data_diff = new_public_data_dict;
                     }
                 }
             } else if (strcmp(key, "private_data") == 0) {
@@ -134,6 +141,7 @@ static int lobby_newindex(lua_State* L) {
                     if (peer.private_data_dirty || peer.private_data != new_private_data_dict) {
                         peer.private_data = new_private_data_dict;
                         peer.private_data_dirty = true;
+                        peer.private_data_diff = new_private_data_dict;
                     }
                 }
             }
@@ -143,18 +151,21 @@ static int lobby_newindex(lua_State* L) {
             auto new_public_data = decode_luavalue(L, 3);
             peer.public_data[key] = new_public_data;
             peer.public_data_dirty = true;
+            peer.public_data_diff[key] = new_public_data;
         } break;
         case LobbyUserdata::LobbyType::PEER_PRIVATE_DATA: {
             auto& peer = game.peers[info->peer_id];
             auto new_private_data = decode_luavalue(L, 3);
             peer.private_data[key] = new_private_data;
             peer.private_data_dirty = true;
+            peer.private_data_diff[key] = new_private_data;
         } break;
         case LobbyUserdata::LobbyType::PEER_USER_DATA: {
             auto& peer = game.peers[info->peer_id];
             auto new_user_data = decode_luavalue(L, 3);
             peer.user_data[key] = new_user_data;
             peer.user_data_dirty = true;
+            peer.user_data_diff[key] = new_user_data;
         } break;
     }
 
@@ -378,6 +389,7 @@ AnyElement ScriptLua::func_call(std::string& func_name, boost::container::vector
     int ret = lua_getfield(L, -1, func_name.c_str());
     if (ret != LUA_TFUNCTION) {
         has_error = true;
+        lua_settop(L, 0);
         return AnyElement{"Function not found. " + func_name};
     }
 

@@ -214,6 +214,29 @@ int notify(lua_State *L) {
     return 0;
 }
 
+int notify_all(lua_State *L) {
+    if (lua_gettop(L) < 1) {
+        luaL_error(L, "Expected 1 arguments.");
+        return 0;
+    }
+    auto notification_object = decode_luavalue(L, 1);
+    lua_getfield(L, LUA_REGISTRYINDEX, "game_id");
+    std::string game_id = lua_tostring(L, -1);
+    lua_pop(L, 1);
+
+    lua_getfield(L, LUA_REGISTRYINDEX, "lobby_id");
+    std::string lobby_id = lua_tostring(L, -1);
+    lua_pop(L, 1);
+
+    lua_getfield(L, LUA_REGISTRYINDEX, "game_thread");
+    GameThread *game_thread = static_cast<GameThread *>(lua_touserdata(L, -1));
+    lua_pop(L, 1);
+
+    auto &game = game_thread->games[game_id];
+    game_thread->notify_all(game, lobby_id, notification_object);
+    return 0;
+}
+
 int broadcast_chat(lua_State *L) {
     if (lua_gettop(L) < 1) {
         luaL_error(L, "Expected 1 arguments.");
@@ -379,7 +402,15 @@ int lua_read_file_as_string(lua_State *L) {
         luaL_error(L, "Expected 1 argument.");
         return 0;
     }
-    std::string filename = luaL_checkstring(L, 1);
+
+    lua_getfield(L, LUA_REGISTRYINDEX, "game_thread");
+    GameThread *game_thread = static_cast<GameThread *>(lua_touserdata(L, -1));
+    lua_pop(L, 1);
+
+    lua_getfield(L, LUA_REGISTRYINDEX, "base_path");
+    std::string base_path = lua_tostring(L, -1);
+    lua_pop(L, 1);
+    std::string filename = base_path + "/" + luaL_checkstring(L, 1);
     std::ifstream file(filename);
     if (!file.is_open()) {
         lua_pushnil(L);
@@ -397,7 +428,10 @@ int lua_write_file_as_string(lua_State *L) {
         luaL_error(L, "Expected 2 arguments.");
         return 0;
     }
-    std::string filename = luaL_checkstring(L, 1);
+    lua_getfield(L, LUA_REGISTRYINDEX, "base_path");
+    std::string base_path = lua_tostring(L, -1);
+    lua_pop(L, 1);
+    std::string filename = base_path + "/" + luaL_checkstring(L, 1);
     std::string content = luaL_checkstring(L, 2);
     std::ofstream file(filename);
     if (!file.is_open()) {
@@ -422,6 +456,10 @@ int get_lobby(lua_State *L) {
     lua_getfield(L, LUA_REGISTRYINDEX, "lobby_id");
     std::string lobby_id = lua_tostring(L, -1);
     lua_pop(L, 1);
+    if (game_id.empty() || lobby_id.empty()) {
+        lua_pushnil(L);
+        return 1;
+    }
 
     lua_getfield(L, LUA_REGISTRYINDEX, "game_thread");
     GameThread *game_thread = static_cast<GameThread *>(lua_touserdata(L, -1));
@@ -462,6 +500,10 @@ int lua_require(lua_State *L) {
     }
     lua_pop(L, 1);  // Pop nil
 
+    // STEP 1: Pre-cache a placeholder to prevent recursion crash
+    lua_pushboolean(L, 1);                      // Insert placeholder (true)
+    lua_setfield(L, -2, resolvedPath.c_str());  // _MODULES[resolvedPath] = true
+
     // Read the file contents
     std::ifstream file(resolvedPath);
     if (!file.is_open()) {
@@ -484,6 +526,7 @@ int lua_require(lua_State *L) {
         luaL_error(L, "require: failed to load module '%s': %s", resolvedPath.c_str(),
                    err ? err : "unknown error");
     }
+    free(bytecode);  // Free the compiled bytecode
 
     // Execute the module
     if (lua_pcall(L, 0, 1, 0) != LUA_OK) {
@@ -498,7 +541,6 @@ int lua_require(lua_State *L) {
                         resolvedPath.c_str());
         lua_error(L);
     }
-
     // Store in _MODULES
     lua_pushvalue(L, -1);
     lua_setfield(L, -3, resolvedPath.c_str());
@@ -576,6 +618,9 @@ void luaopen_lobby(lua_State *L) {
 
     lua_pushcfunction(L, notify, "notify");
     lua_setfield(L, -2, "notify");
+
+    lua_pushcfunction(L, notify_all, "notify_all");
+    lua_setfield(L, -2, "notify_all");
 
     lua_pushcfunction(L, kick_peer, "kick_peer");
     lua_setfield(L, -2, "kick_peer");

@@ -1,6 +1,6 @@
 local helper = {}
 
-function helper.peers_ordered(l: any)
+function helper.peers_ordered(l)
     local peerIDs = {}
     -- Collect all peer IDs
     for peerID, _ in pairs(l.peers) do

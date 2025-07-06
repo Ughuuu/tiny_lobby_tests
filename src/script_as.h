@@ -112,7 +112,8 @@ struct ScriptAS {
     boost::container::flat_set<std::string> open();
     void as_start_timer(std::string& timer_id, double duration, CScriptArray* arg);
     void as_stop_timer(std::string& timer_id);
-    void as_notifty(std::string& peer_id, CScriptAny* message);
+    void as_notifty(std::string& peer_id, CScriptDictionary* message);
+    void as_notifty_all(CScriptDictionary* message);
     void as_broadcast_chat(std::string& message, CScriptDictionary* chat_metadata);
     void as_kick_peer(std::string& peer_id);
     void close();

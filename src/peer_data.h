@@ -19,8 +19,11 @@ struct PeerData {
     boost::container::flat_map<std::string, AnyElement> user_data;
     bool disconnected = false;
     bool ready = false;
+    boost::container::flat_map<std::string, AnyElement> public_data_diff;
     bool public_data_dirty = false;
+    boost::container::flat_map<std::string, AnyElement> private_data_diff;
     bool private_data_dirty = false;
+    boost::container::flat_map<std::string, AnyElement> user_data_diff;
     bool user_data_dirty = false;
 
     void leave_lobby() {

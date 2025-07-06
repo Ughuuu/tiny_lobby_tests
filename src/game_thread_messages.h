@@ -32,6 +32,14 @@ std::string notification_error(const std::string& message, const std::string& co
                           {"is_logical_error", AnyElement{is_logical_error}}}}
         .to_string();
 }
+std::string notification_lobby_host_changed(const std::string& host_id) {
+    return AnyElement{boost::container::flat_map<std::string, AnyElement>{
+                          {"command", AnyElement{"lobby_hosted"}},
+                          {"message", AnyElement{"Lobby hosted"}},
+                          {"data", AnyElement{boost::container::flat_map<std::string, AnyElement>{
+                                       {"host_id", AnyElement{host_id}}}}}}}
+        .to_string();
+}
 std::string notification_lobby_created(const AnyElement& lobby, const AnyElement& peers,
                                        const std::string& command_id) {
     return AnyElement{

@@ -1,4 +1,5 @@
 local turn = require("turn")
+local helper = require("helper")
 local lobby = require("lobby")
 local system = require("system")
 local GameMode = require("game/game_mode")
@@ -115,12 +116,11 @@ function CompetitiveAbunchHanging:get_competitive_words(l, peerID, count)
                 print("Switching to new category: " .. current_category)
             else
                 for _, question_data in ipairs(questions) do
-                    local word = string.upper(tostring(question_data["answer"]))
+                    local word = helper.string_to_array(string.upper(question_data["answer"]))
                     local hint = string.upper(tostring(question_data["question"]))
                     local is_valid = true
-                    for i = 1, #word do
-                        local char = word:sub(i, i)
-                        if char ~= " " and not char:match("[A-Za-z]") then
+                    for _, char in ipairs(word) do
+                        if char ~= " " and not helper.is_letter(char, l.tags["lang"]) then
                             is_valid = false
                             break
                         end
@@ -167,9 +167,7 @@ function CompetitiveAbunchHanging:assign_random_word(l, peerID)
 end
 
 function CompetitiveAbunchHanging:guess_letter(l, peerID, letter)
-    letter = string.upper(tostring(letter))
-    if #letter ~= 1 then return { error = "Too many letters." } end
-    if not self:is_letter(letter) then return { error = "Invalid letter." } end
+    if not helper.is_letter(letter, l.tags["lang"]) then return { error = "Invalid letter." } end
     local err = turn.validate_game_state_is("playing")
     if err then return err end
 
@@ -181,23 +179,23 @@ function CompetitiveAbunchHanging:guess_letter(l, peerID, letter)
     l.peers[peerID].private_data["pressed"] = pressed
 
     local word = l.peers[peerID].private_data["word"]
-    if not string.find(word, letter, 1, true) then
+    if not helper.array_contains(word, letter) then
         self:take_damage(l, peerID)
     end
 
     local points = 0
     local guessed = l.peers[peerID].private_data["guessed"]
-    for i = 1, #word do
-        if word:sub(i, i) == letter then
+    for i, char in ipairs(word) do
+        if char == letter then
             points = points + 1
-            guessed = guessed:sub(1, i - 1) .. letter .. guessed:sub(i + 1)
+            guessed[i] = letter
         end
     end
     l.peers[peerID].private_data["guessed"] = guessed
     local total_points = (l.peers[peerID].public_data["total_points"] or 0) + points
     self:set_points(l, l.peers[peerID], total_points)
 
-    if guessed == word then
+    if helper.arrays_equal(guessed, word) then
         l.peers[peerID].private_data["timer"] = system.get_time_since_epoch()
         self:set_state(l, l.peers[peerID], "waiting")
         lobby.start_timer("_on_timer_next_word", 2, peerID)
@@ -213,26 +211,25 @@ function CompetitiveAbunchHanging:show_letter_hint(l, peerID)
     end
     l.peers[peerID].private_data["letter_hints_used"] = hints_used + 1
     local word = l.peers[peerID].private_data["word"]
-    local guessed = l.peers[peerID].private_data["guessed"] or ""
+    local guessed = l.peers[peerID].private_data["guessed"] or {}
     l.peers[peerID].private_data["hint_positions"] = l.peers[peerID].private_data["hint_positions"] or {}
 
     local next_letter = nil
-    for i = 1, #word do
-        local letter = word:sub(i, i)
-        if guessed:sub(i, i) == "_" and not l.peers[peerID].private_data["hint_positions"][i] then
+    for i, letter in ipairs(word) do
+        if guessed[i] == "_" and not l.peers[peerID].private_data["hint_positions"][i] then
             next_letter = letter
             break
         end
     end
 
     if next_letter then
-        local new_guessed = ""
-        for i = 1, #word do
-            if word:sub(i, i) == next_letter then
-                new_guessed = new_guessed .. next_letter
+        local new_guessed = {}
+        for i, char in ipairs(word) do
+            if char == next_letter then
+                table.insert(new_guessed, next_letter)
                 l.peers[peerID].private_data["hint_positions"][i] = true
             else
-                new_guessed = new_guessed .. guessed:sub(i, i)
+                table.insert(new_guessed, guessed[i])
             end
         end
         l.peers[peerID].private_data["guessed"] = new_guessed
@@ -242,7 +239,7 @@ function CompetitiveAbunchHanging:show_letter_hint(l, peerID)
         local penalty = 1
         local total_points = (l.peers[peerID].public_data["total_points"] or 0) - penalty
         self:set_points(l, l.peers[peerID], total_points)
-        if word == new_guessed then
+        if helper.arrays_equal(word, new_guessed) then
             l.peers[peerID].private_data["timer"] = system.get_time_since_epoch()
             self:set_state(l, l.peers[peerID], "waiting")
             lobby.start_timer("_on_timer_next_word", 2, peerID)
@@ -283,17 +280,21 @@ function CompetitiveAbunchHanging:set_competitive_word(l, peerID, word, hint)
         self:set_state(l, l.peers[peerID], "")
         l.peers[peerID].private_data["timer"] = system.get_time_since_epoch()
     end
-    l.peers[peerID].private_data["guessed"] = ""
+    local guessed = {}
     l.peers[peerID].private_data["word"] = word
     l.peers[peerID].private_data["hint"] = hint
     l.peers[peerID].private_data["pressed"] = {}
     l.peers[peerID].private_data["hint_used"] = false
     l.peers[peerID].private_data["letter_hints_used"] = 0
 
-    for i = 1, #word do
-        local letter = word:sub(i, i)
-        l.peers[peerID].private_data["guessed"] = l.peers[peerID].private_data["guessed"] .. (letter == ' ' and ' ' or '_')
+    for _, letter in ipairs(word) do
+        if letter == " " then
+            table.insert(guessed, ' ')
+        else
+            table.insert(guessed, '_')
+        end
     end
+    l.peers[peerID].private_data["guessed"] = {}
     return l
 end
 
@@ -324,6 +325,7 @@ function CompetitiveAbunchHanging:on_timer_next_word(l, peerID)
 end
 
 function CompetitiveAbunchHanging:on_left(l, peerID)
+    -- No-op
     return
 end
 
@@ -334,11 +336,6 @@ function CompetitiveAbunchHanging:on_tick(l, tickrate)
             self:take_damage(l, peer.id)
         end
     end
-end
-
-function CompetitiveAbunchHanging:is_letter(letter)
-    local b = letter:byte()
-    return b >= string.byte('A') and b <= string.byte('Z')
 end
 
 return CompetitiveAbunchHanging
