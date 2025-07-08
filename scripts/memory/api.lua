@@ -194,7 +194,7 @@ function api.flip_card(x, y)
         l = api.resolve_turn(l)
     end
     l.public_data["flipped_values"] = flipped_values
-    lobby.start_timer("_on_timer_flipped_card", 1)
+    l.start_timer("_on_timer_flipped_card", 1)
     
     return l
 end
@@ -250,9 +250,9 @@ function api.end_game(l)
     end
     
     if l.public_data["turns_played"] < l.tags["max_turns"] then
-        lobby.start_timer("_on_timer_new_game", 1)
+        l.start_timer("_on_timer_new_game", 1)
     else
-        lobby.start_timer("_on_timer_end_game", 2)
+        l.start_timer("_on_timer_end_game", 2)
     end
     return l
 end
@@ -274,7 +274,7 @@ end
 function api.on_timer_end_game()
     local l = lobby.get()
     l.public_data["game_state"] = "finished"
-    lobby.start_timer("_on_timer_setup_game", 2)
+    l.start_timer("_on_timer_setup_game", 2)
     return l
 end
 
@@ -295,7 +295,7 @@ function api.on_timer_new_game()
     current_subfolder = l.public_data["image_folder"]
     l.public_data["game_state"] = "new_game"
     l.public_data["image_folder"] = api.random_image_folder(l)
-    lobby.start_timer("_on_timer_set_new_game_data", 2)
+    l.start_timer("_on_timer_set_new_game_data", 2)
     return l
 end
 

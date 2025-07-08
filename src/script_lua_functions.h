@@ -15,6 +15,7 @@ int notify_all(lua_State *L);
 int broadcast_chat(lua_State *L);
 int get_time(lua_State *L);
 int get_lobby(lua_State *L);
+int kick_peer(lua_State *L);
 
 int lua_require(lua_State *L);
 void setup_lua_state(lua_State *L);

@@ -51,7 +51,7 @@ function api.set_initial_data(l)
     l = turn.increment_dealer(l, 1)
     l = api.prepare_questions(l)
     l = api.update_question(l)
-    lobby.start_timer("_on_timer_question_expired", 7)
+    l.start_timer("_on_timer_question_expired", 7)
     return l
 end
 
@@ -176,7 +176,7 @@ function api.on_timer_question_reset()
     l.public_data["game_state"] = "playing"
     l.public_data["turn_timestamp"] = system.get_time_since_epoch()
     l = api.update_question(l)
-    return lobby.start_timer("_on_timer_question_expired", 7)
+    return l.start_timer("_on_timer_question_expired", 7)
 end
 
 function api.on_timer_question_expired()
@@ -190,11 +190,11 @@ function api.on_timer_question_expired()
         end
     end
     if l.public_data["game_state"] == "over" then
-        return lobby.start_timer("_on_timer_restart_game", 1)
+        return l.start_timer("_on_timer_restart_game", 1)
     end
     l.public_data["game_state"] = "question_over"
     l.public_data["correct_answer"] = l.private_data["correct_answer"]
-    return lobby.start_timer("_on_timer_question_reset", 3)
+    return l.start_timer("_on_timer_question_reset", 3)
 end
 
 return api

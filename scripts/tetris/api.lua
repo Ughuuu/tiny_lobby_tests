@@ -586,7 +586,7 @@ function api.check_all_players_finished()
         if winner then
             l.peers[winner].public_data.total_points = l.peers[winner].public_data.total_points + 1
         end
-        lobby.start_timer("_on_timer_restart_game", 3)
+        l.start_timer("_on_timer_restart_game", 3)
     end
 end
 

@@ -32,8 +32,8 @@ function CompetitiveAbunchHanging:set_state(l, peer, state)
     l.private_data["players_states"] = player_states
     peer.public_data["state"] = state
     if state == "lost" then
-        lobby.broadcast_chat(string.format("%s lost the game and was kicked!", peer.user_data["name"]))
-        lobby.start_timer("_on_timer_kick_peer", 8, peer.id)
+        l.broadcast_chat(string.format("%s lost the game and was kicked!", peer.user_data["name"]))
+        l.start_timer("_on_timer_kick_peer", 8, peer.id)
     end
 end
 
@@ -198,7 +198,7 @@ function CompetitiveAbunchHanging:guess_letter(l, peerID, letter)
     if helper.arrays_equal(guessed, word) then
         l.peers[peerID].private_data["timer"] = system.get_time_since_epoch()
         self:set_state(l, l.peers[peerID], "waiting")
-        lobby.start_timer("_on_timer_next_word", 2, peerID)
+        l.start_timer("_on_timer_next_word", 2, peerID)
     end
     l.peers[peerID].private_data["timer"] = system.get_time_since_epoch()
     return l
@@ -242,7 +242,7 @@ function CompetitiveAbunchHanging:show_letter_hint(l, peerID)
         if helper.arrays_equal(word, new_guessed) then
             l.peers[peerID].private_data["timer"] = system.get_time_since_epoch()
             self:set_state(l, l.peers[peerID], "waiting")
-            lobby.start_timer("_on_timer_next_word", 2, peerID)
+            l.start_timer("_on_timer_next_word", 2, peerID)
         end
         return next_letter
     end
@@ -271,7 +271,7 @@ function CompetitiveAbunchHanging:take_damage(l, peerID)
 end
 
 function CompetitiveAbunchHanging:on_timer_kick_peer(l, peerID)
-    lobby.kick_peer(peerID)
+    l.kick_peer(peerID)
     return l
 end
 

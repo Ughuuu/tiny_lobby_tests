@@ -610,24 +610,6 @@ void luaopen_lobby(lua_State *L) {
     lua_pushcfunction(L, get_lobby, "get_lobby");
     lua_setfield(L, -2, "get");
 
-    lua_pushcfunction(L, start_timer, "start_timer");
-    lua_setfield(L, -2, "start_timer");
-
-    lua_pushcfunction(L, stop_timer, "stop_timer");
-    lua_setfield(L, -2, "stop_timer");
-
-    lua_pushcfunction(L, notify, "notify");
-    lua_setfield(L, -2, "notify");
-
-    lua_pushcfunction(L, notify_all, "notify_all");
-    lua_setfield(L, -2, "notify_all");
-
-    lua_pushcfunction(L, kick_peer, "kick_peer");
-    lua_setfield(L, -2, "kick_peer");
-
-    lua_pushcfunction(L, broadcast_chat, "broadcast_chat");
-    lua_setfield(L, -2, "broadcast_chat");
-
     luaL_findtable(L, LUA_REGISTRYINDEX, "_MODULES", 1);
     lua_pushstring(L, "lobby");
     lua_pushvalue(L, -3);

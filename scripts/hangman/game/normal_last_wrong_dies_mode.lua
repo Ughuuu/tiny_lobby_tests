@@ -49,7 +49,7 @@ function LastWrongDies:start_game(l)
     l.public_data["hint"] = hint
     l.public_data["health"] = 6
     l.public_data["announcement_message"] = ""
-    lobby.start_timer("_on_timer_guess_timeout", 10)
+    l.start_timer("_on_timer_guess_timeout", 10)
     return self:set_initial_data(l)
 end
 
@@ -129,7 +129,7 @@ function LastWrongDies:guess_letter(l, peerID, letter)
     local peer_name = string.upper(tostring(l.peers[peerID].user_data["name"]))
     local word = l.private_data["word"]
     if not helper.array_contains(word, letter) then
-        lobby.broadcast_chat(string.format("%s guessed the wrong letter, %s", peer_name, letter))
+        l.broadcast_chat(string.format("%s guessed the wrong letter, %s", peer_name, letter))
         self:take_damage(l, peerID)
     return { error = "Letter is not in the word." }
     end
@@ -146,15 +146,15 @@ function LastWrongDies:guess_letter(l, peerID, letter)
 
     local total_points = (l.peers[peerID].public_data["total_points"] or 0) + points
     self:set_points(l, l.peers[peerID], total_points)
-    lobby.broadcast_chat(string.format(
+    l.broadcast_chat(string.format(
         "%s guessed letter %s. Gained %d points. Total: %d",
         peer_name, letter, points, total_points
     ))
 
     if helper.arrays_equal(l.public_data["guessed"], word) and l.public_data["game_state"] ~= "over" then
-        lobby.broadcast_chat("Starting next round...")
+        l.broadcast_chat("Starting next round...")
         l.public_data["game_state"] = "new_round"
-        lobby.start_timer("_on_timer_next_round", 1)
+        l.start_timer("_on_timer_next_round", 1)
     end
     return
 end
@@ -183,11 +183,11 @@ function LastWrongDies:take_damage(l, peerID)
         self:set_state(l, l.peers[peerID], "dead")
         self:check_game_end(l, peerID, "lost")
         local peer_name = string.upper(tostring(l.peers[peerID].user_data["name"]))
-        lobby.broadcast_chat(string.format("%s is dead", peer_name))
+        l.broadcast_chat(string.format("%s is dead", peer_name))
         if l.public_data["game_state"] ~= "over" then
-            lobby.broadcast_chat(string.format("recreating body"))
+            l.broadcast_chat(string.format("recreating body"))
             l.public_data["game_state"] = "recreating_body"
-            lobby.start_timer("_on_timer_recreate_body", 5)
+            l.start_timer("_on_timer_recreate_body", 5)
         end
     end
     return
@@ -205,7 +205,7 @@ function LastWrongDies:check_game_end(l, peerID, newState)
         for k, _ in pairs(l.peers) do
             if l.peers[k].public_data["state"] == "alive" then
                 local winning_message = string.format("%s won!", l.peers[k].user_data["name"])
-                lobby.broadcast_chat(winning_message)
+                l.broadcast_chat(winning_message)
                 l.public_data["announcement_message"] = winning_message
                 self:set_state(l, l.peers[k], "won")
                 break
@@ -213,7 +213,7 @@ function LastWrongDies:check_game_end(l, peerID, newState)
         end
         l.public_data["word"] = l.private_data["word"]
         l.public_data["game_state"] = "over"
-        lobby.start_timer("_on_timer_restart_game", 10)
+        l.start_timer("_on_timer_restart_game", 10)
     end
 end
 
@@ -236,7 +236,7 @@ function LastWrongDies:on_timer_next_round(l)
     l.public_data["pressed"] = {}
     l.public_data["game_state"] = "playing"
     l.public_data["turn_timestamp"] = system.get_time_since_epoch()
-    lobby.start_timer("_on_timer_guess_timeout", 10)
+    l.start_timer("_on_timer_guess_timeout", 10)
     return
 end
 
@@ -265,14 +265,14 @@ function LastWrongDies:on_timer_guess_timeout(l)
         players_guessed[k] = false
         l.public_data["players_guessed"] = players_guessed
     end
-    lobby.start_timer("_on_timer_guess_timeout", 10)
+    l.start_timer("_on_timer_guess_timeout", 10)
 end
 
 function LastWrongDies:on_timer_recreate_body(l)
     l.public_data["game_state"] = "playing"
     l.public_data["health"] = 6
     l.public_data["turn_timestamp"] = system.get_time_since_epoch()
-    lobby.start_timer("_on_timer_guess_timeout", 10)
+    l.start_timer("_on_timer_guess_timeout", 10)
     return l
 end
 

@@ -186,7 +186,30 @@ static int lobby_index(lua_State* L) {
     auto& lobby = game.lobbies[lobby_id];
     const char* key = luaL_checkstring(L, 2);
     std::string empty_string;
+    const char* method = nullptr;
 
+    // functions
+    if (strcmp(key, "start_timer") == 0) {
+        lua_pushcfunction(L, start_timer, "start_timer");
+        return 1;
+    } else if (strcmp(key, "stop_timer") == 0) {
+        lua_pushcfunction(L, stop_timer, "stop_timer");
+        return 1;
+    } else if (strcmp(key, "notify") == 0) {
+        lua_pushcfunction(L, notify, "notify");
+        return 1;
+    } else if (strcmp(key, "notify_all") == 0) {
+        lua_pushcfunction(L, notify_all, "notify_all");
+        return 1;
+    } else if (strcmp(key, "kick_peer") == 0) {
+        lua_pushcfunction(L, kick_peer, "kick_peer");
+        return 1;
+    } else if (strcmp(key, "broadcast_chat") == 0) {
+        lua_pushcfunction(L, broadcast_chat, "broadcast_chat");
+        return 1;
+    }
+
+    // properties
     switch (info->type) {
         case LobbyUserdata::LobbyType::LOBBY_ROOT: {
             if (strcmp(key, "calling_peer_id") == 0) {
@@ -338,6 +361,7 @@ void ScriptLua::set_lua_metatables() {
     luaL_newmetatable(L, "LobbyMetatable");
 
     lua_pushstring(L, "__index");
+
     lua_pushcfunction(L, lobby_index, "lobby_index");
     lua_settable(L, -3);
     lua_pushstring(L, "__newindex");

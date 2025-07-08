@@ -12,11 +12,11 @@ main.me_command = function (action)
     end
     local l = lobby.get()
     local peer_name = l.peers[l.calling_peer_id].user_data["name"]
-    lobby.broadcast_chat(string.format("* %s %s", peer_name, action))
+    l.broadcast_chat(string.format("* %s %s", peer_name, action))
     return
 end
 main.ripple = function (pos_x, pos_y)
-    lobby.notify_all({
+    lobby.get().notify_all({
         type = "ripple",
         pos_x = pos_x,
         pos_y = pos_y

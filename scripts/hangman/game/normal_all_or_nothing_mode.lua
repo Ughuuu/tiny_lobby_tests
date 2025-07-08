@@ -27,7 +27,7 @@ function CompetitiveAllOrNothing:start_game(l)
     l.private_data["word"] = word
     l.public_data["hint"] = hint
     l.public_data["announcement_message"] = ""
-    lobby.start_timer("_on_timer_guess_timeout", 10)
+    l.start_timer("_on_timer_guess_timeout", 10)
     return self:set_initial_data(l)
 end
 
@@ -103,10 +103,10 @@ function CompetitiveAllOrNothing:guess_letter(l, peerID, letter)
     local peer_name = string.upper(tostring(l.peers[peerID].user_data["name"]))
     local word = l.private_data["word"]
     if not helper.array_contains(word, letter) then
-        lobby.broadcast_chat(string.format("%s guessed the wrong letter, %s", peer_name, letter))
+        l.broadcast_chat(string.format("%s guessed the wrong letter, %s", peer_name, letter))
         self:take_damage(l, "")
         l.public_data["turn_timestamp"] = system.get_time_since_epoch()
-        lobby.start_timer("_on_timer_guess_timeout", 10)
+        l.start_timer("_on_timer_guess_timeout", 10)
     return { error = "Letter is not in the word." }
     end
 
@@ -122,18 +122,18 @@ function CompetitiveAllOrNothing:guess_letter(l, peerID, letter)
 
     local total_points = (l.peers[peerID].public_data["total_points"] or 0) + points
     l.peers[peerID].public_data["total_points"] = total_points
-    lobby.broadcast_chat(string.format(
+    l.broadcast_chat(string.format(
         "%s guessed letter %s. Gained %d points. Total: %d",
         peer_name, letter, points, total_points
     ))
 
     if helper.arrays_equal(l.public_data["guessed"], word) then
-        lobby.broadcast_chat("Starting next round...")
+        l.broadcast_chat("Starting next round...")
         l.public_data["game_state"] = "new_round"
-        lobby.start_timer("_on_timer_next_round", 1)
+        l.start_timer("_on_timer_next_round", 1)
     else
         l.public_data["turn_timestamp"] = system.get_time_since_epoch()
-        lobby.start_timer("_on_timer_guess_timeout", 10)
+        l.start_timer("_on_timer_guess_timeout", 10)
     end
     return
 end
@@ -169,7 +169,7 @@ function CompetitiveAllOrNothing:take_damage(l, peerID)
             winning_message = winning_message .. string.format("\n%s contributed %d letters", player.name, player.total_points)
         end
         l.public_data["announcement_message"] = winning_message
-        lobby.start_timer("_on_timer_restart_game", 10)
+        l.start_timer("_on_timer_restart_game", 10)
     end
     return
 end
@@ -198,7 +198,7 @@ end
 function CompetitiveAllOrNothing:on_timer_guess_timeout(l)
     l.public_data["turn_timestamp"] = system.get_time_since_epoch()
     self:take_damage(l, "")
-    lobby.start_timer("_on_timer_guess_timeout", 10)
+    l.start_timer("_on_timer_guess_timeout", 10)
 end
 
 function CompetitiveAllOrNothing:on_tick(l, tickrate)

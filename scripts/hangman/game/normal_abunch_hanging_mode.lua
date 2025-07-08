@@ -25,9 +25,9 @@ function NormalAbunchHanging:set_state(l, peer, state)
     l.private_data["players_states"] = player_states
     peer.public_data["state"] = state
     if state == "won" then
-        lobby.broadcast_chat(string.format("%s guessed the word!", peer.user_data["name"]))
+        l.broadcast_chat(string.format("%s guessed the word!", peer.user_data["name"]))
     elseif state == "lost" then
-        lobby.broadcast_chat(string.format("%s lost the game!", peer.user_data["name"]))
+        l.broadcast_chat(string.format("%s lost the game!", peer.user_data["name"]))
     end
 end
 
@@ -76,7 +76,7 @@ function NormalAbunchHanging:guess_letter(l, peerID, letter)
             self:set_state(l, l.peers[peerID], "lost")
             self:check_game_end(l)
         end
-        lobby.broadcast_chat(string.format("%s guessed the wrong letter", peer_name))
+        l.broadcast_chat(string.format("%s guessed the wrong letter", peer_name))
     end
 
     local points = 0
@@ -91,13 +91,13 @@ function NormalAbunchHanging:guess_letter(l, peerID, letter)
     local total_points = (l.peers[peerID].public_data["total_points"] or 0) + points
     self:set_points(l, l.peers[peerID], total_points)
 
-    lobby.broadcast_chat(string.format(
+    l.broadcast_chat(string.format(
         "%s guessed a letter. Gained %d points. Total: %d",
         peer_name, points, total_points
     ))
     if self:check_single_winner(l) then
         l.public_data["game_state"] = "over"
-        lobby.start_timer("_on_timer_restart_game", 10)
+        l.start_timer("_on_timer_restart_game", 10)
         return
     end
     if helper.arrays_equal(guessed, word) then
@@ -198,19 +198,19 @@ function NormalAbunchHanging:check_game_end(l)
         local winning_message = ""
         if #winners > 1 then
             winning_message = string.format("The winners are: %s", table.concat(winners, ", "))
-            lobby.broadcast_chat(winning_message)
+            l.broadcast_chat(winning_message)
         else
             winning_message = string.format("%s is the winner!", winners[1])
-            lobby.broadcast_chat(winning_message)
+            l.broadcast_chat(winning_message)
         end
         l.public_data["announcement_message"] = winning_message
         l.public_data["game_state"] = "over"
-        lobby.start_timer("_on_timer_restart_game", 5)
+        l.start_timer("_on_timer_restart_game", 5)
         return
     end
     if self:check_single_winner(l) then
         l.public_data["game_state"] = "over"
-        lobby.start_timer("_on_timer_restart_game", 5)
+        l.start_timer("_on_timer_restart_game", 5)
         return
     end
     local all_finished = true
@@ -221,8 +221,8 @@ function NormalAbunchHanging:check_game_end(l)
         end
     end
     if all_finished then
-        lobby.broadcast_chat("Starting next round...")
-        lobby.start_timer("_on_timer_next_round", 1)
+        l.broadcast_chat("Starting next round...")
+        l.start_timer("_on_timer_next_round", 1)
     end
 end
 
@@ -363,7 +363,7 @@ function NormalAbunchHanging:check_single_winner(l)
     local winner_name = l.peers[remaining_player].user_data["name"] or ""
     local winning_message = string.format("%s is the winner!", winner_name)
     l.public_data["announcement_message"] = winning_message
-    lobby.broadcast_chat(string.format("%s is the winner!", winner_name))
+    l.broadcast_chat(string.format("%s is the winner!", winner_name))
     return true
 end
 

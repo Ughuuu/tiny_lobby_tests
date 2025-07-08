@@ -69,7 +69,7 @@ function NormalGameMode:set_word(l, word)
         end
     end
     l.public_data["guessed"] = guessed
-    lobby.start_timer("_on_timer_guess_timeout", WORD_TIMEOUT)
+    l.start_timer("_on_timer_guess_timeout", WORD_TIMEOUT)
     return
 end
 
@@ -129,7 +129,7 @@ function NormalGameMode:guess_letter(l, peerID, letter)
     if not helper.array_contains(word, letter) then
         l.public_data["health"] = l.public_data["health"] - 1
         if l.public_data["health"] <= 0 then self:end_game(l, "lost") end
-        lobby.broadcast_chat(string.format("%s guessed the wrong letter, %s", peer_name, letter))
+        l.broadcast_chat(string.format("%s guessed the wrong letter, %s", peer_name, letter))
         return { error = "Letter is not in the word." }
     end
 
@@ -145,13 +145,13 @@ function NormalGameMode:guess_letter(l, peerID, letter)
 
     local total_points = (l.peers[peerID].public_data["total_points"] or 0) + points
     l.peers[peerID].public_data["total_points"] = total_points
-    lobby.broadcast_chat(string.format(
+    l.broadcast_chat(string.format(
         "%s guessed letter %s. Gained %d points. Total: %d",
         peer_name, letter, points, total_points
     ))
 
     if helper.arrays_equal(l.public_data["guessed"], word) then
-        lobby.start_timer("_on_timer_restart_game", 1)
+        l.start_timer("_on_timer_restart_game", 1)
         self:end_game(l, "won")
     end
     return
@@ -195,14 +195,14 @@ function NormalGameMode:end_game(l, newState)
     end
 
     if newState == "won" then
-        lobby.broadcast_chat("The guessers successfully found the word!")
+        l.broadcast_chat("The guessers successfully found the word!")
     elseif newState == "lost" then
         local dealer_name = l.peers[dealerID].user_data["name"] or ""
         local total = l.peers[dealerID].public_data["total_points"]
-        lobby.broadcast_chat(string.format("%s won! Gained %d points. Total: %d", dealer_name, points, total))
+        l.broadcast_chat(string.format("%s won! Gained %d points. Total: %d", dealer_name, points, total))
     end
 
-    lobby.start_timer("_on_timer_restart_game", 1)
+    l.start_timer("_on_timer_restart_game", 1)
 end
 
 function NormalGameMode:check_game_end(l, peerID, newState)
@@ -257,7 +257,7 @@ function NormalGameMode:set_initial_data(l)
     end
     l = turn.increment_dealer(l, 1)
     l = turn.increment_turn(l, 1)
-    lobby.start_timer("_on_timer_word_timeout", WORD_TIMEOUT, l.public_data["dealer"])
+    l.start_timer("_on_timer_word_timeout", WORD_TIMEOUT, l.public_data["dealer"])
     return l
 end
 

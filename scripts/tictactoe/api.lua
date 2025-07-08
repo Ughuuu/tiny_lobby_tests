@@ -135,7 +135,7 @@ function api.end_game(l, state)
     if state == "won" then
         l.peers[l.calling_peer_id].public_data["total_points"] = l.peers[l.calling_peer_id].public_data["total_points"] + 1
     end
-    return lobby.start_timer("_on_timer_restart_game", 1)
+    return l.start_timer("_on_timer_restart_game", 1)
 end
 
 function api.on_timer_restart_game()
