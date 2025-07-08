@@ -51,7 +51,7 @@ void WebAuthenticationThread<SSL>::run() {
                 if (*abort_shared) {
                     return;
                 }
-                logger.error_log("[WebSocketServer] upgraded anon user: ", user_data.game_id, " ", user_data.id);
+                logger.debug_log("[WebSocketServer] upgraded anon user: ", user_data.game_id, " ", user_data.id);
                 res->template upgrade<PerSocketData>(std::move(user_data),
                 websocket_key,
                 "blazium",

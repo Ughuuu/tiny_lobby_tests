@@ -30,7 +30,7 @@ function NormalGameMode:start_game(l)
 end
 
 function NormalGameMode:set_word(l, word)
-    if #word > helper.max_word_length then
+    if #word > 20 then
         return { error = "Word too long." }
     end
 
@@ -82,7 +82,7 @@ function NormalGameMode:guess_word(l, word)
         return { error = "The dealer cannot guess the word." }
     end
     if #word == 0 then return { error = "Empty word." } end
-    if #word > helper.max_word_length then return { error = "Too many letters." } end
+    if #word > 20 then return { error = "Too many letters." } end
     if #word ~= #l.peers[dealerID].private_data["word"] then return { error = "Incorrect length." } end
     
     local word_str = ""

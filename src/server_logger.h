@@ -96,6 +96,8 @@ class ServerLogger {
     template <typename... Args>
     void error_log(const Args&... args) {
         log_to_file(args...);
+        std::cout << get_cached_time() << ": ";
+        (std::cout << ... << args) << '\n';
     }
 
     // Constructor with file open

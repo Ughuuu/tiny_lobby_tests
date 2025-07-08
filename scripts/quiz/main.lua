@@ -1,11 +1,27 @@
 local main = {}
 -- Load Modules
 local api = require("api")
+local lobby = require("lobby")
 
 -- Callable Function
 main.start_game = api.start_game
 main.guess_answer = api.guess_answer
-main.me_command = api.me_command
+main.me_command = function (action)
+    if type(action) ~= "string" then
+        return { error = "Invalid action format." }
+    end
+    local l = lobby.get()
+    local peer_name = l.peers[l.calling_peer_id].user_data["name"]
+    lobby.broadcast_chat(string.format("* %s %s", peer_name, action))
+    return
+end
+main.ripple = function (pos_x, pos_y)
+    lobby.notify_all({
+        type = "ripple",
+        pos_x = pos_x,
+        pos_y = pos_y
+    })
+end
 
 -- Private Function
 main._on_timer_question_expired = api.on_timer_question_expired

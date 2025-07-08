@@ -1,8 +1,6 @@
 --!strict
 local helper = {}
 
-helper.max_word_length= 20
-
 function helper.peers_length(l)
 	local count = 0
     -- Collect all peer IDs

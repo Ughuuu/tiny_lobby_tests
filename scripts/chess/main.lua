@@ -1,11 +1,11 @@
 local main = {}
-local lobby = require("lobby")
 -- Load Modules
 local api = require("api")
+local lobby = require("lobby")
 
 -- Callable Function
 main.start_game = api.start_game
-main.set_piece = api.set_piece
+main.move_piece = function(fromX, fromY, toX, toY, promotionPiece) return api.move_piece(fromX, fromY, toX, toY, promotionPiece) end
 main.me_command = function (action)
     if type(action) ~= "string" then
         return { error = "Invalid action format." }
@@ -22,9 +22,6 @@ main.ripple = function (pos_x, pos_y)
         pos_y = pos_y
     })
 end
-
--- Private Function
-main._on_timer_restart_game = api.on_timer_restart_game
 
 -- Callback functions
 local callbacks = require("callbacks")

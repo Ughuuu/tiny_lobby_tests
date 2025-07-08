@@ -9,7 +9,15 @@ main.start_game = api.start_game
 main.set_word = api.set_word
 main.guess_letter = api.guess_letter
 main.guess_word = api.guess_word
-main.me_command = api.me_command
+main.me_command = function (action)
+    if type(action) ~= "string" then
+        return { error = "Invalid action format." }
+    end
+    local l = lobby.get()
+    local peer_name = l.peers[l.calling_peer_id].user_data["name"]
+    lobby.broadcast_chat(string.format("* %s %s", peer_name, action))
+    return
+end
 main.skip = api.skip
 main.show_hint = api.show_hint
 main.show_letter_hint = api.show_letter_hint

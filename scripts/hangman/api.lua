@@ -74,16 +74,6 @@ function api.take_damage()
     return game_mode:take_damage(l, l.calling_peer_id)
 end
 
-function api.me_command(action)
-    if type(action) ~= "string" then
-        return { error = "Invalid action format." }
-    end
-    local l = lobby.get()
-    local peer_name = l.peers[l.calling_peer_id].user_data["name"]
-    lobby.broadcast_chat(string.format("* %s %s", peer_name, action))
-    return
-end
-
 function api.skip()
     local l = lobby.get()
     local game_mode = create_game_mode(l.tags["game_mode"])

@@ -802,6 +802,9 @@ void GameThread::on_error(GameData &game, std::string command_id, std::string pe
     if (close) {
         logger.error_log("[GameThread] on_error ", command_id, " ", peer_id, " ", message);
     }
+    if (logical_error) {
+        logger.error_log("[GameThread] on_logical_error ", command_id, " ", peer_id, " ", message);
+    }
     if (close) {
         send(game, peer_id, message, uWS::OpCode::CLOSE);
     } else {
