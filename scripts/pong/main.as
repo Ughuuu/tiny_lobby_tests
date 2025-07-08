@@ -5,8 +5,8 @@ namespace main {
         auto pad_y = peer.public_data.get_int("pad_y");
         switch(dir) {
             case -1:
-                //print(lobby::get_ticks_ms());
-                peer.public_data.set("timestamp", lobby::get_ticks_ms());
+                //print(get_ticks_ms());
+                peer.public_data.set("timestamp", get_ticks_ms());
                 peer.public_data.set("pad_y", pad_y - 1);
                 break;
             case 1:

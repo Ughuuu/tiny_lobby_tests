@@ -312,27 +312,31 @@ boost::container::flat_set<std::string> ScriptAS::open() {
     as_engine->RegisterObjectMethod("LobbyData", "any@ opIndex(const string &in) const",
                                     asMETHOD(LobbyAS, opIndex_any), asCALL_THISCALL);
     as_engine->SetDefaultNamespace("lobby");
-    as_engine->RegisterGlobalFunction(
+    // Register as Lobby methods instead of global functions
+    as_engine->RegisterObjectMethod(
+        "Lobby",
         "void start_timer(string timer_id, double duration, array<any>@ args = array<any>())",
         asFUNCTION(as_start_timer_wrapper), asCALL_GENERIC);
-    as_engine->RegisterGlobalFunction("void stop_timer(string timer_id)",
-                                      asFUNCTION(as_stop_timer_wrapper), asCALL_GENERIC);
-    as_engine->RegisterGlobalFunction("void notify(string peer_id, dictionary@ message)",
-                                      asFUNCTION(as_notifty_wrapper), asCALL_GENERIC);
-    as_engine->RegisterGlobalFunction("void notify_all(dictionary@ message)",
-                                      asFUNCTION(as_notifty_all_wrapper), asCALL_GENERIC);
-    as_engine->RegisterGlobalFunction("void broadcast_chat(string message)",
-                                      asFUNCTION(as_broadcast_chat_wrapper), asCALL_GENERIC);
-    as_engine->RegisterGlobalFunction("void broadcast_chat(string message, dictionary@ metadata)",
-                                      asFUNCTION(as_broadcast_chat_wrapper_with_metadata),
-                                      asCALL_GENERIC);
-    as_engine->RegisterGlobalFunction("int64 get_ticks_ms()", asFUNCTION(as_get_ticks_ms_wrapper),
-                                      asCALL_GENERIC);
-    as_engine->RegisterGlobalFunction("void kick_peer(string peer_id)",
-                                      asFUNCTION(as_kick_peer_wrapper), asCALL_GENERIC);
+    as_engine->RegisterObjectMethod("Lobby", "void stop_timer(string timer_id)",
+                                    asFUNCTION(as_stop_timer_wrapper), asCALL_GENERIC);
+    as_engine->RegisterObjectMethod("Lobby", "void notify(string peer_id, dictionary@ message)",
+                                    asFUNCTION(as_notifty_wrapper), asCALL_GENERIC);
+    as_engine->RegisterObjectMethod("Lobby", "void notify_all(dictionary@ message)",
+                                    asFUNCTION(as_notifty_all_wrapper), asCALL_GENERIC);
+    as_engine->RegisterObjectMethod("Lobby", "void broadcast_chat(string message)",
+                                    asFUNCTION(as_broadcast_chat_wrapper), asCALL_GENERIC);
+    as_engine->RegisterObjectMethod(
+        "Lobby", "void broadcast_chat(string message, dictionary@ metadata)",
+        asFUNCTION(as_broadcast_chat_wrapper_with_metadata), asCALL_GENERIC);
+    as_engine->RegisterObjectMethod("Lobby", "void kick_peer(string peer_id)",
+                                    asFUNCTION(as_kick_peer_wrapper), asCALL_GENERIC);
+    // Only keep get() as a global function
     as_engine->RegisterGlobalFunction("Lobby@ get()", asFUNCTION(as_get_lobby_wrapper),
                                       asCALL_GENERIC);
     as_engine->SetDefaultNamespace("");
+    // Register get_ticks_ms as a global function
+    as_engine->RegisterGlobalFunction("int64 get_ticks_ms()", asFUNCTION(as_get_ticks_ms_wrapper),
+                                      asCALL_GENERIC);
     as_engine->SetUserData(this);
     if (r < 0) {
         std::cerr << "Failed to register global function" << std::endl;

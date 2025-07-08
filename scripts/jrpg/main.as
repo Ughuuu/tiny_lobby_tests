@@ -22,7 +22,7 @@ namespace main {
 
         auto move_start_ms = peer.public_data.get_int("move_start");
         auto move_time_ms = peer.public_data.get_int("move_time");
-        auto current_time_ms = lobby::get_ticks_ms();
+        auto current_time_ms = get_ticks_ms();
         // Not enough time passed to finish movement
         if (move_start_ms + move_time_ms > current_time_ms) {
             return;
@@ -105,7 +105,7 @@ namespace main {
     }
     void _on_lobby_tick(int64 tickrate) {
         auto l = lobby::get();
-        auto current_time_ms = lobby::get_ticks_ms();
+        auto current_time_ms = get_ticks_ms();
         auto peerKeys = l.peers.getKeys();
         for (uint64 i=0; i < peerKeys.length(); i++) {
             auto peer = cast<LobbyPeer@>(l.peers[peerKeys[i]]);
