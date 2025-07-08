@@ -58,6 +58,7 @@ struct LobbyAS {
     LobbyAS* get_private_data();
     LobbyAS* get_tags();
     CScriptDictionary* get_peers();
+    CScriptArray* get_peers_ordered();
     int64_t get_peers_count();
     CScriptAny* get(const std::string& key);
     int64_t getInt64(const std::string& key);

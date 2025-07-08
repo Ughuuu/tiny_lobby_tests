@@ -271,6 +271,9 @@ boost::container::flat_set<std::string> ScriptAS::open() {
                                     asMETHOD(LobbyAS, get_peer_disconnected), asCALL_THISCALL);
     as_engine->RegisterObjectMethod("Lobby", "dictionary@ get_peers() const property",
                                     asMETHOD(LobbyAS, get_peers), asCALL_THISCALL);
+    as_engine->RegisterObjectMethod("Lobby",
+                                    "array<LobbyPeer@>@ get_peers_ordered() const property",
+                                    asMETHOD(LobbyAS, get_peers_ordered), asCALL_THISCALL);
     // Set
     as_engine->RegisterObjectMethod("LobbyData", "void set(string key, any@ value)",
                                     asMETHOD(LobbyAS, set), asCALL_THISCALL);
@@ -783,6 +786,28 @@ CScriptDictionary *LobbyAS::get_peers() {
         dict->Set(peer_id, &peer_obj, peer_type_id);
     }
     return dict;
+}
+
+CScriptArray *LobbyAS::get_peers_ordered() {
+    CScriptArray *arr = CScriptArray::Create(as_engine->GetTypeInfoByDecl("array<LobbyPeer@>"));
+    assert(peer_type_id >= 0);
+    auto &game = game_thread->games[as_game_id];
+    auto &lobby = game.lobbies[as_lobby_id];
+    for (const auto &peer_id : lobby.peer_ids) {
+        LobbyAS *peer_obj = new LobbyAS{
+            .type = LobbyType::PEER_ROOT,
+            .as_engine = as_engine,
+            .as_context = as_context,
+            .as_module = as_module,
+            .game_thread = game_thread,
+            .as_game_id = as_game_id,
+            .as_lobby_id = as_lobby_id,
+            .as_peer_id = peer_id,
+            .as_calling_peer_id = as_calling_peer_id,
+        };
+        arr->InsertLast(&peer_obj);
+    }
+    return arr;
 }
 
 AnyElement LobbyAS::retrieve(const std::string &key) {

@@ -1,29 +1,30 @@
-local helper = require("helper")
 local lobby = require("lobby")
 
 local turn = {}
 
 function turn.increment_dealer(l, increment)
+    if l.tags["game_mode"] == "competitive" then
+        return l
+    end
     if l.public_data["dealer_idx"] == nil then
         l.public_data["dealer_idx"] = -1
     end
     l.public_data["dealer_idx"] = l.public_data["dealer_idx"] + increment
-    local peers_ordered = helper.peers_ordered(l)
     local dealer_idx = l.public_data["dealer_idx"] % l.peers_count
-    local dealer_key = peers_ordered[dealer_idx + 1] -- Lua is 1-indexed!
-    l.public_data["dealer"] = l.peers[dealer_key].id
+    l.public_data["dealer"] = l.peers_ordered[dealer_idx + 1].id
     return l
 end
 
 function turn.increment_turn(l, increment)
+    if l.tags["game_mode"] == "competitive" then
+        return l
+    end
     if l.public_data["turn_idx"] == nil then
         l.public_data["turn_idx"] = -1
     end
     l.public_data["turn_idx"] = l.public_data["turn_idx"] + increment
-    local peers_ordered = helper.peers_ordered(l)
     local to_select_idx = (l.public_data["turn_idx"] + l.public_data["dealer_idx"]) % l.peers_count
-    local selected_peer_key = peers_ordered[to_select_idx + 1] -- Lua is 1-indexed!
-    l.public_data["turn"] = l.peers[selected_peer_key].id
+    l.public_data["turn"] = l.peers_ordered[to_select_idx + 1].id
     return l
 end
 

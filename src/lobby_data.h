@@ -15,6 +15,7 @@ struct LobbyData {
     std::string password;
     int64_t max_players;
     boost::container::flat_set<std::string> peer_ids;
+    boost::container::vector<std::string> peer_ordered_ids;
     int64_t create_time;
     std::string game_id;
     bool sealed = false;

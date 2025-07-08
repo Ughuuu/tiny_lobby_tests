@@ -1,5 +1,6 @@
 #include "game_thread.h"
 
+#include <algorithm>
 #include <ctime>
 #include <iomanip>
 #include <regex>
@@ -681,6 +682,9 @@ void GameThread::remove_peer_from_lobby(GameData &game, LobbyData &lobby, std::s
     peer.lobby_id = EMPTY_STRING;
     peer.ready = false;
     lobby.peer_ids.erase(peer_id);
+    lobby.peer_ordered_ids.erase(
+        std::remove(lobby.peer_ordered_ids.begin(), lobby.peer_ordered_ids.end(), peer_id),
+        lobby.peer_ordered_ids.end());
     game.lobbies_updated.insert(lobby.id);
     if ((is_host && (lobby.disband_on_leave || game.disband_on_leave)) || lobby.peer_ids.empty()) {
         game.lobbies.erase(lobby.id);
@@ -916,6 +920,7 @@ void GameThread::on_create_lobby(
                              .password = decode_string_or_default(data_val, "password", ""),
                              .max_players = decode_int_or_default(data_val, "max_players", 0),
                              .peer_ids = {peer.id},
+                             .peer_ordered_ids = {peer.id},
                              .create_time = now,
                              .game_id = peer.game_id,
                              .sealed = decode_bool_or_default(data_val, "sealed", game.seal),
@@ -1020,6 +1025,13 @@ bool GameThread::on_join_lobby(GameData &game, std::string command_id, PeerData 
         peer.order_id = ++lobby.order_id_counter;
         peer.lobby_id = lobby_id;
         lobby.peer_ids.insert(peer.id);
+        lobby.peer_ordered_ids.push_back(peer.id);
+        std::sort(lobby.peer_ordered_ids.begin(), lobby.peer_ordered_ids.end(),
+                  [&game](const std::string &a, const std::string &b) {
+                      auto &peer_a = game.peers[a];
+                      auto &peer_b = game.peers[b];
+                      return peer_a.order_id < peer_b.order_id;
+                  });
         game.lobbies_updated.insert(lobby_id);
     }
     peer.disconnected = false;

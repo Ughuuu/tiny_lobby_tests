@@ -10,19 +10,6 @@ function helper.peers_length(l)
 	return count
 end
 
-function helper.peers_ordered(l: any)
-    local peerIDs = {}
-    -- Collect all peer IDs
-    for peerID, _ in pairs(l.peers) do
-        table.insert(peerIDs, peerID)
-    end
-
-    table.sort(peerIDs, function(a, b)
-        return l.peers[a].order_id < l.peers[b].order_id
-    end)
-
-    return peerIDs
-end
 function helper.is_letter(letter: string, lang: string)
     local alphabets = {
         ar = { "ا","ب","ت","ث","ج","ح","خ","د","ذ","ر","ز","س","ش","ص","ض","ط","ظ","ع","غ","ف","ق","ك","ل","م","ن","ه","و","ي" },

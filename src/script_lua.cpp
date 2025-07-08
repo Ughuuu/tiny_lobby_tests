@@ -238,6 +238,18 @@ static int lobby_index(lua_State* L) {
             } else if (strcmp(key, "peers_count") == 0) {
                 lua_pushinteger(L, lobby.peer_ids.size());
                 return 1;
+            } else if (strcmp(key, "peers_ordered") == 0) {
+                lua_newtable(L);
+                int index = 1;
+                for (const auto& peer_id : lobby.peer_ordered_ids) {
+                    auto& peer = game.peers[peer_id];
+                    create_lobby_userdata(L, game_thread, game_id, lobby_id, calling_peer_id,
+                                          peer_id, LobbyUserdata::LobbyType::PEER_ROOT);
+                    lua_pushinteger(L, index++);  // push index
+                    lua_insert(L, -2);            // move userdata below index
+                    lua_settable(L, -3);          // table[index] = userdata
+                }
+                return 1;
             }
         } break;
         case LobbyUserdata::LobbyType::LOBBY_TAGS: {
