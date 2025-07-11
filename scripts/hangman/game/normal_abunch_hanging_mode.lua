@@ -32,7 +32,7 @@ function NormalAbunchHanging:set_state(l, peer, state)
 end
 
 function NormalAbunchHanging:start_game(l)
-    if l.peers[l.calling_peer_id].id ~= l.host then
+    if l.calling_peer_id ~= l.host then
         return { error = "You are not the host" }
     end
     if l.public_data["game_state"] ~= "setup" then

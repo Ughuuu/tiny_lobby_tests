@@ -8,7 +8,7 @@ local api = {}
 
 function api.start_game()
     local l = lobby.get()
-    if l.peers[l.calling_peer_id].id ~= l.host then
+    if l.calling_peer_id ~= l.host then
         return { error = "You are not the host" }
     end
     if l.public_data["game_state"] == "moving_piece" then

@@ -5,11 +5,19 @@ local api = {}
 
 function api.start_game()
     local l = lobby.get()
-    if l.peers[l.calling_peer_id].id ~= l.host then
+    if l.calling_peer_id ~= l.host then
         return { error = "You are not the host" }
     end
     if l.public_data["game_state"] ~= "setup" then
         return { error = "Game already started" }
+    end
+    local valid_tag = false
+    if l.tags["game_mode"] == "normal_mode" or l.tags["game_mode"] == "dissapearing_mode" then
+        valid_tag = true
+    end
+    print(l.tags["game_mode"])
+    if not valid_tag then
+        return { error = "Invalid game mode. Must be normal_mode or dissapearing_mode." }
     end
     for k, _ in pairs(l.peers) do
         l.peers[k].public_data["total_points"] = 0
@@ -90,6 +98,12 @@ function api.set_piece(placementTileX, placementTileY)
         return { error = "Piece already placed." }
     end
     board[placementTileY][placementTileX] = l.calling_peer_id
+    local moves = l.public_data["moves"]
+    table.insert(moves, {
+        x = placementTileX,
+        y = placementTileY,
+    })
+    l.public_data["moves"] = moves
     l.public_data["board"] = board
 
     local winner = api.check_winner(board)
@@ -107,7 +121,17 @@ function api.set_piece(placementTileX, placementTileY)
         end
     end
 
-    if is_draw then
+    if #moves == 7 and l.tags["game_mode"] == "dissapearing_mode" then
+        print("every 7th remove first move")
+        -- Delete first move if it was a draw
+        local first_move = moves[1]
+        board[first_move.y][first_move.x] = 0
+        table.remove(moves, 1)
+        l.public_data["moves"] = moves
+        l.public_data["board"] = board
+    end
+    if is_draw and l.tags["game_mode"] == "normal_mode" then
+        l.public_data["game_state"] = "draw"
         return api.end_game(l, "draw")
     end
 
@@ -117,6 +141,7 @@ end
 
 function api.set_initial_data(l)
     l.public_data["turn_timestamp"] = system.get_time_since_epoch()
+    l.public_data["moves"] = {}
     l.public_data["game_state"] = "playing"
     local board = {
         { 0, 0, 0 },

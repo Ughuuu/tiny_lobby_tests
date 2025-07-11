@@ -3,9 +3,6 @@ local lobby = require("lobby")
 local turn = {}
 
 function turn.increment_dealer(l, increment)
-    if l.tags["game_mode"] == "competitive" then
-        return l
-    end
     if l.public_data["dealer_idx"] == nil then
         l.public_data["dealer_idx"] = -1
     end
@@ -16,9 +13,6 @@ function turn.increment_dealer(l, increment)
 end
 
 function turn.increment_turn(l, increment)
-    if l.tags["game_mode"] == "competitive" then
-        return l
-    end
     if l.public_data["turn_idx"] == nil then
         l.public_data["turn_idx"] = -1
     end
