@@ -1,7 +1,8 @@
 local lobby = require("lobby")
+local system = require("system")
 local main = {}
 
-local MOVE_DELAY_MS = 250
+local MOVE_DELAY_SEC = 250
 local DIRECTIONS = {
   up =    { x =  0, y = -1 },
   down =  { x =  0, y =  1 },
@@ -9,28 +10,41 @@ local DIRECTIONS = {
   right = { x =  1, y =  0 }
 }
 
+function main._on_lobby_created()
+    local l = lobby.get()
+    local peer = l.peers[l.calling_peer_id]
+    main._set_peer_initial_data(peer)
+end
+
+function main._on_peer_joined()
+    local l = lobby.get()
+    local peer = l.peers[l.calling_peer_id]
+    main._set_peer_initial_data(peer)
+    return
+end
+
+function main._set_peer_initial_data(peer)
+    peer.public_data["pos"] = { x = 0, y = 0 }
+    peer.public_data["dir"] = { x = 1, y = 0 }
+    peer.public_data["move_start"] = 0
+    peer.public_data["is_moving"] = false
+end
+
 function main.move(dir: string)
     local l = lobby.get()
     local peer = l.peers[l.calling_peer_id]
     if dir ~= "up" and dir ~= "down" and dir ~= "left" and dir ~= "right" then
-        error("invalid dir")
+        return { error = "invalid dir" }
     end
 
     local move_start_ms = peer.public_data["move_start"]
-    local move_time_ms = peer.public_data["move_time"]
-    local utcTimestamp = os.time()
-    print("UTC Timestamp:", utcTimestamp)
-    local current_time_ms = utcTimestamp
-
-    if move_start_ms + move_time_ms > current_time_ms then
+    local current_time_ms = system.get_time_since_epoch()
+    if move_start_ms + MOVE_DELAY_SEC > current_time_ms then
         return
-    end
-
-    if peer.public_data:get_bool("is_moving") and dir == peer.public_data:get_int("dir") then
-        return
-    end
+    end 
 
     main._move_peer(peer, l, dir, current_time_ms)
+    return
 end
 
 function main._check_peer_collision(l, pos)
@@ -45,26 +59,12 @@ function main._check_peer_collision(l, pos)
 end
 
 function main._move_peer(moving_peer, l, dir_code, move_start)
-    local pos = Vector2i(moving_peer.public_data:get_int("pos_x"), moving_peer.public_data:get_int("pos_y"))
-    local dir = main._dir_code_to_vector(dir_code)
-    local current_id = l.private_data:get_int(pos:to_string())
-    local new_id = l.private_data:get_int((pos + dir):to_string())
+    local pos = moving_peer.public_data["pos"]
+    local dir = DIRECTIONS[dir_code]
 
-    moving_peer.public_data:set("is_interactable", map._is_interactable(new_id))
-    moving_peer.public_data:set("dir", dir_code)
-
-    if not map._is_walkable(new_id) or main._check_peer_collision(l, pos + dir) then
-        moving_peer.public_data:set("is_moving", false)
-        return false
-    end
-
-    local speed_ms = map._tile_speed(current_id) + map._tile_speed(new_id)
-    moving_peer.public_data:set("move_time", speed_ms)
-    moving_peer.public_data:set("pos_x", (pos + dir).x)
-    moving_peer.public_data:set("pos_y", (pos + dir).y)
-    moving_peer.public_data:set("move_start", move_start)
-    moving_peer.public_data:set("is_moving", true)
-    return true
+    moving_peer.public_data["dir"] = dir
+    moving_peer.public_data["pos"] = { x = pos["x"] + dir["x"], y = pos["y"] + dir["y"] }
+    moving_peer.public_data["move_start"] = move_start
 end
 
 return main

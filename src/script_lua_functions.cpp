@@ -297,7 +297,7 @@ int kick_peer(lua_State *L) {
 int get_time(lua_State *L) {
     lua_getfield(L, LUA_REGISTRYINDEX, "game_thread");
     GameThread *game_thread = static_cast<GameThread *>(lua_touserdata(L, -1));
-    lua_pushstring(L, std::to_string(game_thread->get_time()).c_str());
+    lua_pushnumber(L, static_cast<lua_Number>(game_thread->get_time()));
     return 1;
 }
 
