@@ -48,7 +48,5 @@ main._can_peer_ready = callbacks.on_ready
 main._on_peer_leave = callbacks.on_left
 main._on_peer_joined = callbacks.on_join
 main._on_lobby_tick = callbacks.on_tick
-main._on_server_init = callbacks.on_init
-main._on_server_reload = callbacks.on_reload
 
 return main

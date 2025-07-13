@@ -71,7 +71,7 @@ bool login_server() {
             }
         }
     }
-    LoginClient client("login.blazium.app", "f3c31f25-b3b4-4241-908a-bab2509e0a61");
+    LoginClient client("login.appsinacup.app", "f3c31f25-b3b4-4241-908a-bab2509e0a61");
     std::string error;
     if (!client.connect(error)) {
         std::cerr << "Connect failed: " << error << std::endl;

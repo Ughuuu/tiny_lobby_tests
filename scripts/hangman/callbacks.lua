@@ -1,5 +1,4 @@
 -- Load modules
-local system = require("system")
 local turn = require("turn")
 local lobby = require("lobby")
 local NormalGameMode = require("game/normal_game_mode")
@@ -24,17 +23,6 @@ local function create_game_mode(game_mode_tag)
 end
 
 local callbacks = {}
-
-function callbacks.on_init()
-    local messages = system.read_file_as_string("messages.json")
-    local _messages_data = system.decode_json(messages)
-    return
-end
-
-function callbacks.on_reload()
-    callbacks.on_init()
-    return
-end
 
 function callbacks.on_create(minPlayers, maxPlayers)
     local l = lobby.get()

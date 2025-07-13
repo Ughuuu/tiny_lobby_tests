@@ -54,13 +54,13 @@ void WebAuthenticationThread<SSL>::run() {
                 logger.debug_log("[WebSocketServer] upgraded anon user: ", user_data.game_id, " ", user_data.id);
                 res->template upgrade<PerSocketData>(std::move(user_data),
                 websocket_key,
-                "blazium",
+                "appsinacup",
                 websocket_extensions,
                 context);
             });
             continue;
         }
-        LoginClient client("login.blazium.app", user_data.game_id);
+        LoginClient client("login.appsinacup.app", user_data.game_id);
         std::string error_msg;
         std::string result = client.verify_jwt(user_data.reconnection_token, error_msg);
         loop->defer([res, result, user_data = std::move(user_data), error_msg, websocket_key, websocket_extensions, context, abort_shared, this]() mutable{
@@ -158,7 +158,7 @@ void WebAuthenticationThread<SSL>::run() {
             this->logger.debug_log("[WebSocketServer] upgraded authenticated user: ", user_data.game_id, " ", user_data.id);
             res->template upgrade<PerSocketData>(std::move(user_data),
             websocket_key,
-            "blazium",
+            "appsinacup",
             websocket_extensions,
             context);
         }
@@ -185,7 +185,7 @@ void WebSocketServer<SSL>::on_upgrade(uWS::HttpResponse<SSL> *res,uWS::HttpReque
         protocols_split.push_back( trim(substr) );
     }
 
-    if (protocols_split.size() < 2 || protocols_split[0] != "blazium") {
+    if (protocols_split.size() < 2 || protocols_split[0] != "appsinacup") {
         logger.error_log("[WebSocketServer] error: ", protocol);
         res->writeStatus("400 Bad Request")->write("Failed to open WebSocket connection.");
         res->end();

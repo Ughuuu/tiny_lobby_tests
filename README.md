@@ -1,6 +1,6 @@
-# Blazium Lobby Server
+# Lobby Server
 
-This is the C++ implementation of the Blazium Web Server. It uses [uWebSockets](https://github.com/uNetworking/uWebSockets/tree/master)
+This is the C++ implementation of the Lobby Websocket Server. It uses [uWebSockets](https://github.com/uNetworking/uWebSockets/tree/master)
 
 ## Requirements
 

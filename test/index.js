@@ -4,7 +4,7 @@ const path = require('path');
 
 // Configuration
 const serverUrl = 'ws://localhost:8080/connect'; // Your WebSocket server URL
-//const serverUrl = 'wss://lobby.blazium.app/connect'; // Your WebSocket server URL
+//const serverUrl = 'wss://lobby.appsinacup.app/connect'; // Your WebSocket server URL
 const numClients = 1;  // Number of WebSocket clients to simulate
 let stopAfter = 0; // Number of messages each client will send. Set to 0 for infinite
 let messageInterval = 1;  // Interval in milliseconds between messages
@@ -42,7 +42,7 @@ fs.writeFileSync(csvFilePath, 'timestamp,client_count,client_errors,messages_sen
 
 // Function to start a WebSocket client
 function startClient(clientId) {
-    const ws = new WebSocket(serverUrl, ['blazium', '00000000-0000-0000-0000-000000000001']);
+    const ws = new WebSocket(serverUrl, ['appsinacup', '00000000-0000-0000-0000-000000000001']);
     ws.on('open', () => {
         clientCount++;
     });

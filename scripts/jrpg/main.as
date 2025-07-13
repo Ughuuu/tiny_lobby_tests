@@ -4,7 +4,7 @@
 
 namespace main {
     // key pressed and release and direction isn't same
-    void turn(int64 dir) {
+    void turn(int64 dir_x, int64 dir_y) {
         Lobby@ l = lobby::get();
         auto peer = cast<LobbyPeer@>(l.peers[l.calling_peer_id]);
         if (dir < 0 || dir > 3) {

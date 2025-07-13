@@ -45,7 +45,7 @@ bool LoginClient::connect(std::string& error) {
         ws.next_layer().handshake(ssl::stream_base::client);
 
         ws.set_option(websocket::stream_base::decorator([this](websocket::request_type& req) {
-            req.set(boost::beast::http::field::sec_websocket_protocol, "blazium," + game_id);
+            req.set(boost::beast::http::field::sec_websocket_protocol, "appsinacup," + game_id);
         }));
 
         ws.handshake(ws_host, "/api/v1/connect");
@@ -141,7 +141,7 @@ std::string LoginClient::verify_jwt(const std::string& jwt, std::string& error) 
     headers.set("SESSION", jwt);
     headers.set("INTERNAL_ACCESS", "921f0111-eb2c-4ac9-8ff9-61174f866001");
     headers.set("INTERNAL_SECRET", "frtZnC0L3IasO4AGLZFARFgdtdkc8W7p");
-    auto result = send_request(boost::beast::http::verb::get, "https://login.blazium.app",
+    auto result = send_request(boost::beast::http::verb::get, "https://login.appsinacup.app",
                                "/api/v1/internal/token/verify", "", headers);
     yyjson_doc* doc = yyjson_read(result.c_str(), result.size(), 0);
     if (!doc) {
@@ -167,7 +167,7 @@ std::string LoginClient::verify_jwt(const std::string& jwt, std::string& error) 
         if (!success) {
             // try with steam ticket
             auto steam_result =
-                send_request(boost::beast::http::verb::get, "https://login.blazium.app",
+                send_request(boost::beast::http::verb::get, "https://login.appsinacup.app",
                              "/api/v1/internal/steam/verify", "", headers);
             return steam_result;
         }
