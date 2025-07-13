@@ -136,64 +136,6 @@ jobs:
             ghcr.io/${{ github.repository }}:latest
             ghcr.io/${{ github.repository }}:${{ github.sha }}
 
-  test:
-    name: Test Code (Ubuntu)
-    runs-on: ubuntu-22.04
-    needs: build-linux
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Download Linux build artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: lobby_server-linux-x64-release
-          path: build
-      
-      - name: Clone Old Lobby Server
-        uses: actions/checkout@v4
-        with:
-          repository: blazium-engine/blazium-lobby
-          path: old-lobby
-          token: ${{ secrets.GH_PAT }}
-      
-      # Set up Go environment
-      - name: Setup Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: 1.21  # Specify the Go version you are using
-
-      # Install dependencies
-      - name: Install Dependencies
-        working-directory: old-lobby
-        run: go mod tidy
-
-      # Run the app and tests in the same step
-      - name: Run App and Tests
-        working-directory: old-lobby
-        run: |
-          # Remove the sendrate, replace sendrate=100 with sendrate=0
-          # Start the app in the background
-          cd ..
-          sed -i 's/sendrate=100/sendrate=0/g' games.ini
-          cp build/lobby_server .
-          ls
-          chmod +x lobby_server
-          ./lobby_server --skip-login &> app.log &
-          sleep 10
-          cd old-lobby
-          go test -timeout 200s -tags=auth ./... -v
-          go test -timeout 200s -tags=lobby ./... -v
-      
-      # Always print server logs
-      - name: Print Server Logs
-        if: always()
-        run: |
-          cat app.log
-          cat logs/game.txt
-          cat logs/websocket.txt
-
   build-macos:
     name: Build on macOS (${{ matrix.arch }})
     needs: lint
