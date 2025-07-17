@@ -2,6 +2,8 @@
 
 #include "yyjson.h"
 
+namespace http = boost::beast::http;
+
 // Specialize the teardown for SSL stream
 namespace boost::beast {
 
@@ -15,6 +17,65 @@ void teardown(beast::role_type role, ssl::stream<tcp::socket>& stream, beast::er
 }
 
 }  // namespace boost::beast
+
+static std::string send_request(const boost::beast::http::verb& verb, const std::string& url,
+                                const std::string& target, const std::string& body,
+                                http::fields& headers) {
+    try {
+        auto pos = url.find("://");
+        std::string host = url.substr(pos + 3);
+        std::string port = "443";
+        auto slash = host.find('/');
+        if (slash != std::string::npos) host = host.substr(0, slash);
+
+        net::io_context ioc;
+        ssl::context ctx(ssl::context::tlsv12_client);
+        ctx.set_default_verify_paths();
+
+        tcp::resolver resolver(ioc);
+        auto const results = resolver.resolve(host, port);
+
+        beast::tcp_stream tcp_stream(ioc);
+        tcp_stream.connect(results);
+
+        ssl::stream<beast::tcp_stream> stream(std::move(tcp_stream), ctx);
+        if (!SSL_set_tlsext_host_name(stream.native_handle(), host.c_str())) {
+            throw beast::system_error(beast::error_code(static_cast<int>(::ERR_get_error()),
+                                                        net::error::get_ssl_category()),
+                                      "Failed to set SNI Hostname");
+        }
+        stream.handshake(ssl::stream_base::client);
+
+        http::request<http::string_body> req{verb, target, 11};
+        req.set(http::field::host, host);
+        req.set(http::field::content_type, "application/json");
+        req.body() = body;
+        req.prepare_payload();
+
+        for (const auto& header : headers) {
+            req.set(header.name_string(), header.value());
+        }
+
+        http::write(stream, req);
+
+        beast::flat_buffer buffer;
+        http::response<http::string_body> res;
+        http::read(stream, buffer, res);
+
+        if (res.result() != http::status::ok) {
+            std::cerr << "Error: " << res.result_int() << " " << res.reason() << std::endl;
+        } else {
+            // Optionally handle response
+        }
+
+        beast::error_code ec;
+        stream.shutdown(ec);
+        return res.body();
+    } catch (const std::exception& e) {
+        std::cerr << "Exception: " << e.what() << target << std::endl;
+    }
+    return "";
+}
 
 LoginClient::LoginClient(const std::string& host, const std::string& game_id,
                          const std::string& port)

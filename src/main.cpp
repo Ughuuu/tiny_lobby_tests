@@ -10,7 +10,6 @@
 #include "database.h"
 #include "default_config.h"
 #include "game_thread.h"
-#include "login_client.h"
 #include "websocket_server.h"
 #ifdef _WIN32
 #include <windows.h>
