@@ -1,6 +1,5 @@
 #include "login_client.h"
 
-#include "pogr_client.h"
 #include "yyjson.h"
 
 // Specialize the teardown for SSL stream

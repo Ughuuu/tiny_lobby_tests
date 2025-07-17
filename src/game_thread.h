@@ -14,7 +14,6 @@
 #include "games_listener.h"
 #include "lobby_data.h"
 #include "peer_data.h"
-#include "pogr_client.h"
 #include "server_logger.h"
 #include "websocket_server.h"
 #include "yyjson.h"
@@ -40,7 +39,6 @@ class GameThread {
     std::string logs_folder;
     std::string scripts_folder;
     boost::uuids::random_generator gen;
-    moodycamel::BlockingReaderWriterQueue<AnalyticsEvent> &analytics_queue;
     moodycamel::BlockingReaderWriterQueue<WebSocketReceivedMessage> &receive_queue;
     struct uWS::Loop *loop;
     WebSocketServer<true> *webserver_ssl;
@@ -144,7 +142,6 @@ class GameThread {
     void set_lobby_host(GameData &game, LobbyData &lobby, const std::string &new_host);
 
     GameThread(bool verbose, std::string log_folder, std::string scripts_folder,
-               moodycamel::BlockingReaderWriterQueue<AnalyticsEvent> &analytics_queue,
                moodycamel::BlockingReaderWriterQueue<WebSocketReceivedMessage> &receive_queue,
                uWS::Loop *loop, WebSocketServer<true> *webserver,
                WebSocketServer<false> *webserver_nossl, std::atomic<bool> &stop,

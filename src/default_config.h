@@ -12,6 +12,7 @@ max_backpressure=65536
 log_folder=logs
 max_messages_per_second=50000
 message_queue_length=250000
+max_users=10000
 
 [ssl]
 enabled=false
@@ -34,14 +35,4 @@ port=<port>
 database=<database>
 sslmode=<sslmode>
 
-[authentication]
-enabled=false
-
-[analytics]
-enabled=false
-access_token=<access_token>
-secret_key=<secret_key>
-
-[license]
-id=f2867f41-29c8-4bfb-93b9-436f71f921dc
 )";

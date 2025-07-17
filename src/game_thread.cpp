@@ -13,7 +13,6 @@
 
 GameThread::GameThread(
     bool verbose, std::string log_folder, std::string scripts_folder,
-    moodycamel::BlockingReaderWriterQueue<AnalyticsEvent> &analytics_queue,
     moodycamel::BlockingReaderWriterQueue<WebSocketReceivedMessage> &receive_queue, uWS::Loop *loop,
     WebSocketServer<true> *webserver, WebSocketServer<false> *webserver_no_ssl,
     std::atomic<bool> &stop, int listing_interval, int max_recconection_time)
@@ -21,7 +20,6 @@ GameThread::GameThread(
       max_reconnection_time(max_recconection_time),
       logger(verbose, log_folder + "/game.txt"),
       scripts_folder(scripts_folder),
-      analytics_queue(analytics_queue),
       receive_queue(receive_queue),
       loop(loop),
       webserver_ssl(webserver),
@@ -947,19 +945,6 @@ void GameThread::on_create_lobby(
         notification_lobby_created(AnyElement{game.lobbies[small_uuid].to_dict()},
                                    AnyElement{game.peers_to_array(small_uuid)}, command_id);
     send(game, peer.id, notification, uWS::OpCode::TEXT);
-    // STATISTICS
-    analytics_queue.enqueue(AnalyticsEvent{
-        .event = "lobby_created",
-        .event_data =
-            boost::container::flat_map<std::string, AnyElement>{
-                {"max_players", AnyElement{game.lobbies[small_uuid].max_players}},
-                {"game_id", AnyElement{game.lobbies[small_uuid].game_id}},
-                {"has_password", AnyElement{!game.lobbies[small_uuid].password.empty()}}},
-        .event_flag = "created",
-        .event_key = "lobby_created",
-        .event_type = "lobby",
-        .sub_event = "",
-    });
     // SCRIPTED CALL
     if (game.enabled_callbacks.find("_on_lobby_created") != game.enabled_callbacks.end()) {
         bool has_error = false;
