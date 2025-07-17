@@ -84,7 +84,7 @@ jobs:
         run: |
           export OPENSSL_ROOT_DIR=./external/vcpkg/installed/x64-linux
           export PKG_CONFIG_PATH=./external/vcpkg/installed/x64-linux/lib/pkgconfig
-          ./build_${{ matrix.type }}-${{ matrix.arch }}.sh
+          ./bash/build_${{ matrix.type }}-${{ matrix.arch }}.sh
 
       - name: Archive build artifacts
         uses: actions/upload-artifact@v4
@@ -179,7 +179,7 @@ jobs:
   
       - name: Build (macOS)
         run: |
-          ./build_release_macos-${{ matrix.arch }}.sh
+          ./bash/build_release_macos-${{ matrix.arch }}.sh
 
 
       # https://docs.github.com/en/actions/deployment/deploying-xcode-applications/installing-an-apple-certificate-on-macos-runners-for-xcode-development
@@ -276,7 +276,7 @@ jobs:
       - name: Build Release
         shell: pwsh
         run: |
-          .\build_release.ps1
+          .\bash\build_release.ps1
 
       - name: Archive build artifacts
         uses: actions/upload-artifact@v4
