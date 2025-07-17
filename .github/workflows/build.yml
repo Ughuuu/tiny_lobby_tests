@@ -70,7 +70,7 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y software-properties-common autoconf 
-          ./install-linux-${{ matrix.arch }}.sh
+          ./bash/install-linux-${{ matrix.arch }}.sh
 
       - name: Cache vcpkg dependencies
         uses: actions/cache/save@v4
@@ -167,7 +167,7 @@ jobs:
 
       - name: Install dependencies (macOS)
         run: |
-          ./install-macos-${{ matrix.arch }}.sh
+          ./bash/install-macos-${{ matrix.arch }}.sh
 
       - name: Cache vcpkg dependencies
         uses: actions/cache/save@v4
@@ -263,7 +263,7 @@ jobs:
       - name: Install dependencies
         shell: pwsh
         run: |
-          .\install.ps1
+          .\bash\install.ps1
 
       - name: Cache vcpkg dependencies
         uses: actions/cache/save@v4

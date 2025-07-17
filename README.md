@@ -1,6 +1,6 @@
 # Tiny Lobby
 
-This is the C++ implementation of the Lobby Websocket Server. It uses [uWebSockets](https://github.com/uNetworking/uWebSockets/tree/master)
+This is the C++ implementation of the Lobby Websocket Server. It starts a websocket server and has backend scripting in Luau and AngelScript.
 
 ## Requirements
 
@@ -8,24 +8,24 @@ This is the C++ implementation of the Lobby Websocket Server. It uses [uWebSocke
 - cmake version 3.30.5
 - Run `install.sh`
 
+## How to build
+
 1. MacOS
 
 ```sh
-./install-macos.sh
+./bash/install-macos.sh
 ```
 
 2. Linux
 
 ```sh
-./install-linux.sh
+./bash/install-linux.sh
 ```
 
 3. Windows
 
 ```sh
-./install-windows.bat
+./bash/install-windows.bat
 ```
 
-## How to build
-
-Run `build.sh` and then run `build/lobby_server`.
+Run `./bash/build.sh` and then run `build/lobby_server`.
