@@ -219,7 +219,7 @@ static int lobby_index(lua_State* L) {
                 lua_pushstring(L, lobby_id.c_str());
                 return 1;
             } else if (strcmp(key, "tick_rate") == 0) {
-                lua_pushinteger(L, game.tick_rate);
+                lua_pushnumber(L, game.tick_rate);
                 return 1;
             } else if (strcmp(key, "name") == 0) {
                 lua_pushstring(L, lobby.name.c_str());
@@ -228,10 +228,10 @@ static int lobby_index(lua_State* L) {
                 lua_pushstring(L, lobby.host.c_str());
                 return 1;
             } else if (strcmp(key, "max_players") == 0) {
-                lua_pushinteger(L, lobby.max_players);
+                lua_pushnumber(L, lobby.max_players);
                 return 1;
             } else if (strcmp(key, "create_time") == 0) {
-                lua_pushinteger(L, int64_t(lobby.create_time));
+                lua_pushnumber(L, int64_t(lobby.create_time));
                 return 1;
             } else if (strcmp(key, "sealed") == 0) {
                 lua_pushboolean(L, lobby.sealed);

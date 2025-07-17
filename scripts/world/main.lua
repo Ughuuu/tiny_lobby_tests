@@ -3,6 +3,7 @@ local system = require("system")
 local main = {}
 
 local MOVE_DELAY_SEC = 250
+local INPUT_DELAY_SEC = 50
 local DIRECTIONS = {
   up =    { x =  0, y = -1 },
   down =  { x =  0, y =  1 },
@@ -39,11 +40,11 @@ function main.move(dir: string)
 
     local move_start_ms = peer.public_data["move_start"]
     local current_time_ms = system.get_time_since_epoch()
-    if move_start_ms + MOVE_DELAY_SEC > current_time_ms then
-        return
-    end 
+    if move_start_ms + MOVE_DELAY_SEC - INPUT_DELAY_SEC > current_time_ms then
+        return { error = "too soon" }
+    end
 
-    main._move_peer(peer, l, dir, current_time_ms)
+    main._move_peer(peer, l, dir, current_time_ms + MOVE_DELAY_SEC - INPUT_DELAY_SEC)
     return
 end
 

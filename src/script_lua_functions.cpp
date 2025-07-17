@@ -103,7 +103,7 @@ void push_lua_value(lua_State *L, const AnyElement &value) {
             } else if constexpr (std::is_same_v<T, bool>) {
                 lua_pushboolean(L, v);
             } else if constexpr (std::is_same_v<T, int64_t>) {
-                lua_pushinteger(L, v);
+                lua_pushnumber(L, v);
             } else if constexpr (std::is_same_v<T, double>) {
                 lua_pushnumber(L, v);
             } else if constexpr (std::is_same_v<T, std::string>) {
