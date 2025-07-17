@@ -1,4 +1,4 @@
-# Lobby Server
+# Tiny Lobby
 
 This is the C++ implementation of the Lobby Websocket Server. It uses [uWebSockets](https://github.com/uNetworking/uWebSockets/tree/master)
 
