@@ -145,10 +145,9 @@ int main(int argc, char *argv[]) {
             }
             return 0;
         } else if (arg == "--help" || arg == "-h") {
-            std::cout
-                << "Usage: " << argv[0]
-                << " [--verbose] [--disable-metrics] [--logout] [--generate-config]"
-                << std::endl;
+            std::cout << "Usage: " << argv[0]
+                      << " [--verbose] [--disable-metrics] [--logout] [--generate-config]"
+                      << std::endl;
             return 0;
         }
     }
@@ -179,8 +178,8 @@ int main(int argc, char *argv[]) {
         WebSocketServer<true> webserver(
             verbose, config_reader.GetString("webserverserver", "log_folder", "logs"),
             receive_queue,
-            config_reader.GetInteger("webserverserver", "max_messages_per_second", 5), config_reader.GetInteger("webserverserver", "max_users", 10000),
-            app.getLoop());
+            config_reader.GetInteger("webserverserver", "max_messages_per_second", 5),
+            config_reader.GetInteger("webserverserver", "max_users", 10000), app.getLoop());
         app.ws<PerSocketData>(
                "/connect",
                {/* Settings */
@@ -219,9 +218,8 @@ int main(int argc, char *argv[]) {
 
         GameThread GameThread(
             verbose, config_reader.GetString("games", "log_folder", "logs"),
-            config_reader.Get("games", "scripts_folder", "scripts"), receive_queue,
-            app.getLoop(), &webserver, nullptr, stop,
-            config_reader.GetInteger("games", "listing_interval", 3000),
+            config_reader.Get("games", "scripts_folder", "scripts"), receive_queue, app.getLoop(),
+            &webserver, nullptr, stop, config_reader.GetInteger("games", "listing_interval", 3000),
             config_reader.GetInteger("games", "max_reconnection_time", 6 * 60 * 1000));
         app.get("/health", [](auto *res, auto *req) { res->writeStatus("200 OK")->end("OK"); });
         app.post("/system/shutdown", [&stop](auto *res, auto *req) {
@@ -288,8 +286,8 @@ int main(int argc, char *argv[]) {
         WebSocketServer<false> webserver(
             verbose, config_reader.GetString("webserverserver", "log_folder", "logs"),
             receive_queue,
-            config_reader.GetInteger("webserverserver", "max_messages_per_second", 5), config_reader.GetInteger("webserverserver", "max_users", 10000),
-            app.getLoop());
+            config_reader.GetInteger("webserverserver", "max_messages_per_second", 5),
+            config_reader.GetInteger("webserverserver", "max_users", 10000), app.getLoop());
         app.ws<PerSocketData>(
                "/connect",
                {/* Settings */
@@ -327,9 +325,8 @@ int main(int argc, char *argv[]) {
             });
         GameThread GameThread(
             verbose, config_reader.GetString("games", "log_folder", "logs"),
-            config_reader.Get("games", "scripts_folder", "scripts"), receive_queue,
-            app.getLoop(), nullptr, &webserver, stop,
-            config_reader.GetInteger("games", "listing_interval", 3000),
+            config_reader.Get("games", "scripts_folder", "scripts"), receive_queue, app.getLoop(),
+            nullptr, &webserver, stop, config_reader.GetInteger("games", "listing_interval", 3000),
             config_reader.GetInteger("games", "max_reconnection_time", 6 * 60 * 1000));
         app.get("/health", [](auto *res, auto *req) { res->writeStatus("200 OK")->end("OK"); });
         app.post("/system/shutdown", [&stop](auto *res, auto *req) {
