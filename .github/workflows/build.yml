@@ -27,7 +27,7 @@ jobs:
           sudo apt-get install clang-format clang-tidy
 
       - name: Check formatting in src directory
-        run: ./check_format.sh
+        run: ./bash/check_format.sh
 
       - name: Download luau-analyze
         run: |
