@@ -5,12 +5,13 @@ const path = require('path');
 // Configuration
 const serverUrl = 'ws://localhost:8080/connect'; // Your WebSocket server URL
 //const serverUrl = 'wss://lobby.appsinacup.app/connect'; // Your WebSocket server URL
-const numClients = 1;  // Number of WebSocket clients to simulate
+const numClients = 50;  // Number of WebSocket clients to simulate
 let stopAfter = 0; // Number of messages each client will send. Set to 0 for infinite
 let messageInterval = 1;  // Interval in milliseconds between messages
-const max_time = 30000; // 30 s
+let max_time = 30000; // 30 s
 //let usecase = "max_sent"
-let usecase = "max_echo"
+let usecase = "movement"
+let game_id = "00000000-0000-0000-0000-000000000001"; // Game ID for the lobby
 switch (usecase) {
     case "max_echo":
         // send as many messages as possible
@@ -22,10 +23,11 @@ switch (usecase) {
         stopAfter = 15000
         messageInterval = 20
         break;
-    case "jrpg":
-        // simulate a JRPG game
-        stopAfter = 6000
-        messageInterval = 1000 / 6
+    case "movement":
+        // simulate a World movememtn
+        max_time = 10 * 60 * 1000 // 10 minutes
+        messageInterval = 1000 / 4
+        game_id = "3f0b1d2c-4e6a-4f8c-9b5d-7a0c1e2f3b4a"
         break;
 }
 let clientCount = 0;
@@ -42,7 +44,7 @@ fs.writeFileSync(csvFilePath, 'timestamp,client_count,client_errors,messages_sen
 
 // Function to start a WebSocket client
 function startClient(clientId) {
-    const ws = new WebSocket(serverUrl, ['appsinacup', '00000000-0000-0000-0000-000000000001']);
+    const ws = new WebSocket(serverUrl, ['appsinacup', game_id]);
     ws.on('open', () => {
         clientCount++;
     });
@@ -96,8 +98,8 @@ function startStresTest() {
         let ws = websockets[i];
         messagesSent++;
         ws.send(JSON.stringify({
-            "command": "create_lobby",
-            "data": { "max_players": 2 }
+            "command": "quick_join",
+            "data": { "max_players": 1000 }
         }));
         
         setTimeout(() => {
@@ -117,6 +119,14 @@ function startStresTest() {
                             "data": { "chat": "test", "id": "123" }
                         }));
                     break;
+                    case "movement":
+                        // up down left right
+                        let dirs = ["up", "down", "left", "right"];
+                        let dir = dirs[Math.floor(Math.random() * dirs.length)];
+                        ws.send(JSON.stringify({
+                            "command": "lobby_call",
+                            "data": { "function": "move", "inputs": [dir]}
+                        }));
                 }
         
                 messagesSent++;
@@ -125,7 +135,7 @@ function startStresTest() {
         
                 let timestamp = Date.now() - start;
                 // stop sending after specified time
-                if (stopAfter < timestamp) {
+                if (stopAfter < timestamp && stopAfter != 0) {
                     clearInterval(messageIntervalId);
                     //ws.close();
                 }
