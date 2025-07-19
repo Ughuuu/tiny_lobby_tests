@@ -530,7 +530,7 @@ void GameThread::handle_afk() {
     for (auto &game : games) {
         auto &game_data = game.second;
         if (game_data.max_afk_time <= 0) {
-            return; // no afk handling
+            return;  // no afk handling
         }
         boost::container::flat_set<std::string> to_erase;
         for (auto &peer : game_data.peers) {
