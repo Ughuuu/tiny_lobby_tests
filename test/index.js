@@ -91,12 +91,18 @@ for (let i = 0; i < numClients; i++) {
 }
 
 let start = -1;
-function startStresTest() {
+async function startStresTest() {
     start = Date.now();
     console.log("Starting stress test...");
     for (let i = 0; i < numClients; i++) {
+        await new Promise(resolve => setTimeout(resolve, i * 10)); // stagger client connections
         let ws = websockets[i];
         messagesSent++;
+
+        ws.send(JSON.stringify({
+            "command": "user_data",
+            "data": { "user_data": {"name": "Player " + (i + 1)} }
+        }));
         ws.send(JSON.stringify({
             "command": "quick_join",
             "data": { "max_players": 1000 }
@@ -120,6 +126,9 @@ function startStresTest() {
                         }));
                     break;
                     case "movement":
+                        if (Math.random() < 0.3) {
+                            break;
+                        }
                         // up down left right
                         let dirs = ["up", "down", "left", "right"];
                         let dir = dirs[Math.floor(Math.random() * dirs.length)];
@@ -145,11 +154,11 @@ function startStresTest() {
 }
 
 // Interval to log stats and write to CSV
-const logInterval = setInterval(() => {
+const logInterval = setInterval(async () => {
     if (start == -1) {
         console.log("Waiting for all clients to connect..." + clientCount + " " + numClients);
         if (clientCount == numClients) {
-            startStresTest();
+            await startStresTest();
         }
         return;
     }

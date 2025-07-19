@@ -48,6 +48,7 @@ void GameThread::load_games() {
             tickrate = 0;
         }
         int sendrate = config_reader.GetInteger(section, "sendrate", 0);
+        int max_afk_time = config_reader.GetInteger(section, "max_afk_time", 0);
         bool seal = config_reader.GetBoolean(section, "seal", false);
         std::string lobby_control = config_reader.Get(section, "lobby_control", "lua");
         ScriptAS as;
@@ -78,6 +79,7 @@ void GameThread::load_games() {
                                         .lobby_control = lobby_control,
                                         .tick_rate = tickrate,
                                         .send_rate = sendrate,
+                                        .max_afk_time = max_afk_time,
                                         .seal = seal,
                                         .disband_on_leave = config_reader.GetBoolean(
                                             section, "disband_on_leave", false),
@@ -527,6 +529,9 @@ void GameThread::handle_disconnects() {
 void GameThread::handle_afk() {
     for (auto &game : games) {
         auto &game_data = game.second;
+        if (game_data.max_afk_time <= 0) {
+            return; // no afk handling
+        }
         boost::container::flat_set<std::string> to_erase;
         for (auto &peer : game_data.peers) {
             auto &peer_obj = peer.second;
@@ -538,7 +543,7 @@ void GameThread::handle_afk() {
             for (auto &peer_id : lobby.peer_ids) {
                 auto &lobby_peer = game_data.peers[peer_id];
                 // if peer is not afk, do not destroy lobby
-                if (now - peer_obj.last_message_time < max_reconnection_time * 2) {
+                if (now - peer_obj.last_message_time < game_data.max_afk_time) {
                     destroy_lobby = false;
                     break;
                 }
@@ -790,7 +795,7 @@ void GameThread::on_close(GameData &game, std::string &peer_id) {
     if (game.enabled_callbacks.find("_on_peer_disconnected") != game.enabled_callbacks.end()) {
         bool has_error = false;
         boost::container::vector<AnyElement> args;
-        auto func_result = scripted_function_call(peer_id, EMPTY_STRING, game,
+        auto func_result = scripted_function_call(peer_id, peer.lobby_id, game,
                                                   "_on_peer_disconnected", true, args, has_error);
         if (has_error && std::holds_alternative<std::string>(func_result.value)) {
             on_error(game, EMPTY_STRING, peer_id, std::get<std::string>(func_result.value), false,

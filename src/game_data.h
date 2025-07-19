@@ -26,6 +26,7 @@ struct GameData {
     std::string lobby_control = "relay";
     int tick_rate = 0;
     int send_rate = 0;
+    int max_afk_time = 0;
     bool seal = false;
     bool disband_on_leave = false;
     std::string folder_name;

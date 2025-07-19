@@ -3,6 +3,8 @@
 |[Website](https://appsinacup.com)|[Discord](https://discord.gg/56dMud8HYn)|
 |-|-|
 
+![example](docs/example.gif)
+
 This is the C++ implementation of the Lobby Websocket Server. It starts a websocket server and has backend scripting in Luau and AngelScript.
 
 - [addon_tiny_lobby_client](https://github.com/appsinacup/addon_tiny_lobby_client): Godot Tiny Lobby Client
