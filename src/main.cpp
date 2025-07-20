@@ -116,14 +116,11 @@ int main(int argc, char *argv[]) {
         std::cout << "Cannot open config.ini. To generate one run --generate-config" << std::endl;
     }
     bool verbose = false;
-    bool disable_metrics = false;
     for (int i = 1; i < argc; ++i) {
         std::string arg(argv[i]);
 
         if (arg == "--verbose") {
             verbose = true;
-        } else if (arg == "--disable-metrics") {
-            disable_metrics = true;
         } else if (arg == "--logout") {
             std::string jwt_path = get_jwt_path();
             if (std::filesystem::exists(jwt_path)) {
@@ -149,11 +146,6 @@ int main(int argc, char *argv[]) {
                       << std::endl;
             return 0;
         }
-    }
-    if (!disable_metrics) {
-        std::cout << "This application collects anonymous usage statistics. To disable it pass "
-                     "--disable-metrics"
-                  << std::endl;
     }
 
     if (config_reader.GetBoolean("database", "enabled", false) == true) {
