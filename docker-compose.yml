@@ -3,10 +3,9 @@ services:
     build: .
     container_name: tiny_lobby
     platform: linux/amd64
-    cap_add:
-      - SYS_PTRACE
-    security_opt:
-      - seccomp=unconfined
     ports:
       - "8080:8080"
     restart: unless-stopped
+    volumes:
+      - ./config.ini:/app/config.ini
+      - ./logs:/app/logs
