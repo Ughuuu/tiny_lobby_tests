@@ -209,19 +209,27 @@ int main(int argc, char *argv[]) {
             config_reader.Get("games", "scripts_folder", "scripts"), receive_queue, app.getLoop(),
             &webserver, nullptr, stop, config_reader.GetInteger("games", "listing_interval", 3000),
             config_reader.GetInteger("games", "max_reconnection_time", 6 * 60 * 1000));
+        app.get("/", [](auto *res, auto *req) { res->writeStatus("200 OK")->end("OK"); });
         app.get("/health", [](auto *res, auto *req) { res->writeStatus("200 OK")->end("OK"); });
         app.post("/system/shutdown", [&stop](auto *res, auto *req) {
             res->writeStatus("200 OK")->end("OK");
             // No-op for now
+            return;
             stop = true;
             // TODO do it correctly
             exit(0);
         });
         app.post("/system/notify", [&webserver](auto *res, auto *req) {
+            res->writeStatus("200 OK")->end("OK");
+            // No-op for now
+            return;
             webserver.send_all("notify", uWS::OpCode::TEXT);
             res->writeStatus("200 OK")->end("OK");
         });
         app.post("/game/:game_id", [&webserver, &GameThread](auto *res, auto *req) {
+            res->writeStatus("200 OK")->end("OK");
+            // No-op for now
+            return;
             std::string game_id{req->getParameter(0)};
             if (game_id.empty()) {
                 res->writeStatus("400 Bad Request")->end("Game ID is required");
@@ -245,6 +253,9 @@ int main(int argc, char *argv[]) {
             res->onAborted([isAborted]() { *isAborted = true; });
         });
         app.del("/game/:game_id", [&webserver, &GameThread](auto *res, auto *req) {
+            res->writeStatus("200 OK")->end("OK");
+            // No-op for now
+            return;
             std::string game_id{req->getParameter(0)};
             if (game_id.empty()) {
                 res->writeStatus("400 Bad Request")->end("Game ID is required");
@@ -316,19 +327,27 @@ int main(int argc, char *argv[]) {
             config_reader.Get("games", "scripts_folder", "scripts"), receive_queue, app.getLoop(),
             nullptr, &webserver, stop, config_reader.GetInteger("games", "listing_interval", 3000),
             config_reader.GetInteger("games", "max_reconnection_time", 6 * 60 * 1000));
+        app.get("/", [](auto *res, auto *req) { res->writeStatus("200 OK")->end("OK"); });
         app.get("/health", [](auto *res, auto *req) { res->writeStatus("200 OK")->end("OK"); });
         app.post("/system/shutdown", [&stop](auto *res, auto *req) {
             res->writeStatus("200 OK")->end("OK");
+            return;
             // No-op for now
             stop = true;
             // TODO do it correctly
             exit(0);
         });
         app.post("/system/notify", [&webserver](auto *res, auto *req) {
+            res->writeStatus("200 OK")->end("OK");
+            // No-op for now
+            return;
             webserver.send_all("notify", uWS::OpCode::TEXT);
             res->writeStatus("200 OK")->end("OK");
         });
         app.post("/game/:game_id", [&webserver, &GameThread](auto *res, auto *req) {
+            res->writeStatus("200 OK")->end("OK");
+            // No-op for now
+            return;
             std::string game_id{req->getParameter(0)};
             if (game_id.empty()) {
                 res->writeStatus("400 Bad Request")->end("Game ID is required");
@@ -352,6 +371,9 @@ int main(int argc, char *argv[]) {
             res->onAborted([isAborted]() { *isAborted = true; });
         });
         app.del("/game/:game_id", [&webserver, &GameThread](auto *res, auto *req) {
+            res->writeStatus("200 OK")->end("OK");
+            // No-op for now
+            return;
             std::string game_id{req->getParameter(0)};
             if (game_id.empty()) {
                 res->writeStatus("400 Bad Request")->end("Game ID is required");
