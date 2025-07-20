@@ -60,7 +60,7 @@ void WebAuthenticationThread<SSL>::run() {
             });
             continue;
         }
-        LoginClient client("login.appsinacup.app", user_data.game_id);
+        LoginClient client("login.appsinacup.com", user_data.game_id);
         std::string error_msg;
         std::string result = client.verify_jwt(user_data.reconnection_token, error_msg);
         loop->defer([res, result, user_data = std::move(user_data), error_msg, websocket_key, websocket_extensions, context, abort_shared, this]() mutable{

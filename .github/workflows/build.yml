@@ -186,7 +186,6 @@ jobs:
         run: |
           ./bash/build_release_macos-${{ matrix.arch }}.sh
 
-
       # https://docs.github.com/en/actions/deployment/deploying-xcode-applications/installing-an-apple-certificate-on-macos-runners-for-xcode-development
       - name: Install the Apple certificate and provisioning profile for macOS
         shell: bash

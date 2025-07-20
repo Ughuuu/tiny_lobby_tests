@@ -199,7 +199,7 @@ bool LoginClient::wait_for_jwt(std::string& jwt, std::string& type, std::string&
 std::string LoginClient::verify_jwt(const std::string& jwt, std::string& error) {
     http::fields headers;
     headers.set("SESSION", jwt);
-    auto result = send_request(boost::beast::http::verb::get, "https://login.appsinacup.app",
+    auto result = send_request(boost::beast::http::verb::get, "https://login.appsinacup.com",
                                "/api/v1/internal/token/verify", "", headers);
     yyjson_doc* doc = yyjson_read(result.c_str(), result.size(), 0);
     if (!doc) {
@@ -225,7 +225,7 @@ std::string LoginClient::verify_jwt(const std::string& jwt, std::string& error) 
         if (!success) {
             // try with steam ticket
             auto steam_result =
-                send_request(boost::beast::http::verb::get, "https://login.appsinacup.app",
+                send_request(boost::beast::http::verb::get, "https://login.appsinacup.com",
                              "/api/v1/internal/steam/verify", "", headers);
             return steam_result;
         }
