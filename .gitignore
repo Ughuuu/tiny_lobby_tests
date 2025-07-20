@@ -9,3 +9,4 @@ websocket_log.txt
 scripts/world/*
 public.key
 src/public_key.h
+connection.sh
