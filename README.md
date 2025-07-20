@@ -1,7 +1,7 @@
 # Tiny Lobby
 
 |[Website](https://appsinacup.com)|[Discord](https://discord.gg/56dMud8HYn)|(Documentation)[https://github.com/appsinacup/documentation_lobby]|[Build Locally](./BUILD_LOCALLY.md)
-|-|-|-|
+|-|-|-|-|
 
 ![example](docs/example.gif)
 
