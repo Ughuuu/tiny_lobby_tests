@@ -329,7 +329,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           draft: true
-          release_name: Release v
+          release_name: Tiny Lobby v
           files: |
             release/tiny_lobby_linux_arm64
             release/tiny_lobby_linux_x64
