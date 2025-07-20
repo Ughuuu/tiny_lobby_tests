@@ -8,7 +8,7 @@
             "name": "Build & Debug",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/lobby_server",
+            "program": "${workspaceFolder}/build/tiny_lobby",
             "args": [
                 "--disable-metrics"
                 //"--verbose",
@@ -24,7 +24,7 @@
             "name": "Debug",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/lobby_server",
+            "program": "${workspaceFolder}/build/tiny_lobby",
             "args": [
                 "--disable-metrics"
                 //"--verbose"

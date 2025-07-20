@@ -1,7 +1,7 @@
 # Tiny Lobby
 
-|[Website](https://appsinacup.com)|[Discord](https://discord.gg/56dMud8HYn)|
-|-|-|
+|[Website](https://appsinacup.com)|[Discord](https://discord.gg/56dMud8HYn)|(Documentation)[https://github.com/appsinacup/documentation_lobby]|[Build Locally](./BUILD_LOCALLY.md)
+|-|-|-|
 
 ![example](docs/example.gif)
 
@@ -9,30 +9,19 @@ This is the C++ implementation of the Lobby Websocket Server. It starts a websoc
 
 - [addon_tiny_lobby_client](https://github.com/appsinacup/addon_tiny_lobby_client): Godot Tiny Lobby Client
 
-## Requirements
+## Usage
 
-- clang version 16.0.0
-- cmake version 3.30.5
-- Run `install.sh`
-
-## How to build
-
-1. MacOS
+Run locally by downloading latest [GitHub Release](https://github.com/appsinacup/tiny_lobby/releases) and running it in terminal:
 
 ```sh
-./bash/install-macos.sh
+tiny_lobby
 ```
 
-2. Linux
+Or start it with docker by running:
 
 ```sh
-./bash/install-linux.sh
+docker pull ghcr.io/appsinacup/tiny_lobby:latest
+docker run -p 8080:8080 ghcr.io/appsinacup/tiny_lobby:latest
 ```
 
-3. Windows
-
-```sh
-./bash/install-windows.bat
-```
-
-Run `./bash/build.sh` and then run `build/lobby_server`.
+For more info go to the [Tiny Lobby Documentation](https://github.com/appsinacup/documentation_lobby) page.

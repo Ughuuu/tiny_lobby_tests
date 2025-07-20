@@ -89,8 +89,8 @@ jobs:
       - name: Archive build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: lobby_server-linux-${{ matrix.arch }}-${{ matrix.type }}
-          path: build/lobby_server
+          name: tiny_lobby-linux-${{ matrix.arch }}-${{ matrix.type }}
+          path: build/tiny_lobby
           if-no-files-found: error
 
   docker-build:
@@ -119,7 +119,7 @@ jobs:
       - name: Download Linux build artifact
         uses: actions/download-artifact@v4
         with:
-          name: lobby_server-linux-x64-release
+          name: tiny_lobby-linux-x64-release
           path: build/      
 
       - name: List contents of build directory
@@ -213,26 +213,26 @@ jobs:
         run: |
 
           # Set permissions and sign the application
-          chmod +x lobby_server
+          chmod +x tiny_lobby
           
           codesign --deep --force --options=runtime --verbose --timestamp \
             --entitlements ../signing/mac/entitlements.plist --sign "${{ env.APPLE_SIGNING_IDENTITY }}" \
-            lobby_server
-          codesign --verify --strict --deep --verbose lobby_server
+            tiny_lobby
+          codesign --verify --strict --deep --verbose tiny_lobby
           # Package the application into a zip file
-          ditto -c -k --keepParent lobby_server lobby_server.zip
+          ditto -c -k --keepParent tiny_lobby tiny_lobby.zip
 
           /Applications/Xcode.app/Contents/Developer/usr/bin/notarytool store-credentials "AppleID" --apple-id "${{ secrets.APPLE_ID }}" --password "${{ secrets.APP_SPECIFIC_PASSWORD }}" --team-id "${{ secrets.APPLE_TEAM_ID }}"
 
-          /Applications/Xcode.app/Contents/Developer/usr/bin/notarytool submit lobby_server.zip --wait --keychain-profile "AppleID"
+          /Applications/Xcode.app/Contents/Developer/usr/bin/notarytool submit tiny_lobby.zip --wait --keychain-profile "AppleID"
 
-          rm lobby_server.zip
+          rm tiny_lobby.zip
 
       - name: Archive build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: lobby_server-macos-${{ matrix.arch }}
-          path: build/lobby_server*
+          name: tiny_lobby-macos-${{ matrix.arch }}
+          path: build/tiny_lobby*
           if-no-files-found: error
 
   build-windows:
@@ -278,7 +278,29 @@ jobs:
       - name: Archive build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: lobby_server-windows-x64
+          name: tiny_lobby-windows-x64
           path: |
-            build/Release/lobby_server.exe
+            build/Release/tiny_lobby.exe
           if-no-files-found: error
+
+  release:
+    name: Create Release
+    needs: [build-linux, build-macos, build-windows]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: build
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          draft: true
+          release_name: Release v
+          files: |
+            build/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

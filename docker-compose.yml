@@ -1,7 +1,7 @@
 services:
-  lobby_server:
+  tiny_lobby:
     build: .
-    container_name: lobby_server
+    container_name: tiny_lobby
     platform: linux/amd64
     cap_add:
       - SYS_PTRACE

@@ -33,7 +33,7 @@ FetchContent_Declare(yyjson GIT_REPOSITORY https://github.com/ibireme/yyjson.git
   GIT_TAG master GIT_SHALLOW TRUE )
 FetchContent_MakeAvailable(yyjson)
 
-add_executable(lobby_server ${SOURCES})
+add_executable(tiny_lobby ${SOURCES})
 
 # AngelScript
 add_subdirectory(external/angelscript/sdk/angelscript/projects/cmake)
@@ -49,10 +49,10 @@ file(GLOB SCRIPTHANDLE_SOURCES external/angelscript/sdk/add_on/scripthandle/*.cp
 file(GLOB DATETIME_SOURCES external/angelscript/sdk/add_on/datetime/*.cpp)
 file(GLOB SCRIPTHELPER_SOURCES external/angelscript/sdk/add_on/scripthelper/*.cpp)
 
-target_include_directories(lobby_server PRIVATE "external/angelscript/sdk/angelscript/include"
+target_include_directories(tiny_lobby PRIVATE "external/angelscript/sdk/angelscript/include"
   "external/angelscript/sdk/add_on")
 
-target_link_libraries(lobby_server PRIVATE
+target_link_libraries(tiny_lobby PRIVATE
   Boost::uuid
   Boost::container
   Boost::beast
@@ -74,7 +74,7 @@ target_link_libraries(lobby_server PRIVATE
   OpenSSL::Crypto
   efsw::efsw)
 
-target_sources(lobby_server PRIVATE
+target_sources(tiny_lobby PRIVATE
     ${SCRIPTHELPER_SOURCES}
     ${DATETIME_SOURCES}
     ${SCRIPTHANDLE_SOURCES}

@@ -8,4 +8,4 @@ cmake -S .. -B . \
 -DCMAKE_BUILD_TYPE=Debug
 cmake --build . --config Debug
 cd ..
-codesign --entitlements ./debug.entitlements --sign "-" --force build/lobby_server
+codesign --entitlements ./debug.entitlements --sign "-" --force build/tiny_lobby
