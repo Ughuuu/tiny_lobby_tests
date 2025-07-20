@@ -302,18 +302,18 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: tiny_lobby-macos-arm64-release
-          path: tiny_lobby-macos-arm64-release
+          name: tiny_lobby-macos-arm64
+          path: tiny_lobby-macos-arm64
 
       - uses: actions/download-artifact@v4
         with:
-          name: tiny_lobby-macos-x64-release
-          path: tiny_lobby-macos-x64-release
+          name: tiny_lobby-macos-x64
+          path: tiny_lobby-macos-x64
 
       - uses: actions/download-artifact@v4
         with:
-          name: tiny_lobby-windows-x64-release
-          path: tiny_lobby-windows-x64-release
+          name: tiny_lobby-windows-x64
+          path: tiny_lobby-windows-x64
 
       # Rename executables
       - name: Rename executables
@@ -321,9 +321,9 @@ jobs:
           mkdir release
           mv tiny_lobby-linux-arm64-release/tiny_lobby release/tiny_lobby_linux_arm64
           mv tiny_lobby-linux-x64-release/tiny_lobby release/tiny_lobby_linux_x64
-          mv tiny_lobby-macos-arm64-release/tiny_lobby release/tiny_lobby_macos_arm64
-          mv tiny_lobby-macos-x64-release/tiny_lobby release/tiny_lobby_macos_x64
-          mv tiny_lobby-windows-x64-release/tiny_lobby.exe release/tiny_lobby_windows_x64.exe
+          mv tiny_lobby-macos-arm64/tiny_lobby release/tiny_lobby_macos_arm64
+          mv tiny_lobby-macos-x64/tiny_lobby release/tiny_lobby_macos_x64
+          mv tiny_lobby-windows-x64/tiny_lobby.exe release/tiny_lobby_windows_x64.exe
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
