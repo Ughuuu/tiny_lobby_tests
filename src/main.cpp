@@ -112,9 +112,6 @@ std::string extract_data_from_new_game(const std::string &resp, const std::strin
 
 int main(int argc, char *argv[]) {
     INIReader config_reader("config.ini");
-    if (config_reader.ParseError() < 0) {
-        std::cout << "Cannot open config.ini. To generate one run --generate-config" << std::endl;
-    }
     bool verbose = false;
     for (int i = 1; i < argc; ++i) {
         std::string arg(argv[i]);
