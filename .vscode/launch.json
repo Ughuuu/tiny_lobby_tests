@@ -10,7 +10,9 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/tiny_lobby",
             "args": [
-                "--disable-metrics"
+                "--disable-metrics",
+                "--path",
+                "/Users/dragosdaian/Documents/appsinacup/tiny_lobby_scripts"
                 //"--verbose",
             ],
             "stopAtEntry": false,

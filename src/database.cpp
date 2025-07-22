@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "INIReader.h"
+#include "main.h"
 
 pqxx::connection *connection;
 
@@ -17,7 +18,7 @@ bool ensure_connection() {
 
 void connect_to_db() {
     try {
-        INIReader config_reader("config.ini");
+        INIReader config_reader(BasePath::instance().file("config.ini"));
         std::string database = config_reader.Get("database", "database", "");
         if (database.empty()) {
             std::cerr << "Database name not found in config.ini" << std::endl;

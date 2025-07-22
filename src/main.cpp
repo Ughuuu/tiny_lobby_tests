@@ -1,3 +1,24 @@
+
+#include "main.h"
+
+// Define BasePath default constructor
+BasePath::BasePath() = default;
+
+// Implementation of BasePath
+BasePath &BasePath::instance() {
+    static BasePath inst;
+    return inst;
+}
+void BasePath::set(const std::string &path) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    base_path_ = path;
+    if (!base_path_.empty() && base_path_.back() != '/' && base_path_.back() != '\\') {
+        base_path_ += "/";
+    }
+}
+std::string BasePath::get() const { return base_path_; }
+std::string BasePath::file(const std::string &fname) const { return base_path_ + fname; }
+
 #include <readerwriterqueue.h>
 #include <stddef.h>
 #include <uwebsockets/App.h>
@@ -53,19 +74,17 @@ std::string get_jwt_path() { return getUserAppDataPath("LobbyServer") + "session
 
 std::vector<std::string> get_game_data_without_game_id(const std::string &game_id) {
     std::vector<std::string> lines;
-    // Open the file in append mode
-    std::ifstream games_file_check("games.ini");
+    std::ifstream games_file_check(BasePath::instance().file("games.ini"));
     if (!games_file_check.is_open()) {
         return lines;
     }
-    // Read all lines and erase existing game_id lines between [game_id] and next [other_game_id]
     std::string line;
     bool in_game_section = false;
     while (std::getline(games_file_check, line)) {
         if (line == "[" + game_id + "]") {
             in_game_section = true;
         } else if (in_game_section && line.starts_with("[")) {
-            in_game_section = false;  // End of the current game section
+            in_game_section = false;
         }
         if (!in_game_section) {
             lines.push_back(line);
@@ -88,8 +107,7 @@ std::string extract_data_from_new_game(const std::string &resp, const std::strin
 
     yyjson_doc_free(doc);
     std::vector<std::string> lines = get_game_data_without_game_id(game_id);
-    // write lines back to the file
-    std::ofstream games_file("games.ini", std::ios::out);
+    std::ofstream games_file(BasePath::instance().file("games.ini"), std::ios::out);
     if (!games_file.is_open()) {
         return "Failed to open games.ini.";
     }
@@ -111,8 +129,17 @@ std::string extract_data_from_new_game(const std::string &resp, const std::strin
 }
 
 int main(int argc, char *argv[]) {
-    INIReader config_reader("config.ini");
     bool verbose = false;
+    // Parse --path argument and set singleton
+    for (int i = 1; i < argc; ++i) {
+        std::string arg(argv[i]);
+        if (arg == "--path" && i + 1 < argc) {
+            BasePath::instance().set(argv[++i]);
+        }
+    }
+
+    INIReader config_reader(BasePath::instance().file("config.ini"));
+
     for (int i = 1; i < argc; ++i) {
         std::string arg(argv[i]);
 
@@ -129,7 +156,7 @@ int main(int argc, char *argv[]) {
             return 0;
         } else if (arg == "--generate-config") {
             std::cout << "Generating config.ini" << std::endl;
-            std::ofstream config_file("config.ini");
+            std::ofstream config_file(BasePath::instance().file("config.ini"));
             if (config_file.is_open()) {
                 config_file << default_config;
                 config_file.close();
@@ -138,9 +165,10 @@ int main(int argc, char *argv[]) {
             }
             return 0;
         } else if (arg == "--help" || arg == "-h") {
-            std::cout << "Usage: " << argv[0]
-                      << " [--verbose] [--disable-metrics] [--logout] [--generate-config]"
-                      << std::endl;
+            std::cout
+                << "Usage: " << argv[0]
+                << " [--verbose] [--disable-metrics] [--logout] [--generate-config] [--path <path>]"
+                << std::endl;
             return 0;
         }
     }
@@ -205,9 +233,11 @@ int main(int argc, char *argv[]) {
             });
 
         GameThread GameThread(
-            verbose, config_reader.GetString("games", "log_folder", "logs"),
-            config_reader.Get("games", "scripts_folder", "scripts"), receive_queue, app.getLoop(),
-            &webserver, nullptr, stop, config_reader.GetInteger("games", "listing_interval", 3000),
+            verbose,
+            BasePath::instance().file(config_reader.GetString("games", "log_folder", "logs")),
+            BasePath::instance().file(config_reader.Get("games", "scripts_folder", "scripts")),
+            receive_queue, app.getLoop(), &webserver, nullptr, stop,
+            config_reader.GetInteger("games", "listing_interval", 3000),
             config_reader.GetInteger("games", "max_reconnection_time", 6 * 60 * 1000));
         app.get("/", [](auto *res, auto *req) { res->writeStatus("200 OK")->end("OK"); });
         app.get("/health", [](auto *res, auto *req) { res->writeStatus("200 OK")->end("OK"); });
@@ -263,8 +293,7 @@ int main(int argc, char *argv[]) {
             }
             GameThread.unload_game(game_id);
             std::vector<std::string> lines = get_game_data_without_game_id(game_id);
-            // write lines back to the file
-            std::ofstream games_file("games.ini", std::ios::out);
+            std::ofstream games_file(BasePath::instance().file("games.ini"), std::ios::out);
             if (!games_file.is_open()) {
                 res->writeStatus("500 Internal Server Error")->end("Failed to open games.ini.");
                 return;
@@ -323,9 +352,11 @@ int main(int argc, char *argv[]) {
                 }
             });
         GameThread GameThread(
-            verbose, config_reader.GetString("games", "log_folder", "logs"),
-            config_reader.Get("games", "scripts_folder", "scripts"), receive_queue, app.getLoop(),
-            nullptr, &webserver, stop, config_reader.GetInteger("games", "listing_interval", 3000),
+            verbose,
+            BasePath::instance().file(config_reader.GetString("games", "log_folder", "logs")),
+            BasePath::instance().file(config_reader.Get("games", "scripts_folder", "scripts")),
+            receive_queue, app.getLoop(), nullptr, &webserver, stop,
+            config_reader.GetInteger("games", "listing_interval", 3000),
             config_reader.GetInteger("games", "max_reconnection_time", 6 * 60 * 1000));
         app.get("/", [](auto *res, auto *req) { res->writeStatus("200 OK")->end("OK"); });
         app.get("/health", [](auto *res, auto *req) { res->writeStatus("200 OK")->end("OK"); });

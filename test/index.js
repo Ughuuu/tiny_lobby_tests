@@ -5,7 +5,7 @@ const path = require('path');
 // Configuration
 //const serverUrl = 'ws://localhost:8080/connect'; // Your WebSocket server URL
 const serverUrl = 'wss://lobby.appsinacup.com/connect'; // Your WebSocket server URL
-const numClients = 50;  // Number of WebSocket clients to simulate
+const numClients = 30;  // Number of WebSocket clients to simulate
 let stopAfter = 0; // Number of messages each client will send. Set to 0 for infinite
 let messageInterval = 1;  // Interval in milliseconds between messages
 let max_time = 30000; // 30 s

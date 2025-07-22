@@ -10,6 +10,7 @@
 #include "any_type.h"
 #include "game_thread_messages.h"
 #include "lua.h"
+#include "main.h"
 
 GameThread::GameThread(
     bool verbose, std::string log_folder, std::string scripts_folder,
@@ -34,11 +35,11 @@ GameThread::GameThread(
 
 void GameThread::load_games() {
     logger.debug_log("[GameThread] on_load_games");
-    if (!std::filesystem::exists("games.ini")) {
+    if (!std::filesystem::exists(BasePath::instance().file("games.ini"))) {
         logger.error_log("[GameThread] Cannot open games.ini file");
         return;
     }
-    INIReader config_reader("games.ini");
+    INIReader config_reader(BasePath::instance().file("games.ini"));
     auto sections = config_reader.Sections();
     std::unordered_set<std::string> games_to_open;
     for (const auto &section : sections) {
