@@ -15,16 +15,15 @@
 GameThread::GameThread(
     bool verbose, std::string log_folder, std::string scripts_folder,
     moodycamel::BlockingReaderWriterQueue<WebSocketReceivedMessage> &receive_queue, uWS::Loop *loop,
-    WebSocketServer<true> *webserver, WebSocketServer<false> *webserver_no_ssl,
-    std::atomic<bool> &stop, int listing_interval, int max_recconection_time)
+    WebSocketServer *webserver, std::atomic<bool> &stop, int listing_interval,
+    int max_recconection_time)
     : listing_interval(listing_interval),
       max_reconnection_time(max_recconection_time),
       logger(verbose, log_folder + "/game.txt"),
       scripts_folder(scripts_folder),
       receive_queue(receive_queue),
       loop(loop),
-      webserver_ssl(webserver),
-      webserver_nossl(webserver_no_ssl),
+      webserver(webserver),
       stop(stop),
       logs_folder(log_folder),
       games_listener(scripts_folder, file_watcher_queue) {
@@ -279,9 +278,8 @@ void GameThread::handle_send() {
         }
         game_data.last_send_time += game_data.send_rate;
 
-        if (webserver_ssl != nullptr) {
-            loop->defer([peers_send_data = std::move(game_data.peers_send_data),
-                         webserver = webserver_ssl]() {
+        loop->defer(
+            [peers_send_data = std::move(game_data.peers_send_data), webserver = webserver]() {
                 for (auto &peer : peers_send_data) {
                     if (peer.second.empty()) {
                         continue;
@@ -290,18 +288,6 @@ void GameThread::handle_send() {
                     webserver->send(peer.first, batched_message, uWS::OpCode::TEXT);
                 }
             });
-        } else {
-            loop->defer([peers_send_data = std::move(game_data.peers_send_data),
-                         webserver = webserver_nossl]() {
-                for (auto &peer : peers_send_data) {
-                    if (peer.second.empty()) {
-                        continue;
-                    }
-                    std::string batched_message = "[" + join(peer.second, ",") + "]";
-                    webserver->send(peer.first, batched_message, uWS::OpCode::TEXT);
-                }
-            });
-        }
         game_data.peers_send_data.clear();
     }
 }
@@ -509,15 +495,8 @@ void GameThread::handle_disconnects() {
             }
         }
         // send disconnected users to websocket server
-        if (webserver_ssl != nullptr) {
-            loop->defer([to_erase = to_erase, webserver = webserver_ssl]() {
-                webserver->clear_users(to_erase);
-            });
-        } else {
-            loop->defer([to_erase = to_erase, webserver = webserver_nossl]() {
-                webserver->clear_users(to_erase);
-            });
-        }
+        loop->defer(
+            [to_erase = to_erase, webserver = webserver]() { webserver->clear_users(to_erase); });
         // clear them from game data
         for (auto &peer_id : to_erase) {
             game_data.disconnected_peers.erase(peer_id);
@@ -704,15 +683,9 @@ void GameThread::send(GameData &game, const std::string &peer_id, const std::str
     }
     // send immediately or batch
     if (game.send_rate == 0 || opCode == uWS::OpCode::CLOSE) {
-        if (webserver_ssl != nullptr) {
-            loop->defer([id = peer_id, msg = message, webserver = webserver_ssl, opCode]() {
-                webserver->send(id, msg, opCode);
-            });
-        } else {
-            loop->defer([id = peer_id, msg = message, webserver = webserver_nossl, opCode]() {
-                webserver->send(id, msg, opCode);
-            });
-        }
+        loop->defer([id = peer_id, msg = message, webserver = webserver, opCode]() {
+            webserver->send(id, msg, opCode);
+        });
     } else {
         auto &msg_list = game.peers_send_data[peer_id];
 

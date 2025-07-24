@@ -10,11 +10,6 @@
 // 1 second
 const int64_t RATE_LIMIT_WINDOW = 1000;
 
-static inline int64_t get_time_now() {
-    auto now = std::chrono::system_clock::now().time_since_epoch();
-    return std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
-}
-
 static inline std::string trim(const std::string& s) {
     auto start = std::find_if(s.begin(), s.end(), [](unsigned char ch) {
         return !std::isspace(ch);
@@ -26,18 +21,16 @@ static inline std::string trim(const std::string& s) {
     return std::string(start, end);
 }
 
-template <bool SSL>
-WebAuthenticationThread<SSL>::WebAuthenticationThread(moodycamel::BlockingReaderWriterQueue<WebSocketAuthenticationMessage<SSL>> &authentication_queue,
+WebAuthenticationThread::WebAuthenticationThread(moodycamel::BlockingReaderWriterQueue<WebSocketAuthenticationMessage> &authentication_queue,
     bool verbose,
     std::string log_folder,
     struct uWS::Loop *loop) :
     authentication_queue(authentication_queue), logger(verbose, log_folder + "/websocket.txt"), loop(loop) {
 }
 
-template <bool SSL>
-void WebAuthenticationThread<SSL>::run() {
+void WebAuthenticationThread::run() {
     while (true) {
-        WebSocketAuthenticationMessage<SSL> auth_message;
+        WebSocketAuthenticationMessage auth_message;
         authentication_queue.wait_dequeue(auth_message);
         PerSocketData user_data = auth_message.user_data;
         auto &res = auth_message.res;
@@ -166,8 +159,7 @@ void WebAuthenticationThread<SSL>::run() {
     }
 }
 
-template <bool SSL>
-void WebSocketServer<SSL>::on_upgrade(uWS::HttpResponse<SSL> *res,uWS::HttpRequest *req, struct us_socket_context_t *context) {
+void WebSocketServer::on_upgrade(uWS::HttpResponse<false> *res,uWS::HttpRequest *req, struct us_socket_context_t *context) {
     if (connected_users > max_users) {
         logger.error_log("[WebSocketServer] error: too many users");
         res->writeStatus("400 Bad Request")->write("Too many users.");
@@ -202,7 +194,7 @@ void WebSocketServer<SSL>::on_upgrade(uWS::HttpResponse<SSL> *res,uWS::HttpReque
         user_data.reconnection_token = protocols_split[2];
     }
     std::shared_ptr<bool> abort_shared = std::make_shared<bool>(false);
-    WebSocketAuthenticationMessage<SSL> auth_message {
+    WebSocketAuthenticationMessage auth_message {
         .user_data = user_data,
         .res = res,
         .req = req,
@@ -225,8 +217,7 @@ void WebSocketServer<SSL>::on_upgrade(uWS::HttpResponse<SSL> *res,uWS::HttpReque
     logger.debug_log("[WebSocketServer] on_upgrade: ", user_data.uid, " ", user_data.id, " ", user_data.game_id, protocol);
 }
 
-template <bool SSL>
-void WebSocketServer<SSL>::on_open(uWS::WebSocket<SSL, true, PerSocketData> *ws) {
+void WebSocketServer::on_open(uWS::WebSocket<false, true, PerSocketData> *ws) {
     PerSocketData* data = ws->getUserData();
     logger.debug_log("[WebSocketServer] on_open: ", data->uid, " ", data->id, " ", data->game_id);
     if ((data->reconnection_token != "" &&
@@ -271,7 +262,7 @@ void WebSocketServer<SSL>::on_open(uWS::WebSocket<SSL, true, PerSocketData> *ws)
         .peer_id = data->id,
         .timestamp = get_time_now()
     });
-    connection_data.insert_or_assign(data->id, PeerConnectionData<SSL> {
+    connection_data.insert_or_assign(data->id, PeerConnectionData {
         .id = data->id,
         .game_id = data->game_id,
         .reconnection_token = data->reconnection_token,
@@ -292,8 +283,7 @@ void WebSocketServer<SSL>::on_open(uWS::WebSocket<SSL, true, PerSocketData> *ws)
         send(data->id, "Out of memory", uWS::OpCode::CLOSE);
     }
 }
-template <bool SSL>
-void WebSocketServer<SSL>::on_message(uWS::WebSocket<SSL, true, PerSocketData> *ws, const std::string_view &message, uWS::OpCode opCode) {
+void WebSocketServer::on_message(uWS::WebSocket<false, true, PerSocketData> *ws, const std::string_view &message, uWS::OpCode opCode) {
     PerSocketData* data = ws->getUserData();
     int64_t now = get_time_now();
     if (now - data->last_message_time < RATE_LIMIT_WINDOW) {
@@ -319,8 +309,7 @@ void WebSocketServer<SSL>::on_message(uWS::WebSocket<SSL, true, PerSocketData> *
         send(data->id, "Too many queued messages", uWS::OpCode::CLOSE);
     }
 }
-template <bool SSL>
-void WebSocketServer<SSL>::on_close(uWS::WebSocket<SSL, true, PerSocketData> *ws, const std::string_view &message, int opCode) {
+void WebSocketServer::on_close(uWS::WebSocket<false, true, PerSocketData> *ws, const std::string_view &message, int opCode) {
     PerSocketData* data = ws->getUserData();
     // delete websocket only if reconnection_token matches and it has same websocket
     if (connection_data.find(data->id) != connection_data.end()) {
@@ -340,8 +329,7 @@ void WebSocketServer<SSL>::on_close(uWS::WebSocket<SSL, true, PerSocketData> *ws
     });
 }
 
-template <bool SSL>
-void WebSocketServer<SSL>::send(std::string id, const std::string &message, uWS::OpCode opCode) {
+void WebSocketServer::send(std::string id, const std::string &message, uWS::OpCode opCode) {
     auto it = connection_data.find(id);
     if (it != connection_data.end()) {
         if (it->second.ws != nullptr) {
@@ -359,8 +347,7 @@ void WebSocketServer<SSL>::send(std::string id, const std::string &message, uWS:
     }
 }
 
-template <bool SSL>
-void WebSocketServer<SSL>::send_all(const std::string &message, uWS::OpCode opCode) {
+void WebSocketServer::send_all(const std::string &message, uWS::OpCode opCode) {
     for (auto it = connection_data.begin(); it != connection_data.end(); ++it) {
         if (it->second.ws != nullptr) {
             PerSocketData* data = it->second.ws->getUserData();
@@ -377,8 +364,7 @@ void WebSocketServer<SSL>::send_all(const std::string &message, uWS::OpCode opCo
     }
 }
 
-template <bool SSL>
-void WebSocketServer<SSL>::clear_users(boost::container::flat_set<std::string> users_to_clean) {
+void WebSocketServer::clear_users(boost::container::flat_set<std::string> users_to_clean) {
     for (auto &user_id : users_to_clean) {
         send(user_id, std::string("Failed to reconnect"), uWS::OpCode::CLOSE);
         // user didn't reconnect, delete user
@@ -391,8 +377,7 @@ void WebSocketServer<SSL>::clear_users(boost::container::flat_set<std::string> u
     }
 }
 
-template <bool SSL>
-WebSocketServer<SSL>::WebSocketServer(bool verbose,
+WebSocketServer::WebSocketServer(bool verbose,
     std::string log_folder,
     moodycamel::BlockingReaderWriterQueue<WebSocketReceivedMessage>& receive_queue,
     int max_messages_per_second, int max_users,

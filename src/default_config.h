@@ -14,12 +14,6 @@ max_messages_per_second=50000
 message_queue_length=250000
 max_users=10000
 
-[ssl]
-enabled=false
-key_filename=certs/key.pem
-cert_filename=certs/cert.pem
-passphrase=123456
-
 [games]
 scripts_folder=scripts
 log_folder=logs

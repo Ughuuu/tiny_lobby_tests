@@ -41,8 +41,7 @@ class GameThread {
     boost::uuids::random_generator gen;
     moodycamel::BlockingReaderWriterQueue<WebSocketReceivedMessage> &receive_queue;
     struct uWS::Loop *loop;
-    WebSocketServer<true> *webserver_ssl;
-    WebSocketServer<false> *webserver_nossl;
+    WebSocketServer *webserver;
     std::atomic<bool> &stop;
     GamesListener games_listener;
     efsw::FileWatcher file_watcher;
@@ -143,7 +142,6 @@ class GameThread {
 
     GameThread(bool verbose, std::string log_folder, std::string scripts_folder,
                moodycamel::BlockingReaderWriterQueue<WebSocketReceivedMessage> &receive_queue,
-               uWS::Loop *loop, WebSocketServer<true> *webserver,
-               WebSocketServer<false> *webserver_nossl, std::atomic<bool> &stop,
+               uWS::Loop *loop, WebSocketServer *webserver, std::atomic<bool> &stop,
                int listing_interval, int max_recconection_time);
 };

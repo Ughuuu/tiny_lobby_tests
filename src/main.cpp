@@ -185,250 +185,123 @@ int main(int argc, char *argv[]) {
     }
     moodycamel::BlockingReaderWriterQueue<WebSocketReceivedMessage> receive_queue(
         message_queue_length);
-    if (config_reader.GetBoolean("ssl", "enabled", false)) {
-        std::cout << "Starting webserver with SSL" << std::endl;
-        uWS::SSLApp app = uWS::SSLApp(uWS::SocketContextOptions{
-            .key_file_name = config_reader.Get("ssl", "key_filename", "").c_str(),
-            .cert_file_name = config_reader.Get("ssl", "cert_filename", "").c_str(),
-            .passphrase = config_reader.Get("ssl", "passphrase", "").c_str()});
-        WebSocketServer<true> webserver(
-            verbose, config_reader.GetString("webserverserver", "log_folder", "logs"),
-            receive_queue,
-            config_reader.GetInteger("webserverserver", "max_messages_per_second", 5),
-            config_reader.GetInteger("webserverserver", "max_users", 10000), app.getLoop());
-        app.ws<PerSocketData>(
-               "/connect",
-               {/* Settings */
-                .compression = static_cast<uWS::CompressOptions>(
-                    config_reader.GetUnsigned("webserverserver", "compression", uWS::DISABLED)),
-                // max 2 kb
-                .maxPayloadLength = static_cast<unsigned int>(
-                    config_reader.GetUnsigned("webserverserver", "max_payload_length", 2 * 1024)),
-                // 30 seconds
-                .idleTimeout = static_cast<unsigned short>(
-                    config_reader.GetUnsigned("webserverserver", "idle_timeout", 30)),
-                // 64 kb
-                .maxBackpressure = static_cast<unsigned int>(
-                    config_reader.GetUnsigned("webserverserver", "max_backpressure", 64 * 1024)),
-                .closeOnBackpressureLimit = true,
-                .resetIdleTimeoutOnSend =
-                    config_reader.GetBoolean("webserverserver", "reset_idle_timeout_on_send", true),
-                .sendPingsAutomatically = true,
-                /* Handlers */
-                .upgrade = [&](auto *res, auto *req,
-                               auto *context) { webserver.on_upgrade(res, req, context); },
-                .open = [&](auto *ws) { webserver.on_open(ws); },
-                .message = [&](auto *ws, std::string_view message,
-                               uWS::OpCode opCode) { webserver.on_message(ws, message, opCode); },
-                .close = [&](auto *ws, int code,
-                             std::string_view message) { webserver.on_close(ws, message, code); }})
-            .listen(port, [&](auto *listen_socket) {
-                if (listen_socket) {
-                    std::cout << "Listening on port " << port << std::endl;
-                } else {
-                    std::cout << "Failed to listen on port" << port << std::endl;
-                    stop = true;
-                    exit(1);
+    std::cout << "Starting webserver" << std::endl;
+    uWS::App app = uWS::App();
+    WebSocketServer webserver(
+        verbose, config_reader.GetString("webserverserver", "log_folder", "logs"), receive_queue,
+        config_reader.GetInteger("webserverserver", "max_messages_per_second", 5),
+        config_reader.GetInteger("webserverserver", "max_users", 10000), app.getLoop());
+    app.ws<PerSocketData>(
+           "/connect",
+           {/* Settings */
+            .compression = static_cast<uWS::CompressOptions>(
+                config_reader.GetUnsigned("webserverserver", "compression", uWS::DISABLED)),
+            // max 2 kb
+            .maxPayloadLength = static_cast<unsigned int>(
+                config_reader.GetUnsigned("webserverserver", "max_payload_length", 2 * 1024)),
+            // 30 seconds
+            .idleTimeout = static_cast<unsigned short>(
+                config_reader.GetUnsigned("webserverserver", "idle_timeout", 30)),
+            // 64 kb
+            .maxBackpressure = static_cast<unsigned int>(
+                config_reader.GetUnsigned("webserverserver", "max_backpressure", 64 * 1024)),
+            .closeOnBackpressureLimit = true,
+            .resetIdleTimeoutOnSend =
+                config_reader.GetBoolean("webserverserver", "reset_idle_timeout_on_send", true),
+            .sendPingsAutomatically = true,
+            /* Handlers */
+            .upgrade = [&](auto *res, auto *req,
+                           auto *context) { webserver.on_upgrade(res, req, context); },
+            .open = [&](auto *ws) { webserver.on_open(ws); },
+            .message = [&](auto *ws, std::string_view message,
+                           uWS::OpCode opCode) { webserver.on_message(ws, message, opCode); },
+            .close = [&](auto *ws, int code,
+                         std::string_view message) { webserver.on_close(ws, message, code); }})
+        .listen(port, [&](auto *listen_socket) {
+            if (listen_socket) {
+                std::cout << "Listening on port " << port << std::endl;
+            } else {
+                std::cout << "Failed to listen on port" << port << std::endl;
+                stop = true;
+                exit(1);
+            }
+        });
+    GameThread GameThread(
+        verbose, BasePath::instance().file(config_reader.GetString("games", "log_folder", "logs")),
+        BasePath::instance().file(config_reader.Get("games", "scripts_folder", "scripts")),
+        receive_queue, app.getLoop(), &webserver, stop,
+        config_reader.GetInteger("games", "listing_interval", 3000),
+        config_reader.GetInteger("games", "max_reconnection_time", 6 * 60 * 1000));
+    app.get("/", [](auto *res, auto *req) { res->writeStatus("200 OK")->end("OK"); });
+    app.get("/health", [](auto *res, auto *req) { res->writeStatus("200 OK")->end("OK"); });
+    app.post("/system/shutdown", [&stop](auto *res, auto *req) {
+        res->writeStatus("200 OK")->end("OK");
+        return;
+        // No-op for now
+        stop = true;
+        // TODO do it correctly
+        exit(0);
+    });
+    app.post("/system/notify", [&webserver](auto *res, auto *req) {
+        res->writeStatus("200 OK")->end("OK");
+        // No-op for now
+        return;
+        webserver.send_all("notify", uWS::OpCode::TEXT);
+        res->writeStatus("200 OK")->end("OK");
+    });
+    app.post("/game/:game_id", [&webserver, &GameThread](auto *res, auto *req) {
+        res->writeStatus("200 OK")->end("OK");
+        // No-op for now
+        return;
+        std::string game_id{req->getParameter(0)};
+        if (game_id.empty()) {
+            res->writeStatus("400 Bad Request")->end("Game ID is required");
+            return;
+        }
+        auto body = std::make_shared<std::string>();
+        auto isAborted = std::make_shared<bool>(false);
+        res->onData([res, isAborted, body, &GameThread, game_id](std::string_view chunk,
+                                                                 bool isFin) mutable {
+            body->append(chunk);
+            if (isFin && !*isAborted) {
+                std::string msg = extract_data_from_new_game(*body, game_id);
+                if (msg.size() > 0) {
+                    res->writeStatus("200 OK")->end(msg);
+                    return;
                 }
-            });
-
-        GameThread GameThread(
-            verbose,
-            BasePath::instance().file(config_reader.GetString("games", "log_folder", "logs")),
-            BasePath::instance().file(config_reader.Get("games", "scripts_folder", "scripts")),
-            receive_queue, app.getLoop(), &webserver, nullptr, stop,
-            config_reader.GetInteger("games", "listing_interval", 3000),
-            config_reader.GetInteger("games", "max_reconnection_time", 6 * 60 * 1000));
-        app.get("/", [](auto *res, auto *req) { res->writeStatus("200 OK")->end("OK"); });
-        app.get("/health", [](auto *res, auto *req) { res->writeStatus("200 OK")->end("OK"); });
-        app.post("/system/shutdown", [&stop](auto *res, auto *req) {
-            res->writeStatus("200 OK")->end("OK");
-            // No-op for now
-            return;
-            stop = true;
-            // TODO do it correctly
-            exit(0);
-        });
-        app.post("/system/notify", [&webserver](auto *res, auto *req) {
-            res->writeStatus("200 OK")->end("OK");
-            // No-op for now
-            return;
-            webserver.send_all("notify", uWS::OpCode::TEXT);
-            res->writeStatus("200 OK")->end("OK");
-        });
-        app.post("/game/:game_id", [&webserver, &GameThread](auto *res, auto *req) {
-            res->writeStatus("200 OK")->end("OK");
-            // No-op for now
-            return;
-            std::string game_id{req->getParameter(0)};
-            if (game_id.empty()) {
-                res->writeStatus("400 Bad Request")->end("Game ID is required");
-                return;
+                GameThread.load_games();
+                res->writeStatus("200 OK")->end("Game created");
             }
-            auto body = std::make_shared<std::string>();
-            auto isAborted = std::make_shared<bool>(false);
-            res->onData([res, isAborted, body, &GameThread, game_id](std::string_view chunk,
-                                                                     bool isFin) mutable {
-                body->append(chunk);
-                if (isFin && !*isAborted) {
-                    std::string msg = extract_data_from_new_game(*body, game_id);
-                    if (msg.size() > 0) {
-                        res->writeStatus("200 OK")->end(msg);
-                        return;
-                    }
-                    GameThread.load_games();
-                    res->writeStatus("200 OK")->end("Game created");
-                }
-            });
-            res->onAborted([isAborted]() { *isAborted = true; });
         });
-        app.del("/game/:game_id", [&webserver, &GameThread](auto *res, auto *req) {
-            res->writeStatus("200 OK")->end("OK");
-            // No-op for now
+        res->onAborted([isAborted]() { *isAborted = true; });
+    });
+    app.del("/game/:game_id", [&webserver, &GameThread](auto *res, auto *req) {
+        res->writeStatus("200 OK")->end("OK");
+        // No-op for now
+        return;
+        std::string game_id{req->getParameter(0)};
+        if (game_id.empty()) {
+            res->writeStatus("400 Bad Request")->end("Game ID is required");
             return;
-            std::string game_id{req->getParameter(0)};
-            if (game_id.empty()) {
-                res->writeStatus("400 Bad Request")->end("Game ID is required");
-                return;
-            }
-            GameThread.unload_game(game_id);
-            std::vector<std::string> lines = get_game_data_without_game_id(game_id);
-            std::ofstream games_file(BasePath::instance().file("games.ini"), std::ios::out);
-            if (!games_file.is_open()) {
-                res->writeStatus("500 Internal Server Error")->end("Failed to open games.ini.");
-                return;
-            }
-            for (const auto &l : lines) {
-                games_file << l << std::endl;
-            }
-            res->writeStatus("200 OK")->end("Game unloaded");
-        });
-        std::thread GameThread_thread = std::thread([&]() { GameThread.run(); });
-        std::thread GameThread_time_thread = std::thread([&]() { GameThread.time_run(); });
-        app.run();
-        GameThread_thread.join();
-        GameThread_time_thread.join();
-    } else {
-        std::cout << "Starting webserver without SSL" << std::endl;
-        uWS::App app = uWS::App();
-        WebSocketServer<false> webserver(
-            verbose, config_reader.GetString("webserverserver", "log_folder", "logs"),
-            receive_queue,
-            config_reader.GetInteger("webserverserver", "max_messages_per_second", 5),
-            config_reader.GetInteger("webserverserver", "max_users", 10000), app.getLoop());
-        app.ws<PerSocketData>(
-               "/connect",
-               {/* Settings */
-                .compression = static_cast<uWS::CompressOptions>(
-                    config_reader.GetUnsigned("webserverserver", "compression", uWS::DISABLED)),
-                // max 2 kb
-                .maxPayloadLength = static_cast<unsigned int>(
-                    config_reader.GetUnsigned("webserverserver", "max_payload_length", 2 * 1024)),
-                // 30 seconds
-                .idleTimeout = static_cast<unsigned short>(
-                    config_reader.GetUnsigned("webserverserver", "idle_timeout", 30)),
-                // 64 kb
-                .maxBackpressure = static_cast<unsigned int>(
-                    config_reader.GetUnsigned("webserverserver", "max_backpressure", 64 * 1024)),
-                .closeOnBackpressureLimit = true,
-                .resetIdleTimeoutOnSend =
-                    config_reader.GetBoolean("webserverserver", "reset_idle_timeout_on_send", true),
-                .sendPingsAutomatically = true,
-                /* Handlers */
-                .upgrade = [&](auto *res, auto *req,
-                               auto *context) { webserver.on_upgrade(res, req, context); },
-                .open = [&](auto *ws) { webserver.on_open(ws); },
-                .message = [&](auto *ws, std::string_view message,
-                               uWS::OpCode opCode) { webserver.on_message(ws, message, opCode); },
-                .close = [&](auto *ws, int code,
-                             std::string_view message) { webserver.on_close(ws, message, code); }})
-            .listen(port, [&](auto *listen_socket) {
-                if (listen_socket) {
-                    std::cout << "Listening on port " << port << std::endl;
-                } else {
-                    std::cout << "Failed to listen on port" << port << std::endl;
-                    stop = true;
-                    exit(1);
-                }
-            });
-        GameThread GameThread(
-            verbose,
-            BasePath::instance().file(config_reader.GetString("games", "log_folder", "logs")),
-            BasePath::instance().file(config_reader.Get("games", "scripts_folder", "scripts")),
-            receive_queue, app.getLoop(), nullptr, &webserver, stop,
-            config_reader.GetInteger("games", "listing_interval", 3000),
-            config_reader.GetInteger("games", "max_reconnection_time", 6 * 60 * 1000));
-        app.get("/", [](auto *res, auto *req) { res->writeStatus("200 OK")->end("OK"); });
-        app.get("/health", [](auto *res, auto *req) { res->writeStatus("200 OK")->end("OK"); });
-        app.post("/system/shutdown", [&stop](auto *res, auto *req) {
-            res->writeStatus("200 OK")->end("OK");
+        }
+        GameThread.unload_game(game_id);
+        std::vector<std::string> lines = get_game_data_without_game_id(game_id);
+        // write lines back to the file
+        std::ofstream games_file("games.ini", std::ios::out);
+        if (!games_file.is_open()) {
+            res->writeStatus("500 Internal Server Error")->end("Failed to open games.ini.");
             return;
-            // No-op for now
-            stop = true;
-            // TODO do it correctly
-            exit(0);
-        });
-        app.post("/system/notify", [&webserver](auto *res, auto *req) {
-            res->writeStatus("200 OK")->end("OK");
-            // No-op for now
-            return;
-            webserver.send_all("notify", uWS::OpCode::TEXT);
-            res->writeStatus("200 OK")->end("OK");
-        });
-        app.post("/game/:game_id", [&webserver, &GameThread](auto *res, auto *req) {
-            res->writeStatus("200 OK")->end("OK");
-            // No-op for now
-            return;
-            std::string game_id{req->getParameter(0)};
-            if (game_id.empty()) {
-                res->writeStatus("400 Bad Request")->end("Game ID is required");
-                return;
-            }
-            auto body = std::make_shared<std::string>();
-            auto isAborted = std::make_shared<bool>(false);
-            res->onData([res, isAborted, body, &GameThread, game_id](std::string_view chunk,
-                                                                     bool isFin) mutable {
-                body->append(chunk);
-                if (isFin && !*isAborted) {
-                    std::string msg = extract_data_from_new_game(*body, game_id);
-                    if (msg.size() > 0) {
-                        res->writeStatus("200 OK")->end(msg);
-                        return;
-                    }
-                    GameThread.load_games();
-                    res->writeStatus("200 OK")->end("Game created");
-                }
-            });
-            res->onAborted([isAborted]() { *isAborted = true; });
-        });
-        app.del("/game/:game_id", [&webserver, &GameThread](auto *res, auto *req) {
-            res->writeStatus("200 OK")->end("OK");
-            // No-op for now
-            return;
-            std::string game_id{req->getParameter(0)};
-            if (game_id.empty()) {
-                res->writeStatus("400 Bad Request")->end("Game ID is required");
-                return;
-            }
-            GameThread.unload_game(game_id);
-            std::vector<std::string> lines = get_game_data_without_game_id(game_id);
-            // write lines back to the file
-            std::ofstream games_file("games.ini", std::ios::out);
-            if (!games_file.is_open()) {
-                res->writeStatus("500 Internal Server Error")->end("Failed to open games.ini.");
-                return;
-            }
-            for (const auto &l : lines) {
-                games_file << l << std::endl;
-            }
-            res->writeStatus("200 OK")->end("Game unloaded");
-        });
-        std::thread GameThread_thread = std::thread([&]() { GameThread.run(); });
-        std::thread GameThread_time_thread = std::thread([&]() { GameThread.time_run(); });
-        app.run();
-        GameThread_thread.join();
-        GameThread_time_thread.join();
-    }
+        }
+        for (const auto &l : lines) {
+            games_file << l << std::endl;
+        }
+        res->writeStatus("200 OK")->end("Game unloaded");
+    });
+    std::thread GameThread_thread = std::thread([&]() { GameThread.run(); });
+    std::thread GameThread_time_thread = std::thread([&]() { GameThread.time_run(); });
+    app.run();
+    GameThread_thread.join();
+    GameThread_time_thread.join();
     if (config_reader.GetBoolean("database", "enabled", false) == true) {
         close_connection();
     }
