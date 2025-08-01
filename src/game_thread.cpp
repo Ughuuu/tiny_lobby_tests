@@ -1291,9 +1291,12 @@ void GameThread::on_lobby_ready(GameData &game, std::string command_id, PeerData
         bool has_error = false;
         boost::container::vector<AnyElement> args(1);
         args[0] = AnyElement{true};
+        bool old_ready = peer.ready;
+        peer.ready = ready;
         auto func_result = scripted_function_call(peer.id, peer.lobby_id, game, "_can_peer_ready",
                                                   true, args, has_error);
         if (std::holds_alternative<std::string>(func_result.value)) {
+            peer.ready = old_ready;
             return on_error(game, command_id, peer.id, std::get<std::string>(func_result.value),
                             false, has_error);
         }
@@ -1316,9 +1319,12 @@ void GameThread::on_lobby_unready(GameData &game, std::string command_id, PeerDa
         bool has_error = false;
         boost::container::vector<AnyElement> args(1);
         args[0] = AnyElement{false};
+        bool old_ready = peer.ready;
+        peer.ready = ready;
         auto func_result = scripted_function_call(peer.id, peer.lobby_id, game, "_can_peer_ready",
                                                   true, args, has_error);
         if (std::holds_alternative<std::string>(func_result.value)) {
+            peer.ready = old_ready;
             return on_error(game, command_id, peer.id, std::get<std::string>(func_result.value),
                             false, has_error);
         }
