@@ -8,10 +8,12 @@
 #include "INIReader.h"
 #include "main.h"
 
-pqxx::connection* connection;
+Database::Database() : connection(nullptr) {}
 
-bool ensure_connection() {
-    if (!connection->is_open()) {
+Database::~Database() { close_connection(); }
+
+bool Database::ensure_connection() {
+    if (!connection || !connection->is_open()) {
         std::cerr << "Connection lost, attempting to reconnect..." << std::endl;
         connect_to_db();
         return false;
@@ -19,7 +21,7 @@ bool ensure_connection() {
     return true;
 }
 
-void connect_to_db() {
+void Database::connect_to_db() {
     try {
         INIReader config_reader(BasePath::instance().file("config.ini"));
         std::string database = config_reader.Get("database", "database", "");
@@ -64,27 +66,30 @@ void connect_to_db() {
             "game_id TEXT NOT NULL, "
             "user_id TEXT NOT NULL, "
             "score BIGINT NOT NULL, "
-            "timestamp TIMESTAMP DEFAULT NOW()"
+            "timestamp TIMESTAMP DEFAULT NOW(), "
+            "UNIQUE (leaderboard_id, game_id, user_id)"
             ");"
             "CREATE INDEX IF NOT EXISTS idx_leaderboard_game_score ON leaderboards "
             "(leaderboard_id, "
             "game_id, score DESC);");
         txn.commit();
-
     } catch (const std::exception& e) {
         std::cerr << e.what() << std::endl;
         exit(1);
     }
 }
 
-void close_connection() {
-    connection->close();
-    delete connection;
+void Database::close_connection() {
+    if (connection) {
+        connection->close();
+        delete connection;
+        connection = nullptr;
+    }
 }
 
 // Set or update a user's score with mode
-void leaderboard_set_score(const std::string& leaderboard_id, const std::string& game_id,
-                           const std::string& user_id, int64_t score, std::string& mode) {
+void Database::leaderboard_set_score(const std::string& leaderboard_id, const std::string& game_id,
+                                     const std::string& user_id, int64_t score, std::string& mode) {
     ensure_connection();
     pqxx::work txn(*connection);
     if (mode == "set") {
@@ -121,9 +126,8 @@ void leaderboard_set_score(const std::string& leaderboard_id, const std::string&
 }
 
 // Get top N scores for a game
-std::vector<std::tuple<std::string, int64_t>> leaderboard_get_top(const std::string& leaderboard_id,
-                                                                  const std::string& game_id,
-                                                                  int limit) {
+std::vector<std::tuple<std::string, int64_t>> Database::leaderboard_get_top(
+    const std::string& leaderboard_id, const std::string& game_id, int limit) {
     ensure_connection();
     pqxx::work txn(*connection);
     pqxx::result r = txn.exec(pqxx::zview("SELECT user_id, score FROM leaderboards WHERE "
@@ -139,9 +143,9 @@ std::vector<std::tuple<std::string, int64_t>> leaderboard_get_top(const std::str
 }
 
 // Get a user's score and rank
-std::pair<int64_t, int> leaderboard_get_user_score(const std::string& leaderboard_id,
-                                                   const std::string& game_id,
-                                                   const std::string& user_id) {
+std::pair<int64_t, int> Database::leaderboard_get_user_score(const std::string& leaderboard_id,
+                                                             const std::string& game_id,
+                                                             const std::string& user_id) {
     ensure_connection();
     pqxx::work txn(*connection);
     pqxx::result r = txn.exec(pqxx::zview("SELECT score FROM leaderboards WHERE leaderboard_id = "

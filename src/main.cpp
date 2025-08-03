@@ -1,4 +1,3 @@
-
 #include "main.h"
 
 // Define BasePath default constructor
@@ -173,8 +172,10 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    if (config_reader.GetBoolean("database", "enabled", false) == true) {
-        connect_to_db();
+    bool db_enabled = config_reader.GetBoolean("database", "enabled", false);
+    Database db;
+    if (db_enabled) {
+        db.connect_to_db();
     }
     int port = config_reader.GetUnsigned("webserverserver", "port", 8080);
     std::atomic<bool> stop(false);
@@ -232,7 +233,8 @@ int main(int argc, char *argv[]) {
             }
         });
     GameThread GameThread(
-        verbose, BasePath::instance().file(config_reader.GetString("games", "log_folder", "logs")),
+        db_enabled, verbose,
+        BasePath::instance().file(config_reader.GetString("games", "log_folder", "logs")),
         BasePath::instance().file(config_reader.Get("games", "scripts_folder", "scripts")),
         receive_queue, database_queue, app.getLoop(), &webserver, stop,
         config_reader.GetInteger("games", "listing_interval", 3000),
@@ -302,12 +304,49 @@ int main(int argc, char *argv[]) {
         }
         res->writeStatus("200 OK")->end("Game unloaded");
     });
+    app.get("/game/:game_id/leaderboard", [&db, db_enabled](auto *res, auto *req) {
+        if (!db_enabled) {
+            res->writeStatus("503 Service Unavailable")->end("Database is disabled");
+            return;
+        }
+        std::string game_id{req->getParameter(0)};
+        if (game_id.empty()) {
+            res->writeStatus("400 Bad Request")->end("Game ID is required");
+            return;
+        }
+        int leaderboard_size = 10;
+        int count = 0;
+        auto leaderboard_size_str = req->getQuery("leaderboard_size");
+        auto count_str = req->getQuery("count");
+        if (!leaderboard_size_str.empty()) {
+            leaderboard_size =
+                std::min(std::max(1, std::stoi(std::string(leaderboard_size_str))), 100);
+        }
+        if (!count_str.empty()) {
+            count = std::max(0, std::stoi(std::string(count_str)));
+        }
+        std::string leaderboard_id = "default";
+        auto top_players =
+            db.leaderboard_get_top(leaderboard_id, game_id, leaderboard_size + count);
+        std::vector<std::tuple<std::string, int64_t>> paged_players;
+        for (int i = count; i < std::min((int)top_players.size(), count + leaderboard_size); ++i) {
+            paged_players.push_back(top_players[i]);
+        }
+        std::string json = "[";
+        for (size_t i = 0; i < paged_players.size(); ++i) {
+            const auto &[user_id, score] = paged_players[i];
+            json += "{\"user_id\":\"" + user_id + "\",\"score\":" + std::to_string(score) + "}";
+            if (i + 1 < paged_players.size()) json += ",";
+        }
+        json += "]";
+        res->writeStatus("200 OK")->end(json);
+    });
     std::thread GameThread_thread = std::thread([&]() { GameThread.run(); });
     std::thread GameThread_time_thread = std::thread([&]() { GameThread.time_run(); });
     app.run();
     GameThread_thread.join();
     GameThread_time_thread.join();
-    if (config_reader.GetBoolean("database", "enabled", false) == true) {
-        close_connection();
+    if (db_enabled) {
+        db.close_connection();
     }
 }

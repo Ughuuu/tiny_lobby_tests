@@ -29,7 +29,8 @@ class DatabaseThread {
     std::thread db_thread;
 
    public:
-    DatabaseThread(moodycamel::BlockingReaderWriterQueue<DatabaseReceivedMessage> &queue);
+    DatabaseThread(moodycamel::BlockingReaderWriterQueue<DatabaseReceivedMessage> &queue,
+                   bool db_enabled);
     ~DatabaseThread();
     void run();
     void stop();

@@ -13,7 +13,7 @@
 #include "main.h"
 
 GameThread::GameThread(
-    bool verbose, std::string log_folder, std::string scripts_folder,
+    bool db_enabled, bool verbose, std::string log_folder, std::string scripts_folder,
     moodycamel::BlockingReaderWriterQueue<WebSocketReceivedMessage> &receive_queue,
     moodycamel::BlockingReaderWriterQueue<DatabaseReceivedMessage> &database_queue, uWS::Loop *loop,
     WebSocketServer *webserver, std::atomic<bool> &stop, int listing_interval,
@@ -29,7 +29,8 @@ GameThread::GameThread(
       logs_folder(log_folder),
       games_listener(scripts_folder, file_watcher_queue),
       database_queue(database_queue),
-      database_thread(database_queue) {
+      db_enabled(db_enabled),
+      database_thread(database_queue, db_enabled) {
     file_watcher.addWatch(scripts_folder, &games_listener, true);
     file_watcher.watch();
     logger.debug_log("[GameThread] on_start");

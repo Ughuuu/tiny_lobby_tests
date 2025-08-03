@@ -49,6 +49,7 @@ class GameThread {
     moodycamel::ReaderWriterQueue<std::string> file_watcher_queue;
     std::mutex mutex;
     moodycamel::BlockingReaderWriterQueue<DatabaseReceivedMessage> &database_queue;
+    bool db_enabled;
     DatabaseThread database_thread;
 
    public:
@@ -146,7 +147,7 @@ class GameThread {
                                 const std::string &leaderboard_id, int64_t score,
                                 const std::string &leaderboard_type);
 
-    GameThread(bool verbose, std::string log_folder, std::string scripts_folder,
+    GameThread(bool db_enabled, bool verbose, std::string log_folder, std::string scripts_folder,
                moodycamel::BlockingReaderWriterQueue<WebSocketReceivedMessage> &receive_queue,
                moodycamel::BlockingReaderWriterQueue<DatabaseReceivedMessage> &database_queue,
                uWS::Loop *loop, WebSocketServer *webserver, std::atomic<bool> &stop,
