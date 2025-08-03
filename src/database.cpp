@@ -189,10 +189,8 @@ std::string Database::get_peer_or_insert(const std::string& reconnection_token,
     }
 
     // Not found, insert new peer
-    txn.exec(
-        pqxx::zview("INSERT INTO peers (id, peer_id) VALUES ($1, $2) "
-                    "ON CONFLICT (peer_id) DO UPDATE SET id = EXCLUDED.id, timestamp = NOW();"),
-        pqxx::params(reconnection_token, peer_id));
+    txn.exec(pqxx::zview("INSERT INTO peers (id, peer_id) VALUES ($1, $2);"),
+             pqxx::params(reconnection_token, peer_id));
     txn.commit();
     return peer_id;
 }
