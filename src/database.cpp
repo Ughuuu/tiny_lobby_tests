@@ -1,4 +1,3 @@
-
 #include "database.h"
 
 #include <iostream>
@@ -59,7 +58,7 @@ void connect_to_db() {
         }
         pqxx::work txn(*connection);
         txn.exec(
-            "CREATE TABLE IF NOT EXISTS leaderboard ("
+            "CREATE TABLE IF NOT EXISTS leaderboards ("
             "id SERIAL PRIMARY KEY, "
             "leaderboard_id TEXT NOT NULL, "
             "game_id TEXT NOT NULL, "
@@ -67,7 +66,8 @@ void connect_to_db() {
             "score BIGINT NOT NULL, "
             "timestamp TIMESTAMP DEFAULT NOW()"
             ");"
-            "CREATE INDEX IF NOT EXISTS idx_leaderboard_game_score ON leaderboard (leaderboard_id, "
+            "CREATE INDEX IF NOT EXISTS idx_leaderboard_game_score ON leaderboards "
+            "(leaderboard_id, "
             "game_id, score DESC);");
         txn.commit();
 
@@ -88,33 +88,34 @@ void leaderboard_set_score(const std::string& leaderboard_id, const std::string&
     ensure_connection();
     pqxx::work txn(*connection);
     if (mode == "set") {
-        txn.exec_params(
-            "INSERT INTO leaderboard (leaderboard_id, game_id, user_id, score) VALUES ($1, $2, $3, "
-            "$4) "
-            "ON CONFLICT (leaderboard_id, game_id, user_id) DO UPDATE SET score = $4, timestamp = "
-            "NOW();",
-            leaderboard_id, game_id, user_id, score);
+        txn.exec(pqxx::zview("INSERT INTO leaderboards (leaderboard_id, game_id, user_id, score) "
+                             "VALUES ($1, $2, $3, "
+                             "$4) "
+                             "ON CONFLICT (leaderboard_id, game_id, user_id) DO UPDATE SET score = "
+                             "$4, timestamp = "
+                             "NOW();"),
+                 pqxx::params(leaderboard_id, game_id, user_id, score));
     } else if (mode == "best") {
-        txn.exec_params(
-            "INSERT INTO leaderboard (leaderboard_id, game_id, user_id, score) VALUES ($1, $2, $3, "
-            "$4) "
-            "ON CONFLICT (leaderboard_id, game_id, user_id) DO UPDATE SET score = "
-            "GREATEST(leaderboard.score, EXCLUDED.score), timestamp = NOW();",
-            leaderboard_id, game_id, user_id, score);
+        txn.exec(pqxx::zview("INSERT INTO leaderboards (leaderboard_id, game_id, user_id, score) "
+                             "VALUES ($1, $2, $3, "
+                             "$4) "
+                             "ON CONFLICT (leaderboard_id, game_id, user_id) DO UPDATE SET score = "
+                             "GREATEST(leaderboards.score, EXCLUDED.score), timestamp = NOW();"),
+                 pqxx::params(leaderboard_id, game_id, user_id, score));
     } else if (mode == "incr") {
-        txn.exec_params(
-            "INSERT INTO leaderboard (leaderboard_id, game_id, user_id, score) VALUES ($1, $2, $3, "
-            "$4) "
-            "ON CONFLICT (leaderboard_id, game_id, user_id) DO UPDATE SET score = "
-            "leaderboard.score + EXCLUDED.score, timestamp = NOW();",
-            leaderboard_id, game_id, user_id, score);
+        txn.exec(pqxx::zview("INSERT INTO leaderboards (leaderboard_id, game_id, user_id, score) "
+                             "VALUES ($1, $2, $3, "
+                             "$4) "
+                             "ON CONFLICT (leaderboard_id, game_id, user_id) DO UPDATE SET score = "
+                             "leaderboards.score + EXCLUDED.score, timestamp = NOW();"),
+                 pqxx::params(leaderboard_id, game_id, user_id, score));
     } else if (mode == "decr") {
-        txn.exec_params(
-            "INSERT INTO leaderboard (leaderboard_id, game_id, user_id, score) VALUES ($1, $2, $3, "
-            "$4) "
-            "ON CONFLICT (leaderboard_id, game_id, user_id) DO UPDATE SET score = "
-            "leaderboard.score - EXCLUDED.score, timestamp = NOW();",
-            leaderboard_id, game_id, user_id, score);
+        txn.exec(pqxx::zview("INSERT INTO leaderboards (leaderboard_id, game_id, user_id, score) "
+                             "VALUES ($1, $2, $3, "
+                             "$4) "
+                             "ON CONFLICT (leaderboard_id, game_id, user_id) DO UPDATE SET score = "
+                             "leaderboards.score - EXCLUDED.score, timestamp = NOW();"),
+                 pqxx::params(leaderboard_id, game_id, user_id, score));
     }
     txn.commit();
 }
@@ -125,10 +126,10 @@ std::vector<std::tuple<std::string, int64_t>> leaderboard_get_top(const std::str
                                                                   int limit) {
     ensure_connection();
     pqxx::work txn(*connection);
-    pqxx::result r = txn.exec_params(
-        "SELECT user_id, score FROM leaderboard WHERE leaderboard_id = $1 AND game_id = $2 ORDER "
-        "BY score DESC LIMIT $3;",
-        leaderboard_id, game_id, limit);
+    pqxx::result r = txn.exec(pqxx::zview("SELECT user_id, score FROM leaderboards WHERE "
+                                          "leaderboard_id = $1 AND game_id = $2 ORDER "
+                                          "BY score DESC LIMIT $3;"),
+                              pqxx::params(leaderboard_id, game_id, limit));
     std::vector<std::tuple<std::string, int64_t>> results;
     for (auto row : r) {
         results.emplace_back(row[0].as<std::string>(), row[1].as<int64_t>());
@@ -143,15 +144,15 @@ std::pair<int64_t, int> leaderboard_get_user_score(const std::string& leaderboar
                                                    const std::string& user_id) {
     ensure_connection();
     pqxx::work txn(*connection);
-    pqxx::result r = txn.exec_params(
-        "SELECT score FROM leaderboard WHERE leaderboard_id = $1 AND game_id = $2 AND user_id = "
-        "$3;",
-        leaderboard_id, game_id, user_id);
+    pqxx::result r = txn.exec(pqxx::zview("SELECT score FROM leaderboards WHERE leaderboard_id = "
+                                          "$1 AND game_id = $2 AND user_id = "
+                                          "$3;"),
+                              pqxx::params(leaderboard_id, game_id, user_id));
     int64_t score = r.empty() ? 0 : r[0][0].as<int64_t>();
-    pqxx::result rank_r = txn.exec_params(
-        "SELECT COUNT(*) FROM leaderboard WHERE leaderboard_id = $1 AND game_id = $2 AND score > "
-        "$3;",
-        leaderboard_id, game_id, score);
+    pqxx::result rank_r = txn.exec(pqxx::zview("SELECT COUNT(*) FROM leaderboards WHERE "
+                                               "leaderboard_id = $1 AND game_id = $2 AND score > "
+                                               "$3;"),
+                                   pqxx::params(leaderboard_id, game_id, score));
     int rank = rank_r[0][0].as<int>() + 1;
     txn.commit();
     return {score, rank};
