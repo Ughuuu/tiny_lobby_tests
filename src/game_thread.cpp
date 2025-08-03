@@ -392,7 +392,7 @@ bool GameThread::handle_events() {
                 break;
             }
             // get command
-            yyjson_val *command_val = yyjson_obj_get(root, "command");
+            yyjson_val *command_val = yyjson_obj_get(root, "c");
             if (!command_val || !yyjson_is_str(command_val)) {
                 yyjson_doc_free(doc);
                 on_error(game, EMPTY_STRING, message.id,
@@ -401,7 +401,7 @@ bool GameThread::handle_events() {
             }
 
             std::string command = yyjson_get_str(command_val);
-            yyjson_val *data_val = yyjson_obj_get(root, "data");
+            yyjson_val *data_val = yyjson_obj_get(root, "d");
             std::string command_id;
             if (data_val && yyjson_is_obj(data_val)) {
                 yyjson_val *id_val = yyjson_obj_get(data_val, "id");

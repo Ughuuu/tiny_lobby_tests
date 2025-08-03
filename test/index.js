@@ -53,14 +53,14 @@ function startClient(clientId) {
         var message = JSON.parse(message.toString())
         if (Array.isArray(message)) {
             for (var i = 0; i < message.length; i++) {
-                if (message[i]["command"] == "logical_error" || message[i]["command"] == "error") {
+                if (message[i]["c"] == "logical_error" || message[i]["c"] == "error") {
                     clientErrors++;
                     console.log(message[i])
                 }
             }
             batchesReceived += message.length;
         } else {
-            if (message["command"] == "logical_error" || message["command"] == "error") {
+            if (message["c"] == "logical_error" || message["c"] == "error") {
                 clientErrors++;
                 console.log(message)
             }
@@ -100,12 +100,12 @@ async function startStresTest() {
         messagesSent++;
 
         ws.send(JSON.stringify({
-            "command": "user_data",
-            "data": { "user_data": {"name": "Player " + (i + 1)} }
+            "c": "user_data",
+            "d": { "user_data": {"name": "Player " + (i + 1)} }
         }));
         ws.send(JSON.stringify({
-            "command": "quick_join",
-            "data": { "max_players": 1000 }
+            "c": "quick_join",
+            "d": { "max_players": 1000 }
         }));
         
         setTimeout(() => {
@@ -115,14 +115,14 @@ async function startStresTest() {
                 switch (usecase) {
                     case "max_echo":
                         ws.send(JSON.stringify({
-                            "command": "lobby_call",
-                            "data": { "function": "echo", "inputs": ["15.7"], "id": "123" }
+                            "c": "lobby_call",
+                            "d": { "function": "echo", "inputs": ["15.7"], "id": "123" }
                         }));
                     break;
                     case "max_single_chat":
                         ws.send(JSON.stringify({
-                            "command": "chat_lobby",
-                            "data": { "chat": "test", "id": "123" }
+                            "c": "chat_lobby",
+                            "d": { "chat": "test", "id": "123" }
                         }));
                     break;
                     case "movement":
@@ -133,8 +133,8 @@ async function startStresTest() {
                         let dirs = ["up", "down", "left", "right"];
                         let dir = dirs[Math.floor(Math.random() * dirs.length)];
                         ws.send(JSON.stringify({
-                            "command": "lobby_call",
-                            "data": { "function": "move", "inputs": [dir]}
+                            "c": "lobby_call",
+                            "d": { "function": "move", "inputs": [dir]}
                         }));
                 }
         
