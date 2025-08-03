@@ -7,6 +7,7 @@
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
 
+#include "database.h"
 #include "server_logger.h"
 
 static inline int64_t get_time_now() {
@@ -68,6 +69,7 @@ class WebAuthenticationThread {
     moodycamel::BlockingReaderWriterQueue<WebSocketAuthenticationMessage> &authentication_queue;
     ServerLogger logger;
     struct uWS::Loop *loop;
+    Database db;
 
    public:
     void run();

@@ -8,7 +8,10 @@
 #include "INIReader.h"
 #include "main.h"
 
-Database::Database() : connection(nullptr) {}
+Database::Database() : connection(nullptr) {
+    INIReader config_reader(BasePath::instance().file("config.ini"));
+    enabled = config_reader.GetBoolean("database", "enabled", false);
+}
 
 Database::~Database() { close_connection(); }
 
@@ -68,10 +71,17 @@ void Database::connect_to_db() {
             "score BIGINT NOT NULL, "
             "timestamp TIMESTAMPTZ DEFAULT NOW(), "
             "UNIQUE (leaderboard_id, game_id, user_id)"
-            ");"
+            ");");
+        txn.exec(
             "CREATE INDEX IF NOT EXISTS idx_leaderboard_game_score ON leaderboards "
             "(leaderboard_id, "
             "game_id, score DESC);");
+        txn.exec(
+            "CREATE TABLE IF NOT EXISTS peers ("
+            "id TEXT PRIMARY KEY, "
+            "peer_id TEXT NOT NULL, "
+            "timestamp TIMESTAMPTZ DEFAULT NOW()"
+            ");");
         txn.commit();
     } catch (const std::exception& e) {
         std::cerr << e.what() << std::endl;
@@ -162,4 +172,27 @@ std::pair<int64_t, int> Database::leaderboard_get_user_score(const std::string& 
     int rank = rank_r[0][0].as<int>() + 1;
     txn.commit();
     return {score, rank};
+}
+std::string Database::get_peer_or_insert(const std::string& reconnection_token,
+                                         const std::string& peer_id) {
+    ensure_connection();
+    pqxx::work txn(*connection);
+
+    // Try to get peer_id from reconnection_token
+    pqxx::result r = txn.exec(pqxx::zview("SELECT peer_id FROM peers WHERE id = $1;"),
+                              pqxx::params(reconnection_token));
+    if (!r.empty()) {
+        // Found, return existing peer_id
+        std::string found_peer_id = r[0][0].as<std::string>();
+        txn.commit();
+        return found_peer_id;
+    }
+
+    // Not found, insert new peer
+    txn.exec(
+        pqxx::zview("INSERT INTO peers (id, peer_id) VALUES ($1, $2) "
+                    "ON CONFLICT (peer_id) DO UPDATE SET id = EXCLUDED.id, timestamp = NOW();"),
+        pqxx::params(reconnection_token, peer_id));
+    txn.commit();
+    return peer_id;
 }

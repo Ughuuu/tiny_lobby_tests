@@ -26,9 +26,15 @@ WebAuthenticationThread::WebAuthenticationThread(
     bool verbose, std::string log_folder, struct uWS::Loop *loop)
     : authentication_queue(authentication_queue),
       logger(verbose, log_folder + "/websocket.txt"),
-      loop(loop) {}
+      loop(loop),
+      db() {}
 
 void WebAuthenticationThread::run() {
+    if (db.enabled) {
+        db.connect_to_db();
+    } else {
+        logger.debug_log("[WebSocketServer] Database is disabled. Peer state is disabled.");
+    }
     while (true) {
         WebSocketAuthenticationMessage auth_message;
         authentication_queue.wait_dequeue(auth_message);
@@ -44,6 +50,12 @@ void WebAuthenticationThread::run() {
                          context, abort_shared, this]() mutable {
                 if (*abort_shared) {
                     return;
+                }
+                // check if the user has a peer_id associated with the reconnection_token if db
+                // enabled
+                if (db.enabled) {
+                    user_data.id =
+                        db.get_peer_or_insert(user_data.reconnection_token, user_data.id);
                 }
                 logger.debug_log("[WebSocketServer] upgraded anon user: ", user_data.game_id, " ",
                                  user_data.id);
@@ -283,7 +295,10 @@ void WebSocketServer::on_open(uWS::WebSocket<false, true, PerSocketData> *ws) {
     if (data->platform != "anon") {
         data->reconnection_token = data->platform + ":" + data->platform_id;
     } else {
-        data->reconnection_token = uuid;
+        // Only set if empty, if not let user set it.
+        if (data->reconnection_token == "") {
+            data->reconnection_token = uuid;
+        }
         // put an id here so it's easier in ifs in scripting
         data->platform_id = data->id;
     }
