@@ -1,11 +1,15 @@
+
 #include "database.h"
 
 #include <iostream>
+#include <pqxx/pqxx>
+#include <tuple>
+#include <vector>
 
 #include "INIReader.h"
 #include "main.h"
 
-pqxx::connection *connection;
+pqxx::connection* connection;
 
 bool ensure_connection() {
     if (!connection->is_open()) {
@@ -53,25 +57,102 @@ void connect_to_db() {
             std::cerr << "Can't open database" << std::endl;
             exit(1);
         }
+        pqxx::work txn(*connection);
+        txn.exec(
+            "CREATE TABLE IF NOT EXISTS leaderboard ("
+            "id SERIAL PRIMARY KEY, "
+            "leaderboard_id TEXT NOT NULL, "
+            "game_id TEXT NOT NULL, "
+            "user_id TEXT NOT NULL, "
+            "score BIGINT NOT NULL, "
+            "timestamp TIMESTAMP DEFAULT NOW()"
+            ");"
+            "CREATE INDEX IF NOT EXISTS idx_leaderboard_game_score ON leaderboard (leaderboard_id, "
+            "game_id, score DESC);");
+        txn.commit();
 
-    } catch (const std::exception &e) {
+    } catch (const std::exception& e) {
         std::cerr << e.what() << std::endl;
         exit(1);
     }
 }
 
-void execute_query(std::string query) {
-    ensure_connection();
-    pqxx::work work(*connection);
-    pqxx::result result = work.exec("SELECT id, name FROM employees;");
-    for (auto row : result) {
-        std::cout << "ID: " << row[0].as<int>() << " Name: " << row[1].as<std::string>()
-                  << std::endl;
-    }
-    work.commit();
-}
-
 void close_connection() {
     connection->close();
     delete connection;
+}
+
+// Set or update a user's score with mode
+void leaderboard_set_score(const std::string& leaderboard_id, const std::string& game_id,
+                           const std::string& user_id, int64_t score, std::string& mode) {
+    ensure_connection();
+    pqxx::work txn(*connection);
+    if (mode == "set") {
+        txn.exec_params(
+            "INSERT INTO leaderboard (leaderboard_id, game_id, user_id, score) VALUES ($1, $2, $3, "
+            "$4) "
+            "ON CONFLICT (leaderboard_id, game_id, user_id) DO UPDATE SET score = $4, timestamp = "
+            "NOW();",
+            leaderboard_id, game_id, user_id, score);
+    } else if (mode == "best") {
+        txn.exec_params(
+            "INSERT INTO leaderboard (leaderboard_id, game_id, user_id, score) VALUES ($1, $2, $3, "
+            "$4) "
+            "ON CONFLICT (leaderboard_id, game_id, user_id) DO UPDATE SET score = "
+            "GREATEST(leaderboard.score, EXCLUDED.score), timestamp = NOW();",
+            leaderboard_id, game_id, user_id, score);
+    } else if (mode == "incr") {
+        txn.exec_params(
+            "INSERT INTO leaderboard (leaderboard_id, game_id, user_id, score) VALUES ($1, $2, $3, "
+            "$4) "
+            "ON CONFLICT (leaderboard_id, game_id, user_id) DO UPDATE SET score = "
+            "leaderboard.score + EXCLUDED.score, timestamp = NOW();",
+            leaderboard_id, game_id, user_id, score);
+    } else if (mode == "decr") {
+        txn.exec_params(
+            "INSERT INTO leaderboard (leaderboard_id, game_id, user_id, score) VALUES ($1, $2, $3, "
+            "$4) "
+            "ON CONFLICT (leaderboard_id, game_id, user_id) DO UPDATE SET score = "
+            "leaderboard.score - EXCLUDED.score, timestamp = NOW();",
+            leaderboard_id, game_id, user_id, score);
+    }
+    txn.commit();
+}
+
+// Get top N scores for a game
+std::vector<std::tuple<std::string, int64_t>> leaderboard_get_top(const std::string& leaderboard_id,
+                                                                  const std::string& game_id,
+                                                                  int limit) {
+    ensure_connection();
+    pqxx::work txn(*connection);
+    pqxx::result r = txn.exec_params(
+        "SELECT user_id, score FROM leaderboard WHERE leaderboard_id = $1 AND game_id = $2 ORDER "
+        "BY score DESC LIMIT $3;",
+        leaderboard_id, game_id, limit);
+    std::vector<std::tuple<std::string, int64_t>> results;
+    for (auto row : r) {
+        results.emplace_back(row[0].as<std::string>(), row[1].as<int64_t>());
+    }
+    txn.commit();
+    return results;
+}
+
+// Get a user's score and rank
+std::pair<int64_t, int> leaderboard_get_user_score(const std::string& leaderboard_id,
+                                                   const std::string& game_id,
+                                                   const std::string& user_id) {
+    ensure_connection();
+    pqxx::work txn(*connection);
+    pqxx::result r = txn.exec_params(
+        "SELECT score FROM leaderboard WHERE leaderboard_id = $1 AND game_id = $2 AND user_id = "
+        "$3;",
+        leaderboard_id, game_id, user_id);
+    int64_t score = r.empty() ? 0 : r[0][0].as<int64_t>();
+    pqxx::result rank_r = txn.exec_params(
+        "SELECT COUNT(*) FROM leaderboard WHERE leaderboard_id = $1 AND game_id = $2 AND score > "
+        "$3;",
+        leaderboard_id, game_id, score);
+    int rank = rank_r[0][0].as<int>() + 1;
+    txn.commit();
+    return {score, rank};
 }

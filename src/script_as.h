@@ -117,6 +117,8 @@ struct ScriptAS {
     void as_notifty_all(CScriptDictionary* message);
     void as_broadcast_chat(std::string& message, CScriptDictionary* chat_metadata);
     void as_kick_peer(std::string& peer_id);
+    void as_set_leaderboard(std::string& peer_id, int64_t score, std::string& leaderboard_id,
+                            std::string& leaderboard_type);
     void close();
     void as_MessageCallback(const asSMessageInfo* msg, void* param);
 };

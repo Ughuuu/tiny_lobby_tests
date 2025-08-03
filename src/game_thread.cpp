@@ -14,7 +14,8 @@
 
 GameThread::GameThread(
     bool verbose, std::string log_folder, std::string scripts_folder,
-    moodycamel::BlockingReaderWriterQueue<WebSocketReceivedMessage> &receive_queue, uWS::Loop *loop,
+    moodycamel::BlockingReaderWriterQueue<WebSocketReceivedMessage> &receive_queue,
+    moodycamel::BlockingReaderWriterQueue<DatabaseReceivedMessage> &database_queue, uWS::Loop *loop,
     WebSocketServer *webserver, std::atomic<bool> &stop, int listing_interval,
     int max_recconection_time)
     : listing_interval(listing_interval),
@@ -26,7 +27,9 @@ GameThread::GameThread(
       webserver(webserver),
       stop(stop),
       logs_folder(log_folder),
-      games_listener(scripts_folder, file_watcher_queue) {
+      games_listener(scripts_folder, file_watcher_queue),
+      database_queue(database_queue),
+      database_thread(database_queue) {
     file_watcher.addWatch(scripts_folder, &games_listener, true);
     file_watcher.watch();
     logger.debug_log("[GameThread] on_start");
@@ -708,6 +711,19 @@ void GameThread::set_lobby_host(GameData &game, LobbyData &lobby, const std::str
         // Send notification to all peers except the new host
         send(game, peer_id, notification, uWS::OpCode::TEXT);
     }
+}
+
+void GameThread::leaderboards_set_score(GameData &game, const std::string &peer_id,
+                                        const std::string &leaderboard_id, int64_t score,
+                                        const std::string &leaderboard_type) {
+    database_queue.enqueue(DatabaseReceivedMessage{
+        .type = DatabaseReceivedMessage::Type::SetScore,
+        .game_id = game.id,
+        .peer_id = peer_id,
+        .score = score,
+        .leaderboard_id = leaderboard_id,
+        .leaderboard_type = leaderboard_type,
+    });
 }
 
 void GameThread::on_connect(GameData &game, std::string &peer_id, std::string &game_id,

@@ -10,6 +10,7 @@
 #include <efsw/efsw.hpp>
 #include <mutex>
 
+#include "database_thread.h"
 #include "game_data.h"
 #include "games_listener.h"
 #include "lobby_data.h"
@@ -47,6 +48,8 @@ class GameThread {
     efsw::FileWatcher file_watcher;
     moodycamel::ReaderWriterQueue<std::string> file_watcher_queue;
     std::mutex mutex;
+    moodycamel::BlockingReaderWriterQueue<DatabaseReceivedMessage> &database_queue;
+    DatabaseThread database_thread;
 
    public:
     boost::container::map<std::string, GameData> games;
@@ -139,9 +142,13 @@ class GameThread {
     void send(GameData &game, const std::string &peer_id, const std::string &message,
               uWS::OpCode opCode = uWS::OpCode::TEXT);
     void set_lobby_host(GameData &game, LobbyData &lobby, const std::string &new_host);
+    void leaderboards_set_score(GameData &game, const std::string &peer_id,
+                                const std::string &leaderboard_id, int64_t score,
+                                const std::string &leaderboard_type);
 
     GameThread(bool verbose, std::string log_folder, std::string scripts_folder,
                moodycamel::BlockingReaderWriterQueue<WebSocketReceivedMessage> &receive_queue,
+               moodycamel::BlockingReaderWriterQueue<DatabaseReceivedMessage> &database_queue,
                uWS::Loop *loop, WebSocketServer *webserver, std::atomic<bool> &stop,
                int listing_interval, int max_recconection_time);
 };

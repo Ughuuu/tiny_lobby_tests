@@ -185,6 +185,11 @@ int main(int argc, char *argv[]) {
     }
     moodycamel::BlockingReaderWriterQueue<WebSocketReceivedMessage> receive_queue(
         message_queue_length);
+    moodycamel::BlockingReaderWriterQueue<DatabaseReceivedMessage> &database_queue =
+        config_reader.GetBoolean("database", "enabled", false)
+            ? *new moodycamel::BlockingReaderWriterQueue<DatabaseReceivedMessage>(
+                  message_queue_length)
+            : *new moodycamel::BlockingReaderWriterQueue<DatabaseReceivedMessage>(0);
     std::cout << "Starting webserver" << std::endl;
     uWS::App app = uWS::App();
     WebSocketServer webserver(
@@ -229,7 +234,7 @@ int main(int argc, char *argv[]) {
     GameThread GameThread(
         verbose, BasePath::instance().file(config_reader.GetString("games", "log_folder", "logs")),
         BasePath::instance().file(config_reader.Get("games", "scripts_folder", "scripts")),
-        receive_queue, app.getLoop(), &webserver, stop,
+        receive_queue, database_queue, app.getLoop(), &webserver, stop,
         config_reader.GetInteger("games", "listing_interval", 3000),
         config_reader.GetInteger("games", "max_reconnection_time", 6 * 60 * 1000));
     app.get("/", [](auto *res, auto *req) { res->writeStatus("200 OK")->end("OK"); });

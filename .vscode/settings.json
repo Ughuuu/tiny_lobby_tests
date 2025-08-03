@@ -1,5 +1,6 @@
 {
     "files.associations": {
+        "*.ank": "blazium-anko",
         "array": "cpp",
         "memory": "cpp",
         "future": "cpp",
@@ -91,6 +92,7 @@
         "csignal": "cpp",
         "*.inc": "cpp",
         "type_traits": "cpp",
-        "scoped_allocator": "cpp"
+        "scoped_allocator": "cpp",
+        "pqxx": "cpp"
     }
 }

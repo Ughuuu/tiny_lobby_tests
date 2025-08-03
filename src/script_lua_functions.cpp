@@ -294,6 +294,49 @@ int kick_peer(lua_State *L) {
     return 0;
 }
 
+int set_leaderboard(lua_State *L) {
+    if (lua_gettop(L) < 2) {
+        luaL_error(L, "Expected 2 arguments.");
+        return 0;
+    }
+    std::string peer_id = luaL_checkstring(L, 1);
+    double score = luaL_checknumber(L, 2);
+    // get leaderboard_type if provided
+    std::string leaderboard_type = "best";
+    if (lua_gettop(L) >= 3) {
+        leaderboard_type = luaL_checkstring(L, 3);
+        if (leaderboard_type != "best" && leaderboard_type != "last") {
+            luaL_error(L, "Invalid leaderboard type. Expected 'best' or 'last'.");
+            return 0;
+        }
+    }
+    if (leaderboard_type != "best" && leaderboard_type != "set" && leaderboard_type != "incr" &&
+        leaderboard_type != "decr") {
+        luaL_error(L, "Invalid leaderboard type. Expected 'best' or 'set' or 'incr' or 'decr'.");
+        return 0;
+    }
+    // get leaderboard_id if not empty
+    std::string leaderboard_id = "";
+    if (lua_gettop(L) >= 4) {
+        leaderboard_id = luaL_checkstring(L, 4);
+    }
+    lua_getfield(L, LUA_REGISTRYINDEX, "game_id");
+    std::string game_id = lua_tostring(L, -1);
+    lua_pop(L, 1);
+
+    lua_getfield(L, LUA_REGISTRYINDEX, "lobby_id");
+    std::string lobby_id = lua_tostring(L, -1);
+    lua_pop(L, 1);
+
+    lua_getfield(L, LUA_REGISTRYINDEX, "game_thread");
+    GameThread *game_thread = static_cast<GameThread *>(lua_touserdata(L, -1));
+    lua_pop(L, 1);
+
+    auto &game = game_thread->games[game_id];
+    game_thread->leaderboards_set_score(game, peer_id, leaderboard_id, score, leaderboard_type);
+    return 0;
+}
+
 int get_time(lua_State *L) {
     lua_getfield(L, LUA_REGISTRYINDEX, "game_thread");
     GameThread *game_thread = static_cast<GameThread *>(lua_touserdata(L, -1));

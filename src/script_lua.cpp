@@ -204,6 +204,9 @@ static int lobby_index(lua_State* L) {
     } else if (strcmp(key, "kick_peer") == 0) {
         lua_pushcfunction(L, kick_peer, "kick_peer");
         return 1;
+    } else if (strcmp(key, "set_leaderboard") == 0) {
+        lua_pushcfunction(L, set_leaderboard, "set_leaderboard");
+        return 1;
     } else if (strcmp(key, "broadcast_chat") == 0) {
         lua_pushcfunction(L, broadcast_chat, "broadcast_chat");
         return 1;

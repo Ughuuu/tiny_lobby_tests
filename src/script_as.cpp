@@ -108,6 +108,34 @@ void as_kick_peer_wrapper(asIScriptGeneric *gen) {
     self->as_kick_peer(peer_id);
 }
 
+void as_set_leaderboard_wrapper(asIScriptGeneric *gen) {
+    // Retrieve the ScriptAS instance from the engine's user data
+    asIScriptEngine *engine = gen->GetEngine();
+    ScriptAS *self = static_cast<ScriptAS *>(engine->GetUserData());
+
+    // Extract arguments
+    std::string peer_id = *static_cast<std::string *>(gen->GetArgObject(0));
+    int64_t score = gen->GetArgQWord(1);
+    std::string leaderboard_id = "";
+    // Check if leaderboard_type is provided
+    std::string leaderboard_type = "";
+    if (gen->GetArgCount() >= 3) {
+        leaderboard_type = *static_cast<std::string *>(gen->GetArgObject(2));
+    }
+    // Check if leaderboard_id is provided
+    if (gen->GetArgCount() >= 4) {
+        leaderboard_id = *static_cast<std::string *>(gen->GetArgObject(2));
+    }
+    if (leaderboard_type != "best" && leaderboard_type != "set" && leaderboard_type != "incr" &&
+        leaderboard_type != "decr") {
+        throw std::runtime_error(
+            "Invalid leaderboard type. Expected 'best' or 'set' or 'incr' or 'decr'.");
+    }
+
+    // Call the actual function
+    self->as_set_leaderboard(peer_id, score, leaderboard_id, leaderboard_type);
+}
+
 void as_get_lobby_wrapper(asIScriptGeneric *gen) {
     // Retrieve the ScriptAS instance from the engine's user data
     asIScriptEngine *engine = gen->GetEngine();
@@ -330,6 +358,16 @@ boost::container::flat_set<std::string> ScriptAS::open() {
         asFUNCTION(as_broadcast_chat_wrapper_with_metadata), asCALL_GENERIC);
     as_engine->RegisterObjectMethod("Lobby", "void kick_peer(string peer_id)",
                                     asFUNCTION(as_kick_peer_wrapper), asCALL_GENERIC);
+    as_engine->RegisterObjectMethod("Lobby",
+                                    "void set_leaderboard(string peer_id, int64 score, "
+                                    "string leaderboard_type, string leaderboard_id)",
+                                    asFUNCTION(as_set_leaderboard_wrapper), asCALL_GENERIC);
+    // Register method with leaderboard_id as optional argument
+    as_engine->RegisterObjectMethod(
+        "Lobby", "void set_leaderboard(string peer_id, int64 score, string leaderboard_type)",
+        asFUNCTION(as_set_leaderboard_wrapper), asCALL_GENERIC);
+    as_engine->RegisterObjectMethod("Lobby", "void set_leaderboard(string peer_id, int64 score)",
+                                    asFUNCTION(as_set_leaderboard_wrapper), asCALL_GENERIC);
     // Only keep get() as a global function
     as_engine->RegisterGlobalFunction("Lobby@ get()", asFUNCTION(as_get_lobby_wrapper),
                                       asCALL_GENERIC);
@@ -459,6 +497,12 @@ void ScriptAS::as_broadcast_chat(std::string &message, CScriptDictionary *metada
 void ScriptAS::as_kick_peer(std::string &peer_id) {
     auto &game = game_thread->games[as_game_id];
     game_thread->kick_peer(game, as_lobby_id, peer_id);
+}
+
+void ScriptAS::as_set_leaderboard(std::string &peer_id, int64_t score, std::string &leaderboard_id,
+                                  std::string &leaderboard_type) {
+    auto &game = game_thread->games[as_game_id];
+    game_thread->leaderboards_set_score(game, peer_id, leaderboard_id, score, leaderboard_type);
 }
 
 AnyElement ScriptAS::func_call(std::string &func_name, boost::container::vector<AnyElement> &args,
