@@ -176,6 +176,8 @@ int main(int argc, char *argv[]) {
     Database db;
     if (db_enabled) {
         db.connect_to_db();
+    } else {
+        std::cout << "Database is disabled. Leaderboards is disabled." << std::endl;
     }
     int port = config_reader.GetUnsigned("webserverserver", "port", 8080);
     std::atomic<bool> stop(false);
