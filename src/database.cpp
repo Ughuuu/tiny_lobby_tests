@@ -66,7 +66,7 @@ void Database::connect_to_db() {
             "game_id TEXT NOT NULL, "
             "user_id TEXT NOT NULL, "
             "score BIGINT NOT NULL, "
-            "timestamp TIMESTAMP DEFAULT NOW(), "
+            "timestamp TIMESTAMPTZ DEFAULT NOW(), "
             "UNIQUE (leaderboard_id, game_id, user_id)"
             ");"
             "CREATE INDEX IF NOT EXISTS idx_leaderboard_game_score ON leaderboards "
@@ -126,17 +126,19 @@ void Database::leaderboard_set_score(const std::string& leaderboard_id, const st
 }
 
 // Get top N scores for a game
-std::vector<std::tuple<std::string, int64_t>> Database::leaderboard_get_top(
+std::vector<std::tuple<std::string, int64_t, std::string>> Database::leaderboard_get_top(
     const std::string& leaderboard_id, const std::string& game_id, int limit) {
     ensure_connection();
     pqxx::work txn(*connection);
-    pqxx::result r = txn.exec(pqxx::zview("SELECT user_id, score FROM leaderboards WHERE "
+    pqxx::result r = txn.exec(pqxx::zview("SELECT user_id, score, to_char(timestamp, 'YYYY-MM-DD"
+                                          "HH24:MI:SS') FROM leaderboards WHERE "
                                           "leaderboard_id = $1 AND game_id = $2 ORDER "
                                           "BY score DESC LIMIT $3;"),
                               pqxx::params(leaderboard_id, game_id, limit));
-    std::vector<std::tuple<std::string, int64_t>> results;
+    std::vector<std::tuple<std::string, int64_t, std::string>> results;
     for (auto row : r) {
-        results.emplace_back(row[0].as<std::string>(), row[1].as<int64_t>());
+        results.emplace_back(row[0].as<std::string>(), row[1].as<int64_t>(),
+                             row[2].as<std::string>());
     }
     txn.commit();
     return results;

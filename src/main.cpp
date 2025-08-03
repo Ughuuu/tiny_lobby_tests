@@ -325,17 +325,18 @@ int main(int argc, char *argv[]) {
         if (!count_str.empty()) {
             count = std::max(0, std::stoi(std::string(count_str)));
         }
-        std::string leaderboard_id = "default";
+        std::string leaderboard_id = "";
         auto top_players =
             db.leaderboard_get_top(leaderboard_id, game_id, leaderboard_size + count);
-        std::vector<std::tuple<std::string, int64_t>> paged_players;
+        std::vector<std::tuple<std::string, int64_t, std::string>> paged_players;
         for (int i = count; i < std::min((int)top_players.size(), count + leaderboard_size); ++i) {
             paged_players.push_back(top_players[i]);
         }
         std::string json = "[";
         for (size_t i = 0; i < paged_players.size(); ++i) {
-            const auto &[user_id, score] = paged_players[i];
-            json += "{\"user_id\":\"" + user_id + "\",\"score\":" + std::to_string(score) + "}";
+            const auto &[user_id, score, timestamp] = paged_players[i];
+            json += "{\"user_id\":\"" + user_id + "\",\"score\":" + std::to_string(score) +
+                    ",\"timestamp\":\"" + timestamp + "\"}";
             if (i + 1 < paged_players.size()) json += ",";
         }
         json += "]";
