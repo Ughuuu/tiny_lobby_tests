@@ -40,7 +40,7 @@ struct LobbyData {
         lobby_dict["name"] = AnyElement{name};
         lobby_dict["host"] = AnyElement{host};
         lobby_dict["sealed"] = AnyElement{sealed};
-        lobby_dict["max_players"] = AnyElement{max_players};
+        lobby_dict["m"] = AnyElement{max_players};
         lobby_dict["players"] = AnyElement{int(peer_ids.size())};
         lobby_dict["created_at"] = AnyElement{create_time};
         lobby_dict["has_password"] = AnyElement{bool(password != "")};

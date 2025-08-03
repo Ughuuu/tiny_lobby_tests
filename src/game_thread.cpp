@@ -912,7 +912,7 @@ void GameThread::on_create_lobby(
                              .name = decode_string_or_default(data_val, "name", ""),
                              .host = peer.id,
                              .password = decode_string_or_default(data_val, "password", ""),
-                             .max_players = decode_int_or_default(data_val, "max_players", 0),
+                             .max_players = decode_int_or_default(data_val, "m", 0),
                              .peer_ids = {peer.id},
                              .peer_ordered_ids = {peer.id},
                              .create_time = now,

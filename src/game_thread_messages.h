@@ -56,6 +56,9 @@ std::string ERROR_UNKOWN_COMMAND = "Unkown command";
 // 26 = data_to_sent
 // 27 = notify_to_sent
 
+// host_id = h
+// max_players = m
+
 std::string notification_error(const std::string& message, const std::string& command_id = "",
                                bool is_logical_error = false) {
     return AnyElement{boost::container::flat_map<std::string, AnyElement>{
@@ -70,7 +73,7 @@ std::string notification_lobby_host_changed(const std::string& host_id) {
     return AnyElement{boost::container::flat_map<std::string, AnyElement>{
                           {"c", AnyElement{1}},
                           {"d", AnyElement{boost::container::flat_map<std::string, AnyElement>{
-                                    {"host_id", AnyElement{host_id}}}}}}}
+                                    {"h", AnyElement{host_id}}}}}}}
         .to_string();
 }
 std::string notification_lobby_created(const AnyElement& lobby, const AnyElement& peers,
@@ -101,7 +104,7 @@ std::string notification_lobby_max_players(int max_players, const std::string& c
         boost::container::flat_map<std::string, AnyElement>{
             {"c", AnyElement{5}},
             {"d", AnyElement{boost::container::flat_map<std::string, AnyElement>{
-                      {"max_players", AnyElement{max_players}}, {"id", AnyElement{command_id}}}}}}}
+                      {"m", AnyElement{max_players}}, {"id", AnyElement{command_id}}}}}}}
         .to_string();
 }
 std::string notification_lobby_password_protected(bool password_protected,

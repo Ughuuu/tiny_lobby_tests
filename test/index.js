@@ -105,7 +105,7 @@ async function startStresTest() {
         }));
         ws.send(JSON.stringify({
             "c": "quick_join",
-            "d": { "max_players": 1000 }
+            "d": { "m": 1000 }
         }));
         
         setTimeout(() => {
