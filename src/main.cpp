@@ -317,31 +317,27 @@ int main(int argc, char *argv[]) {
             return;
         }
         int leaderboard_size = 10;
-        int count = 0;
+        int leaderboard_start = 0;
         auto leaderboard_size_str = req->getQuery("size");
-        auto count_str = req->getQuery("count");
+        auto start_str = req->getQuery("start");
         if (!leaderboard_size_str.empty()) {
             leaderboard_size =
                 std::min(std::max(1, std::stoi(std::string(leaderboard_size_str))), 100);
         }
-        if (!count_str.empty()) {
-            count = std::max(0, std::stoi(std::string(count_str)));
+        if (!start_str.empty()) {
+            leaderboard_start = std::max(0, std::stoi(std::string(start_str)));
         }
         std::string leaderboard_id{req->getParameter(1)};
         auto top_players =
-            db.leaderboard_get_top(leaderboard_id, game_id, leaderboard_size + count);
-        std::vector<std::tuple<std::string, int64_t, std::string>> paged_players;
-        for (int i = count; i < std::min((int)top_players.size(), count + leaderboard_size); ++i) {
-            paged_players.push_back(top_players[i]);
-        }
+            db.leaderboard_get_top(leaderboard_id, game_id, leaderboard_size, leaderboard_start);
         std::string json = "[";
-        for (size_t i = 0; i < paged_players.size(); ++i) {
-            const auto &[user_id, score, timestamp] = paged_players[i];
+        for (size_t i = 0; i < top_players.size(); ++i) {
+            const auto &[user_id, score, timestamp] = top_players[i];
             json += "{\"user_id\":\"" + user_id + "\",\"score\":" + std::to_string(score) +
-                    ",\"timestamp\":\"" + timestamp + "\", \"rank\":" + std::to_string(i + 1 +) +
-                    "}";
+                    ",\"timestamp\":\"" + timestamp +
+                    "\", \"rank\":" + std::to_string(i + 1 + leaderboard_start) + "}";
             // Add a comma if not the last element
-            if (i + 1 < paged_players.size()) {
+            if (i + 1 < top_players.size()) {
                 json += ",";
             }
         }
