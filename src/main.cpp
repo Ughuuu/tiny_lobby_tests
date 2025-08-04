@@ -164,10 +164,8 @@ int main(int argc, char *argv[]) {
             }
             return 0;
         } else if (arg == "--help" || arg == "-h") {
-            std::cout
-                << "Usage: " << argv[0]
-                << " [--verbose] [--disable-metrics] [--logout] [--generate-config] [--path <path>]"
-                << std::endl;
+            std::cout << "Usage: " << argv[0]
+                      << " [--verbose] [--logout] [--generate-config] [--path <path>]" << std::endl;
             return 0;
         }
     }
