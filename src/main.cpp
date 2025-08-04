@@ -360,8 +360,8 @@ int main(int argc, char *argv[]) {
         auto player_result = db.leaderboard_get_user_score(leaderboard_id, game_id, user_id);
         const auto &[score, rank, timestamp] = player_result;
         std::string json = "{";
-        json += "\"score\":" + std::to_string(score) + ",\"rank\":" + std::to_string(rank) +
-                ",\"timestamp\":\"" + timestamp + "\"}";
+        json += "\"user_id\":\"" + user_id + "\",\"score\":" + std::to_string(score) +
+                ",\"rank\":" + std::to_string(rank) + ",\"timestamp\":\"" + timestamp + "\"}";
         res->writeStatus("200 OK")->end(json);
     });
     std::thread GameThread_thread = std::thread([&]() { GameThread.run(); });
