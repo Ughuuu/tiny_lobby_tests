@@ -344,7 +344,8 @@ int main(int argc, char *argv[]) {
         json += "]";
         res->writeStatus("200 OK")->end(json);
     });
-    app.get("/game/:game_id/leaderboard/:leaderboard_id/user/:user_id", [&db, db_enabled](auto *res, auto *req) {
+    app.get("/game/:game_id/leaderboard/:leaderboard_id/user/:user_id", [&db, db_enabled](
+                                                                            auto *res, auto *req) {
         if (!db_enabled) {
             res->writeStatus("503 Service Unavailable")->end("Database is disabled");
             return;
@@ -356,12 +357,11 @@ int main(int argc, char *argv[]) {
         }
         std::string leaderboard_id{req->getParameter(1)};
         std::string user_id{req->getParameter(2)};
-        auto player_result =
-            db.leaderboard_get_user_score(leaderboard_id, game_id, user_id);
+        auto player_result = db.leaderboard_get_user_score(leaderboard_id, game_id, user_id);
         const auto &[score, rank, timestamp] = player_result;
         std::string json = "{";
-        json += "\"score\":" + std::to_string(score) +
-                ",\"rank\":" + std::to_string(rank) + ",\"timestamp\":\"" + timestamp + "\"}";
+        json += "\"score\":" + std::to_string(score) + ",\"rank\":" + std::to_string(rank) +
+                ",\"timestamp\":\"" + timestamp + "\"}";
         res->writeStatus("200 OK")->end(json);
     });
     std::thread GameThread_thread = std::thread([&]() { GameThread.run(); });

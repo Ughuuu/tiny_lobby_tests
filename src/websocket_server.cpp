@@ -54,8 +54,8 @@ void WebAuthenticationThread::run() {
                 // check if the user has a peer_id associated with the reconnection_token if db
                 // enabled
                 if (db.enabled) {
-                    user_data.id =
-                        db.get_peer_or_insert(user_data.reconnection_token, user_data.game_id, user_data.id);
+                    user_data.id = db.get_peer_or_insert(user_data.reconnection_token,
+                                                         user_data.game_id, user_data.id);
                 }
                 logger.debug_log("[WebSocketServer] upgraded anon user: ", user_data.game_id, " ",
                                  user_data.id);

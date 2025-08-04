@@ -83,8 +83,7 @@ void Database::connect_to_db() {
             "game_id TEXT NOT NULL, "
             "timestamp TIMESTAMPTZ DEFAULT NOW(), "
             "PRIMARY KEY (id, game_id)"
-            ");"
-        );
+            ");");
         txn.commit();
     } catch (const std::exception& e) {
         std::cerr << e.what() << std::endl;
@@ -158,37 +157,38 @@ std::vector<std::tuple<std::string, int64_t, std::string>> Database::leaderboard
 }
 
 // Get a user's score and rank
-std::tuple<int64_t, int, std::string> Database::leaderboard_get_user_score(const std::string& leaderboard_id,
-                                                             const std::string& game_id,
-                                                             const std::string& user_id) {
+std::tuple<int64_t, int, std::string> Database::leaderboard_get_user_score(
+    const std::string& leaderboard_id, const std::string& game_id, const std::string& user_id) {
     ensure_connection();
     pqxx::work txn(*connection);
-    pqxx::result r = txn.exec(pqxx::zview("SELECT score, timestamp FROM leaderboards WHERE leaderboard_id = "
-                                          "$1 AND game_id = $2 AND user_id = "
-                                          "$3;"),
-                              pqxx::params(leaderboard_id, game_id, user_id));
+    pqxx::result r =
+        txn.exec(pqxx::zview("SELECT score, timestamp FROM leaderboards WHERE leaderboard_id = "
+                             "$1 AND game_id = $2 AND user_id = "
+                             "$3;"),
+                 pqxx::params(leaderboard_id, game_id, user_id));
     int64_t score = r.empty() ? 0 : r[0][0].as<int64_t>();
     std::string timestamp = r.empty() ? "" : r[0][1].as<std::string>();
     int rank = 0;
     if (timestamp != "") {
-        pqxx::result rank_r = txn.exec(pqxx::zview("SELECT COUNT(*) FROM leaderboards WHERE "
-                                                "leaderboard_id = $1 AND game_id = $2 AND score > "
-                                                "$3;"),
-                                    pqxx::params(leaderboard_id, game_id, score));
+        pqxx::result rank_r =
+            txn.exec(pqxx::zview("SELECT COUNT(*) FROM leaderboards WHERE "
+                                 "leaderboard_id = $1 AND game_id = $2 AND score > "
+                                 "$3;"),
+                     pqxx::params(leaderboard_id, game_id, score));
         rank = rank_r[0][0].as<int>() + 1;
     }
     txn.commit();
     return {score, rank, timestamp};
 }
 std::string Database::get_peer_or_insert(const std::string& reconnection_token,
-                                         const std::string& game_id,
-                                         const std::string& peer_id) {
+                                         const std::string& game_id, const std::string& peer_id) {
     ensure_connection();
     pqxx::work txn(*connection);
 
     // Try to get peer_id from reconnection_token
-    pqxx::result r = txn.exec(pqxx::zview("SELECT peer_id FROM peers WHERE id = $1 AND game_id = $2;"),
-                              pqxx::params(reconnection_token, game_id));
+    pqxx::result r =
+        txn.exec(pqxx::zview("SELECT peer_id FROM peers WHERE id = $1 AND game_id = $2;"),
+                 pqxx::params(reconnection_token, game_id));
     if (!r.empty()) {
         // Found, return existing peer_id
         std::string found_peer_id = r[0][0].as<std::string>();
