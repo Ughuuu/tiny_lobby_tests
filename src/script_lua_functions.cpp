@@ -305,14 +305,10 @@ int set_leaderboard(lua_State *L) {
     std::string leaderboard_type = "best";
     if (lua_gettop(L) >= 3) {
         leaderboard_type = luaL_checkstring(L, 3);
-        if (leaderboard_type != "best" && leaderboard_type != "last") {
-            luaL_error(L, "Invalid leaderboard type. Expected 'best' or 'last'.");
-            return 0;
-        }
     }
-    if (leaderboard_type != "best" && leaderboard_type != "set" && leaderboard_type != "incr" &&
-        leaderboard_type != "decr") {
-        luaL_error(L, "Invalid leaderboard type. Expected 'best' or 'set' or 'incr' or 'decr'.");
+    if (leaderboard_type != "best" && leaderboard_type != "set" && leaderboard_type != "inc" &&
+        leaderboard_type != "dec") {
+        luaL_error(L, "Invalid leaderboard type. Expected 'best' or 'set' or 'inc' or 'dec'.");
         return 0;
     }
     // get leaderboard_id if not empty

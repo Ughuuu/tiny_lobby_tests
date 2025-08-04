@@ -126,10 +126,10 @@ void as_set_leaderboard_wrapper(asIScriptGeneric *gen) {
     if (gen->GetArgCount() >= 4) {
         leaderboard_id = *static_cast<std::string *>(gen->GetArgObject(2));
     }
-    if (leaderboard_type != "best" && leaderboard_type != "set" && leaderboard_type != "incr" &&
-        leaderboard_type != "decr") {
+    if (leaderboard_type != "best" && leaderboard_type != "set" && leaderboard_type != "inc" &&
+        leaderboard_type != "dec") {
         throw std::runtime_error(
-            "Invalid leaderboard type. Expected 'best' or 'set' or 'incr' or 'decr'.");
+            "Invalid leaderboard type. Expected 'best' or 'set' or 'inc' or 'dec'.");
     }
 
     // Call the actual function

@@ -306,7 +306,7 @@ int main(int argc, char *argv[]) {
         }
         res->writeStatus("200 OK")->end("Game unloaded");
     });
-    app.get("/game/:game_id/leaderboard", [&db, db_enabled](auto *res, auto *req) {
+    app.get("/game/:game_id/leaderboard/:leaderboard_id", [&db, db_enabled](auto *res, auto *req) {
         if (!db_enabled) {
             res->writeStatus("503 Service Unavailable")->end("Database is disabled");
             return;
@@ -318,7 +318,7 @@ int main(int argc, char *argv[]) {
         }
         int leaderboard_size = 10;
         int count = 0;
-        auto leaderboard_size_str = req->getQuery("leaderboard_size");
+        auto leaderboard_size_str = req->getQuery("size");
         auto count_str = req->getQuery("count");
         if (!leaderboard_size_str.empty()) {
             leaderboard_size =
@@ -327,7 +327,7 @@ int main(int argc, char *argv[]) {
         if (!count_str.empty()) {
             count = std::max(0, std::stoi(std::string(count_str)));
         }
-        std::string leaderboard_id = "";
+        std::string leaderboard_id{req->getParameter(1)};
         auto top_players =
             db.leaderboard_get_top(leaderboard_id, game_id, leaderboard_size + count);
         std::vector<std::tuple<std::string, int64_t, std::string>> paged_players;
@@ -342,6 +342,26 @@ int main(int argc, char *argv[]) {
             if (i + 1 < paged_players.size()) json += ",";
         }
         json += "]";
+        res->writeStatus("200 OK")->end(json);
+    });
+    app.get("/game/:game_id/leaderboard/:leaderboard_id/user/:user_id", [&db, db_enabled](auto *res, auto *req) {
+        if (!db_enabled) {
+            res->writeStatus("503 Service Unavailable")->end("Database is disabled");
+            return;
+        }
+        std::string game_id{req->getParameter(0)};
+        if (game_id.empty()) {
+            res->writeStatus("400 Bad Request")->end("Game ID is required");
+            return;
+        }
+        std::string leaderboard_id{req->getParameter(1)};
+        std::string user_id{req->getParameter(2)};
+        auto player_result =
+            db.leaderboard_get_user_score(leaderboard_id, game_id, user_id);
+        const auto &[score, rank, timestamp] = player_result;
+        std::string json = "{";
+        json += "\"score\":" + std::to_string(score) +
+                ",\"rank\":" + std::to_string(rank) + ",\"timestamp\":\"" + timestamp + "\"}";
         res->writeStatus("200 OK")->end(json);
     });
     std::thread GameThread_thread = std::thread([&]() { GameThread.run(); });

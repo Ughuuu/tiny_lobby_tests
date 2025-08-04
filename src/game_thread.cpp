@@ -782,6 +782,9 @@ void GameThread::on_close(GameData &game, std::string &peer_id) {
             }
             send(game, lobby_peer_id, notification, uWS::OpCode::TEXT);
         }
+    } else {
+        // lobby is deleted already
+        return;
     }
     if (game.enabled_callbacks.find("_on_peer_disconnected") != game.enabled_callbacks.end()) {
         bool has_error = false;

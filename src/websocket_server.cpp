@@ -55,7 +55,7 @@ void WebAuthenticationThread::run() {
                 // enabled
                 if (db.enabled) {
                     user_data.id =
-                        db.get_peer_or_insert(user_data.reconnection_token, user_data.id);
+                        db.get_peer_or_insert(user_data.reconnection_token, user_data.game_id, user_data.id);
                 }
                 logger.debug_log("[WebSocketServer] upgraded anon user: ", user_data.game_id, " ",
                                  user_data.id);
@@ -259,10 +259,10 @@ void WebSocketServer::on_open(uWS::WebSocket<false, true, PerSocketData> *ws) {
     PerSocketData *data = ws->getUserData();
     logger.debug_log("[WebSocketServer] on_open: ", data->uid, " ", data->id, " ", data->game_id);
     if ((data->reconnection_token != "" &&
-         reconnections.find(data->reconnection_token) != reconnections.end())) {
-        auto &old_reconnection = reconnections[data->reconnection_token];
+         reconnections.find(data->game_id + data->reconnection_token) != reconnections.end())) {
+        auto &old_reconnection = reconnections[data->game_id + data->reconnection_token];
         if (old_reconnection.timestamp < get_time_now() - MAX_RECONNECTION_TIME) {
-            reconnections.erase(data->reconnection_token);
+            reconnections.erase(data->game_id + data->reconnection_token);
             logger.error_log("[WebSocketServer] Reconnect expired: ", data->uid, " ", data->id, " ",
                              data->game_id);
             ws->end(1002, "Reconnect expired");
@@ -270,7 +270,7 @@ void WebSocketServer::on_open(uWS::WebSocket<false, true, PerSocketData> *ws) {
         }
         auto &old_id = old_reconnection.peer_id;
         if (connection_data.find(old_id) == connection_data.end()) {
-            reconnections.erase(data->reconnection_token);
+            reconnections.erase(data->game_id + data->reconnection_token);
             logger.error_log("[WebSocketServer] Reconnect Peer ID not found: ", data->uid, " ",
                              data->id, " ", data->game_id);
             ws->end(1002, "Reconnect Peer ID not found");
@@ -289,7 +289,7 @@ void WebSocketServer::on_open(uWS::WebSocket<false, true, PerSocketData> *ws) {
         // old reconnection id exists, delete id
         send(old_id, std::string("Reconnect Close"), uWS::OpCode::CLOSE);
         data->id = old_id;
-        reconnections.erase(data->reconnection_token);
+        reconnections.erase(data->game_id + data->reconnection_token);
     }
     auto uuid = to_string(gen());
     if (data->platform != "anon") {
@@ -303,7 +303,7 @@ void WebSocketServer::on_open(uWS::WebSocket<false, true, PerSocketData> *ws) {
         data->platform_id = data->id;
     }
     // write to sockets map
-    reconnections.emplace(data->reconnection_token,
+    reconnections.emplace(data->game_id + data->reconnection_token,
                           ReconnectionTokens{.peer_id = data->id, .timestamp = get_time_now()});
     connection_data.insert_or_assign(data->id, PeerConnectionData{
                                                    .id = data->id,
@@ -422,7 +422,7 @@ void WebSocketServer::clear_users(boost::container::flat_set<std::string> users_
             continue;
         }
         auto &connection = connection_data[user_id];
-        reconnections.erase(connection.reconnection_token);
+        reconnections.erase(connection.game_id + connection.reconnection_token);
         connection_data.erase(user_id);
     }
 }
