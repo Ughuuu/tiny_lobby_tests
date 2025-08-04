@@ -18,7 +18,7 @@ class Database {
     std::string get_peer_or_insert(const std::string& reconnection_token,
                                    const std::string& game_id, const std::string& peer_id);
     std::vector<std::tuple<std::string, int64_t, std::string>> leaderboard_get_top(
-        const std::string& leaderboard_id, const std::string& game_id, int limit);
+        const std::string& leaderboard_id, const std::string& game_id, int limit, int start);
     std::tuple<int64_t, int, std::string> leaderboard_get_user_score(
         const std::string& leaderboard_id, const std::string& game_id, const std::string& user_id);
 

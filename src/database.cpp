@@ -139,14 +139,14 @@ void Database::leaderboard_set_score(const std::string& leaderboard_id, const st
 
 // Get top N scores for a game
 std::vector<std::tuple<std::string, int64_t, std::string>> Database::leaderboard_get_top(
-    const std::string& leaderboard_id, const std::string& game_id, int limit) {
+    const std::string& leaderboard_id, const std::string& game_id, int limit, int start) {
     ensure_connection();
     pqxx::work txn(*connection);
-    pqxx::result r = txn.exec(pqxx::zview("SELECT user_id, score, to_char(timestamp, 'YYYY-MM-DD"
-                                          "HH24:MI:SS') FROM leaderboards WHERE "
-                                          "leaderboard_id = $1 AND game_id = $2 ORDER "
-                                          "BY score DESC LIMIT $3;"),
-                              pqxx::params(leaderboard_id, game_id, limit));
+    pqxx::result r =
+        txn.exec(pqxx::zview("SELECT user_id, score, to_char(timestamp, 'YYYY-MM-DDHH24:MI:SS') "
+                             "FROM leaderboards WHERE leaderboard_id = $1 AND game_id = $2 "
+                             "ORDER BY score DESC LIMIT $3 OFFSET $4;"),
+                 pqxx::params(leaderboard_id, game_id, limit, start));
     std::vector<std::tuple<std::string, int64_t, std::string>> results;
     for (auto row : r) {
         results.emplace_back(row[0].as<std::string>(), row[1].as<int64_t>(),
@@ -168,7 +168,7 @@ std::tuple<int64_t, int, std::string> Database::leaderboard_get_user_score(
                  pqxx::params(leaderboard_id, game_id, user_id));
     int64_t score = r.empty() ? 0 : r[0][0].as<int64_t>();
     std::string timestamp = r.empty() ? "" : r[0][1].as<std::string>();
-    int rank = 0;
+    int rank = -1;
     if (timestamp != "") {
         pqxx::result rank_r =
             txn.exec(pqxx::zview("SELECT COUNT(*) FROM leaderboards WHERE "

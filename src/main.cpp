@@ -338,8 +338,12 @@ int main(int argc, char *argv[]) {
         for (size_t i = 0; i < paged_players.size(); ++i) {
             const auto &[user_id, score, timestamp] = paged_players[i];
             json += "{\"user_id\":\"" + user_id + "\",\"score\":" + std::to_string(score) +
-                    ",\"timestamp\":\"" + timestamp + "\"}";
-            if (i + 1 < paged_players.size()) json += ",";
+                    ",\"timestamp\":\"" + timestamp + "\", \"rank\":" + std::to_string(i + 1 +) +
+                    "}";
+            // Add a comma if not the last element
+            if (i + 1 < paged_players.size()) {
+                json += ",";
+            }
         }
         json += "]";
         res->writeStatus("200 OK")->end(json);
