@@ -5,7 +5,7 @@
 
 ![example](docs/example.gif)
 
-Multiplayer C++ Lobby Server that starts a websocket server with scripting in Luau and AngelScript.
+Multiplayer C++ Lobby Server that starts a websocket server with scripting in Luau.
 
 - [addon_tiny_lobby_client](https://github.com/appsinacup/addon_tiny_lobby_client): Godot Tiny Lobby Client
 
@@ -28,7 +28,12 @@ For more info go to the [Tiny Lobby Documentation](https://github.com/appsinacup
 
 ## Architecture
 
-Tiny Lobby is designed for scalability and performance using a multi-threaded architecture and lockfree queues.
+Tiny Lobby is designed for scalability and performance using a multi-threaded architecture and lockfree queues. It uses the following threads:
+
+- Websocket Thread: Receives and Sends messages to clients. Connects 1-1 to: Game Thread through a queue, and to Authentication Thread through a queue.
+- Authentication Thread: Does validation of tokens and loads data from database.
+- Database Thread: Used by Game Thread to write data asynchronously.
+- Game Thread: Receives messages, updates lobby state or runs scripts and sends response back to the Websocket Thread through a queue.
 
 ```mermaid
 flowchart TD

@@ -3,11 +3,25 @@
 #include <filesystem>
 #include <variant>
 
-#include "game_thread.h"
+#include "../game/game_thread.h"
 #include "luacode.h"
 #include "lualib.h"
-#include "script_as_http.h"
 #include "script_lua.h"
+
+
+#include <boost/asio/connect.hpp>
+#include <boost/asio/ssl.hpp>
+#include <boost/beast/version.hpp>
+#include <boost/beast/core.hpp>
+#include <boost/beast/http.hpp>
+#include <boost/container/flat_map.hpp>
+#include <sstream>
+
+namespace beast = boost::beast;
+namespace http = beast::http;
+namespace net = boost::asio;
+namespace ssl = net::ssl;
+using tcp = net::ip::tcp;
 
 AnyElement decode_luavalue(lua_State *L, int idx) {
     switch (lua_type(L, idx)) {
@@ -340,6 +354,77 @@ int get_time(lua_State *L) {
     return 1;
 }
 
+http::response<http::string_body> request(
+    const std::string &method, const std::string &url,
+    const std::vector<std::pair<std::string, std::string>> &query_params,
+    const std::vector<std::pair<std::string, std::string>> &headers, const std::string &body) {
+    std::string scheme, host, target;
+    int port = 443;
+    if (url.find("http://") == 0) {
+        scheme = "http";
+        port = 80;
+    } else if (url.find("https://") == 0) {
+        scheme = "https";
+    } else {
+        throw std::runtime_error("Invalid URL scheme");
+    }
+
+    auto pos = url.find("://");
+    auto remainder = url.substr(pos + 3);
+    auto slash = remainder.find("/");
+    host = remainder.substr(0, slash);
+    target = slash != std::string::npos ? remainder.substr(slash) : "/";
+
+    std::ostringstream query_stream;
+    for (size_t i = 0; i < query_params.size(); ++i) {
+        if (i > 0) query_stream << "&";
+        query_stream << query_params[i].first << "=" << query_params[i].second;
+    }
+    std::string query_str = query_stream.str();
+    if (!query_str.empty()) {
+        target += "?" + query_str;
+    }
+
+    net::io_context ioc;
+    ssl::context ctx(ssl::context::tlsv12_client);
+    ctx.set_default_verify_paths();
+
+    tcp::resolver resolver(ioc);
+    auto const results = resolver.resolve(host, std::to_string(port));
+
+    beast::tcp_stream tcp_stream(ioc);
+    tcp_stream.connect(results);
+
+    ssl::stream<beast::tcp_stream> stream(std::move(tcp_stream), ctx);
+    if (!SSL_set_tlsext_host_name(stream.native_handle(), host.c_str())) {
+        throw beast::system_error(
+            beast::error_code(static_cast<int>(::ERR_get_error()), net::error::get_ssl_category()));
+    }
+    stream.handshake(ssl::stream_base::client);
+
+    http::request<http::string_body> req;
+    req.version(11);
+    req.method(http::string_to_verb(method));
+    req.target(target);
+    req.set(http::field::host, host);
+    req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
+    for (const auto &h : headers) {
+        req.set(h.first, h.second);
+    }
+    req.body() = body;
+    req.prepare_payload();
+
+    http::write(stream, req);
+
+    beast::flat_buffer buffer;
+    http::response<http::string_body> res;
+    http::read(stream, buffer, res);
+
+    beast::error_code ec;
+    stream.shutdown(ec);
+    return res;
+}
+
 int http_request(lua_State *L) {
     if (lua_gettop(L) < 2 || lua_gettop(L) > 5) {
         luaL_error(L, "Expected 2 argument min. Max 5.");
@@ -415,8 +500,6 @@ int DecodeJSON_from_string(lua_State *L) {
     std::string error = decode_value(root, root_value);
     if (!error.empty()) {
         yyjson_doc_free(doc);
-        asIScriptContext *ctx = asGetActiveContext();
-        if (ctx) ctx->SetException(("JSON parse error: " + error).c_str());
         return 0;
     }
     push_lua_value(L, root_value);

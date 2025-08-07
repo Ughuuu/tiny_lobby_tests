@@ -1,4 +1,3 @@
-// main.h
 #pragma once
 #include <mutex>
 #include <string>

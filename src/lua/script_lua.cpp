@@ -3,7 +3,7 @@
 #include <filesystem>
 #include <variant>
 
-#include "game_thread.h"
+#include "../game/game_thread.h"
 #include "luacode.h"
 #include "lualib.h"
 #include "script_lua_functions.h"

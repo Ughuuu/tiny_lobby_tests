@@ -7,8 +7,7 @@
 
 #include "lobby_data.h"
 #include "peer_data.h"
-#include "script_as.h"
-#include "script_lua.h"
+#include "../lua/script_lua.h"
 
 struct TimerData {
     std::string id;
@@ -39,12 +38,8 @@ struct GameData {
     boost::container::flat_set<std::string> enabled_callbacks;
     boost::container::flat_map<std::string, TimerData> timer_data;
     ScriptLua lua;
-    ScriptAS angelscript;
 
     void close() {
-        if (angelscript.enabled) {
-            angelscript.close();
-        }
         if (lua.enabled) {
             lua.close();
         }
@@ -52,9 +47,6 @@ struct GameData {
     void open(int64_t now) {
         if (lua.enabled) {
             enabled_callbacks = lua.open();
-        }
-        if (angelscript.enabled) {
-            enabled_callbacks = angelscript.open();
         }
         // set last_send_time and last_tick_time to multiple of send_rate and tick_rate
         if (send_rate > 0) {

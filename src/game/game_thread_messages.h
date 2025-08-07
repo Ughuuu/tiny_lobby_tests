@@ -2,7 +2,7 @@
 #include <boost/container/flat_map.hpp>
 #include <string>
 
-#include "any_type.h"
+#include "../common/any_type.h"
 
 std::string ERROR_CANNOT_PARSE_JSON = "Cannot parse json";
 std::string ERROR_PEER_NOT_FOUND = "Peer not found";

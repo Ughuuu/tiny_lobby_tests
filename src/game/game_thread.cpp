@@ -7,10 +7,10 @@
 #include <sstream>
 
 #include "INIReader.h"
-#include "any_type.h"
+#include "../common/any_type.h"
 #include "game_thread_messages.h"
-#include "lua.h"
-#include "main.h"
+#include "../lua/script_lua.h"
+#include "../common/base_path.h"
 
 GameThread::GameThread(
     bool db_enabled, bool verbose, std::string log_folder, std::string scripts_folder,
@@ -55,13 +55,6 @@ void GameThread::load_games() {
         int max_afk_time = config_reader.GetInteger(section, "max_afk_time", 0);
         bool seal = config_reader.GetBoolean(section, "seal", false);
         std::string lobby_control = config_reader.Get(section, "lobby_control", "lua");
-        ScriptAS as;
-        as.scripts_folder = scripts_folder;
-        as.folder_name = folder_name;
-        as.script_entrypoint = "main.as";
-        as.logs_folder = logs_folder;
-        as.game_thread = this;
-        as.enabled = lobby_control == "angelscript";
         if (tickrate > 0) {
             check_time = std::min(check_time, tickrate);
         }
@@ -93,8 +86,8 @@ void GameThread::load_games() {
                                                          .script_entrypoint = "main.lua",
                                                          .logs_folder = logs_folder,
                                                          .game_thread = this,
-                                                         .enabled = lobby_control == "lua"},
-                                        .angelscript = as});
+                                                         .enabled = lobby_control == "lua"}
+                                                        });
     }
     for (auto &game : games) {
         if (!games_to_open.contains(game.first)) {
@@ -1885,22 +1878,6 @@ void GameThread::reload_game(std::string folder_name) {
                     }
                 }
             }
-            if (game.angelscript.enabled) {
-                game.close();
-                game.open(get_time_now());
-                if (game.enabled_callbacks.find("_on_server_reload") !=
-                    game.enabled_callbacks.end()) {
-                    bool has_error = false;
-                    boost::container::vector<AnyElement> args;
-                    auto func_result =
-                        scripted_function_call(EMPTY_STRING, EMPTY_STRING, game,
-                                               "_on_server_reload", true, args, has_error);
-                    if (has_error && std::holds_alternative<std::string>(func_result.value)) {
-                        logger.error_log("[GameThread] on_error _on_reload ",
-                                         std::get<std::string>(func_result.value));
-                    }
-                }
-            }
         }
     }
 }
@@ -1911,21 +1888,6 @@ AnyElement GameThread::scripted_function_call(std::string peer_id, std::string l
                                               bool &has_error) {
     if (game.lua.enabled) {
         auto result = game.lua.func_call(funcname, args, peer_id, lobby_id, game.id, has_error);
-        // if dictionary with error, put error
-        auto result_dict =
-            std::get_if<boost::container::flat_map<std::string, AnyElement>>(&result.value);
-        if (result_dict && result_dict->find("error") != result_dict->end()) {
-            has_error = true;
-            // logical error generates events too
-            notify_lobby_changes(game, lobby_id);
-            return (*result_dict)["error"];
-        }
-        notify_lobby_changes(game, lobby_id);
-        return result;
-    }
-    if (game.angelscript.enabled) {
-        auto result =
-            game.angelscript.func_call(funcname, args, peer_id, lobby_id, game.id, has_error);
         // if dictionary with error, put error
         auto result_dict =
             std::get_if<boost::container::flat_map<std::string, AnyElement>>(&result.value);

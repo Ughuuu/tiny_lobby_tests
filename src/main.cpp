@@ -1,23 +1,4 @@
-#include "main.h"
-
-// Define BasePath default constructor
-BasePath::BasePath() = default;
-
-// Implementation of BasePath
-BasePath &BasePath::instance() {
-    static BasePath inst;
-    return inst;
-}
-void BasePath::set(const std::string &path) {
-    std::lock_guard<std::mutex> lock(mutex_);
-    base_path_ = path;
-    if (!base_path_.empty() && base_path_.back() != '/' && base_path_.back() != '\\') {
-        base_path_ += "/";
-    }
-}
-std::string BasePath::get() const { return base_path_; }
-std::string BasePath::file(const std::string &fname) const { return base_path_ + fname; }
-
+#include "common/base_path.h"
 #include <readerwriterqueue.h>
 #include <stddef.h>
 #include <uwebsockets/App.h>
@@ -27,10 +8,11 @@ std::string BasePath::file(const std::string &fname) const { return base_path_ +
 #include <thread>
 
 #include "INIReader.h"
-#include "database.h"
-#include "default_config.h"
-#include "game_thread.h"
-#include "websocket_server.h"
+#include "database/database.h"
+#include "common/any_type.h"
+#include "common/default_config.h"
+#include "game/game_thread.h"
+#include "websocket/websocket_server.h"
 #ifdef _WIN32
 #include <windows.h>
 #endif

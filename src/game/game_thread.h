@@ -10,13 +10,14 @@
 #include <efsw/efsw.hpp>
 #include <mutex>
 
-#include "database_thread.h"
+#include "../database/database_thread.h"
 #include "game_data.h"
 #include "games_listener.h"
 #include "lobby_data.h"
 #include "peer_data.h"
-#include "server_logger.h"
-#include "websocket_server.h"
+#include "../common/server_logger.h"
+#include "../common/any_type.h"
+#include "../websocket/websocket_server.h"
 #include "yyjson.h"
 
 static std::vector<std::string> get_expected_functions() {

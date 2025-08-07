@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "INIReader.h"
-#include "main.h"
+#include "../common/base_path.h"
 
 Database::Database() : connection(nullptr) {
     INIReader config_reader(BasePath::instance().file("config.ini"));

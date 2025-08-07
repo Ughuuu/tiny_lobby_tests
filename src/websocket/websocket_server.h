@@ -7,9 +7,9 @@
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
 
-#include "authentication_thread.h"
-#include "database.h"
-#include "server_logger.h"
+#include "../authentication/authentication_thread.h"
+#include "../database/database.h"
+#include "../common/server_logger.h"
 #include "per_socket_data.h"
 
 static inline int64_t get_time_now() {

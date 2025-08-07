@@ -5,9 +5,9 @@
 #include <time.h>
 
 #include "INIReader.h"
-#include "any_type.h"
+#include "../common/any_type.h"
 #include "lua.h"
-#include "server_logger.h"
+#include "../common/server_logger.h"
 
 class GameThread;
 
