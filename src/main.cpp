@@ -1,4 +1,3 @@
-#include "common/base_path.h"
 #include <readerwriterqueue.h>
 #include <stddef.h>
 #include <uwebsockets/App.h>
@@ -8,9 +7,10 @@
 #include <thread>
 
 #include "INIReader.h"
-#include "database/database.h"
 #include "common/any_type.h"
+#include "common/base_path.h"
 #include "common/default_config.h"
+#include "database/database.h"
 #include "game/game_thread.h"
 #include "websocket/websocket_server.h"
 #ifdef _WIN32

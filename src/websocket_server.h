@@ -9,8 +9,8 @@
 
 #include "authentication_thread.h"
 #include "database.h"
-#include "server_logger.h"
 #include "per_socket_data.h"
+#include "server_logger.h"
 
 static inline int64_t get_time_now() {
     auto now = std::chrono::system_clock::now().time_since_epoch();
@@ -37,7 +37,6 @@ struct WebSocketReceivedMessage {
     std::string name;
     std::string platform_id;
 };
-
 
 struct ReconnectionTokens {
     std::string peer_id;
