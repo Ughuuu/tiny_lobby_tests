@@ -11,8 +11,8 @@
             "program": "${workspaceFolder}/build/tiny_lobby",
             "args": [
                 "--path",
-                "/Users/dragosdaian/Documents/appsinacup/tiny_lobby_scripts"
-                //"--verbose",
+                "/Users/dragosdaian/Documents/appsinacup/tiny_lobby_scripts",
+                "--verbose",
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -35,6 +35,21 @@
             "environment": [],
             "externalConsole": false,
             "MIMode": "lldb"
-        } ,
+        },
+        // Run mocha tests from test folder
+        {
+            "name": "Mocha Tests",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceFolder}/test/node_modules/mocha/bin/_mocha",
+            "args": [
+                "--timeout",
+                "10000",
+                "--colors",
+                "${workspaceFolder}/test/test.js"
+            ],
+            "internalConsoleOptions": "openOnSessionStart",
+            "console": "integratedTerminal"
+        }
     ]
 }

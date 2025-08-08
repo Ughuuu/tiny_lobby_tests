@@ -26,8 +26,7 @@ std::string ERROR_UNKOWN_COMMAND = "Unkown command";
 // d = DATA
 // e = IS_LOGICAL_ERROR
 // m = MESSAGE
-// COMMAND_IDS
-// 0 = error
+
 // 1 = lobby_hosted
 // 2 = lobby_created
 // 3 = lobby_unsealed
@@ -55,6 +54,34 @@ std::string ERROR_UNKOWN_COMMAND = "Unkown command";
 // 25 = data_to
 // 26 = data_to_sent
 // 27 = notify_to_sent
+const int RESPONSE_ERROR             = 0;
+const int RESPONSE_LOBBY_HOSTED      = 1;
+const int RESPONSE_LOBBY_CREATED     = 2;
+const int RESPONSE_LOBBY_UNSEALED    = 3;
+const int RESPONSE_LOBBY_SEALED      = 4;
+const int RESPONSE_LOBBY_RESIZED     = 5;
+const int RESPONSE_LOBBY_PASSWORDED  = 6;
+const int RESPONSE_LOBBY_TITLED      = 7;
+const int RESPONSE_PEER_READY        = 8;
+const int RESPONSE_PEER_UNREADY      = 9;
+const int RESPONSE_LOBBY_LEFT        = 10;
+const int RESPONSE_PEER_LEFT         = 11;
+const int RESPONSE_LOBBY_KICKED      = 12;
+const int RESPONSE_PEER_STATE        = 13;
+const int RESPONSE_LOBBY_CALL        = 14;
+const int RESPONSE_PEER_USER_DATA    = 15;
+const int RESPONSE_LOBBY_TAGS        = 16;
+const int RESPONSE_PEER_CHAT         = 17;
+const int RESPONSE_PEER_RECONNECTED  = 18;
+const int RESPONSE_JOINED_LOBBY      = 19;
+const int RESPONSE_PEER_JOINED       = 20;
+const int RESPONSE_PEER_DISCONNECTED = 21;
+const int RESPONSE_LOBBY_LIST        = 22;
+const int RESPONSE_LOBBY_DATA        = 23;
+const int RESPONSE_PEER_NOTIFY       = 24;
+const int RESPONSE_DATA_TO           = 25;
+const int RESPONSE_DATA_TO_SENT      = 26;
+const int RESPONSE_NOTIFY_TO_SENT    = 27;
 
 // host_id = h
 // max_players = m
@@ -62,7 +89,7 @@ std::string ERROR_UNKOWN_COMMAND = "Unkown command";
 std::string notification_error(const std::string& message, const std::string& command_id = "",
                                bool is_logical_error = false) {
     return AnyElement{boost::container::flat_map<std::string, AnyElement>{
-                          {"c", AnyElement{0}},
+                          {"c", AnyElement{RESPONSE_ERROR}},
                           {"m", AnyElement{message}},
                           {"d", AnyElement{boost::container::flat_map<std::string, AnyElement>{
                                     {"id", AnyElement{command_id}}}}},
@@ -71,7 +98,7 @@ std::string notification_error(const std::string& message, const std::string& co
 }
 std::string notification_lobby_host_changed(const std::string& host_id) {
     return AnyElement{boost::container::flat_map<std::string, AnyElement>{
-                          {"c", AnyElement{1}},
+                          {"c", AnyElement{RESPONSE_LOBBY_HOSTED}},
                           {"d", AnyElement{boost::container::flat_map<std::string, AnyElement>{
                                     {"h", AnyElement{host_id}}}}}}}
         .to_string();
@@ -80,21 +107,21 @@ std::string notification_lobby_created(const AnyElement& lobby, const AnyElement
                                        const std::string& command_id) {
     return AnyElement{
         boost::container::flat_map<std::string, AnyElement>{
-            {"c", AnyElement{2}},
+            {"c", AnyElement{RESPONSE_LOBBY_CREATED}},
             {"d", AnyElement{boost::container::flat_map<std::string, AnyElement>{
                       {"lobby", lobby}, {"peers", peers}, {"id", AnyElement{command_id}}}}}}}
         .to_string();
 }
 std::string notification_lobby_unsealed(const std::string& command_id) {
     return AnyElement{boost::container::flat_map<std::string, AnyElement>{
-                          {"c", AnyElement{3}},
+                          {"c", AnyElement{RESPONSE_LOBBY_UNSEALED}},
                           {"d", AnyElement{boost::container::flat_map<std::string, AnyElement>{
                                     {"id", AnyElement{command_id}}}}}}}
         .to_string();
 }
 std::string notification_lobby_sealed(const std::string& command_id) {
     return AnyElement{boost::container::flat_map<std::string, AnyElement>{
-                          {"c", AnyElement{4}},
+                          {"c", AnyElement{RESPONSE_LOBBY_SEALED}},
                           {"d", AnyElement{boost::container::flat_map<std::string, AnyElement>{
                                     {"id", AnyElement{command_id}}}}}}}
         .to_string();

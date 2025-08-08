@@ -32,12 +32,21 @@ struct GameData {
     boost::container::flat_map<std::string, boost::container::vector<std::string>> peers_send_data;
     boost::container::flat_map<std::string, PeerData> peers;
     boost::container::flat_map<std::string, int64_t> disconnected_peers;
-    boost::container::flat_map<std::string, LobbyData> lobbies;
+    std::unordered_map<std::string, LobbyData> lobbies;
     boost::container::flat_set<std::string> lobby_listing_peers;
     boost::container::flat_set<std::string> lobbies_updated;
-    boost::container::flat_set<std::string> enabled_callbacks;
     boost::container::flat_map<std::string, TimerData> timer_data;
+    boost::container::flat_set<std::string> enabled_callbacks;
     ScriptLua lua;
+
+    boost::container::vector<AnyElement> peers_to_array(std::string &lobby_id) {
+        boost::container::vector<AnyElement> result;
+        for (auto &peer_id : lobbies[lobby_id].peer_ids) {
+            auto &peer = peers[peer_id];
+            result.push_back(AnyElement{peer.to_dict()});
+        }
+        return result;
+    }
 
     void close() {
         if (lua.enabled) {
@@ -55,14 +64,5 @@ struct GameData {
         if (tick_rate > 0) {
             last_tick_time = (now / tick_rate) * tick_rate;
         }
-    }
-
-    boost::container::vector<AnyElement> peers_to_array(std::string &lobby_id) {
-        boost::container::vector<AnyElement> result;
-        for (auto &peer_id : lobbies[lobby_id].peer_ids) {
-            auto &peer = peers[peer_id];
-            result.push_back(AnyElement{peer.to_dict()});
-        }
-        return result;
     }
 };

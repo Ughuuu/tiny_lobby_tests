@@ -50,6 +50,8 @@ void WebSocketServer::on_upgrade(uWS::HttpResponse<false> *res, uWS::HttpRequest
         .uid = to_string(gen()), .id = small_uuid, .game_id = protocols_split[1]};
     if (protocols_split.size() > 2) {
         user_data.reconnection_token = protocols_split[2];
+    } else {
+        user_data.reconnection_token = uuid;
     }
     std::shared_ptr<bool> abort_shared = std::make_shared<bool>(false);
     AuthenticationMessage auth_message{

@@ -49,6 +49,7 @@ struct ScriptLua {
 
    public:
     bool enabled = false;
+    boost::container::flat_set<std::string> enabled_callbacks;
     AnyElement func_call(std::string& func_name, boost::container::vector<AnyElement>& args,
                          std::string& peer_id, std::string& lobby_id, std::string& game_id,
                          bool& has_error);

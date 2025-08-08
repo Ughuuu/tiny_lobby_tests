@@ -6,6 +6,7 @@
 #include <unordered_set>
 
 #include "../common/any_type.h"
+#include "../lua/script_lua.h"
 #include "peer_data.h"
 
 struct LobbyData {
@@ -33,6 +34,7 @@ struct LobbyData {
     bool max_players_dirty = false;
     bool sealed_dirty = false;
     bool name_dirty = false;
+    ScriptLua lua;
 
     boost::container::flat_map<std::string, AnyElement> to_dict(bool include_private = false) {
         boost::container::flat_map<std::string, AnyElement> lobby_dict;
@@ -50,5 +52,16 @@ struct LobbyData {
             lobby_dict["private_data"] = AnyElement{private_data};
         }
         return lobby_dict;
+    }
+
+    void close() {
+        if (lua.enabled) {
+            lua.close();
+        }
+    }
+    void open() {
+        if (lua.enabled) {
+            lua.open();
+        }
     }
 };
