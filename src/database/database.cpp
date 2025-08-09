@@ -5,8 +5,8 @@
 #include <tuple>
 #include <vector>
 
-#include "INIReader.h"
 #include "../common/base_path.h"
+#include "INIReader.h"
 
 Database::Database() : connection(nullptr) {
     INIReader config_reader(BasePath::instance().file("config.ini"));

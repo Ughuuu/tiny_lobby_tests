@@ -174,17 +174,17 @@ static int lobby_newindex(lua_State* L) {
 
 // Returns cache table at top of stack, creates if missing
 void get_lobby_userdata_cache(lua_State* L, int userdata_index) {
-    lua_getfield(L, LUA_REGISTRYINDEX, "lobby_userdata_cache"); // cache
-    lua_pushvalue(L, userdata_index); // push userdata
-    lua_gettable(L, -2); // cache[userdata]
+    lua_getfield(L, LUA_REGISTRYINDEX, "lobby_userdata_cache");  // cache
+    lua_pushvalue(L, userdata_index);                            // push userdata
+    lua_gettable(L, -2);                                         // cache[userdata]
     if (lua_isnil(L, -1)) {
-        lua_pop(L, 1); // pop nil
-        lua_newtable(L); // new cache table
-        lua_pushvalue(L, userdata_index); // push userdata
-        lua_pushvalue(L, -2); // push new cache table
-        lua_settable(L, -4); // cache[userdata] = new cache table
+        lua_pop(L, 1);                     // pop nil
+        lua_newtable(L);                   // new cache table
+        lua_pushvalue(L, userdata_index);  // push userdata
+        lua_pushvalue(L, -2);              // push new cache table
+        lua_settable(L, -4);               // cache[userdata] = new cache table
     }
-    lua_remove(L, -2); // remove cache table, leave cache table for this userdata
+    lua_remove(L, -2);  // remove cache table, leave cache table for this userdata
 }
 
 // Helper to cache a property in the userdata's registry weak table cache.
@@ -192,25 +192,25 @@ void get_lobby_userdata_cache(lua_State* L, int userdata_index) {
 // - key: property name (from Lua stack at index 2)
 // - push_value: lambda that pushes the value to cache if not present
 // Returns: true if value was found in cache and pushed, false if you should compute and cache it.
-template<typename PushValueFunc>
+template <typename PushValueFunc>
 bool cache_lobby_property(lua_State* L, const char* key, PushValueFunc push_value) {
     // stack: userdata, key
-    get_lobby_userdata_cache(L, 1); // stack: userdata, key, cache (for this userdata)
-    lua_pushstring(L, key); // push key
-    lua_gettable(L, -2);    // cache[key]
+    get_lobby_userdata_cache(L, 1);  // stack: userdata, key, cache (for this userdata)
+    lua_pushstring(L, key);          // push key
+    lua_gettable(L, -2);             // cache[key]
     if (!lua_isnil(L, -1)) {
         // Found in cache
-        lua_remove(L, -2); // remove cache, leave value
+        lua_remove(L, -2);  // remove cache, leave value
         return true;
     }
-    lua_pop(L, 1); // pop nil
+    lua_pop(L, 1);  // pop nil
 
     // Not in cache, compute and cache it
-    push_value(); // should push value to stack
-    lua_pushstring(L, key); // key
-    lua_pushvalue(L, -2);   // value
-    lua_settable(L, -4);    // cache[key] = value
-    lua_remove(L, -2);      // remove cache, leave value
+    push_value();            // should push value to stack
+    lua_pushstring(L, key);  // key
+    lua_pushvalue(L, -2);    // value
+    lua_settable(L, -4);     // cache[key] = value
+    lua_remove(L, -2);       // remove cache, leave value
     return false;
 }
 
@@ -287,9 +287,10 @@ static int lobby_index(lua_State* L) {
                 return 1;
             } else if (strcmp(key, "public_data") == 0) {
                 if (cache_lobby_property(L, key, [&]() {
-                    create_lobby_userdata(L, game_thread, game_id, lobby_id, calling_peer_id,
-                                        empty_string, LobbyUserdata::LobbyType::LOBBY_PUBLIC_DATA);
-                })) {
+                        create_lobby_userdata(L, game_thread, game_id, lobby_id, calling_peer_id,
+                                              empty_string,
+                                              LobbyUserdata::LobbyType::LOBBY_PUBLIC_DATA);
+                    })) {
                     return 1;
                 }
                 return 1;
@@ -401,11 +402,10 @@ static int lobby_index(lua_State* L) {
     return 0;
 }
 
-
 void ScriptLua::set_lua_metatables() {
     // set cache
-    lua_newtable(L);                // cache table
-    lua_newtable(L);                // metatable
+    lua_newtable(L);  // cache table
+    lua_newtable(L);  // metatable
     lua_pushstring(L, "v");
     lua_setfield(L, -2, "__mode");  // weak values
     lua_setmetatable(L, -2);

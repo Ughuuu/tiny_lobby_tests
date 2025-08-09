@@ -6,11 +6,11 @@
 #include <regex>
 #include <sstream>
 
-#include "INIReader.h"
 #include "../common/any_type.h"
-#include "game_thread_messages.h"
-#include "../lua/script_lua.h"
 #include "../common/base_path.h"
+#include "../lua/script_lua.h"
+#include "INIReader.h"
+#include "game_thread_messages.h"
 
 GameThread::GameThread(
     bool db_enabled, bool verbose, std::string log_folder, std::string scripts_folder,
@@ -86,8 +86,7 @@ void GameThread::load_games() {
                                                          .script_entrypoint = "main.lua",
                                                          .logs_folder = logs_folder,
                                                          .game_thread = this,
-                                                         .enabled = lobby_control == "lua"}
-                                                        });
+                                                         .enabled = lobby_control == "lua"}});
     }
     for (auto &game : games) {
         if (!games_to_open.contains(game.first)) {
@@ -372,16 +371,14 @@ bool GameThread::handle_events() {
             // decode message
             yyjson_doc *doc = yyjson_read(message.message.c_str(), message.message.size(), 0);
             if (!doc) {
-                on_error(game, EMPTY_STRING, message.id,
-                         ERROR_CANNOT_PARSE_JSON, true);
+                on_error(game, EMPTY_STRING, message.id, ERROR_CANNOT_PARSE_JSON, true);
                 break;
             }
 
             yyjson_val *root = yyjson_doc_get_root(doc);
             if (!root || !yyjson_is_obj(root)) {
                 yyjson_doc_free(doc);
-                on_error(game, EMPTY_STRING, message.id,
-                         ERROR_CANNOT_PARSE_JSON, true);
+                on_error(game, EMPTY_STRING, message.id, ERROR_CANNOT_PARSE_JSON, true);
                 break;
             }
             // get command
@@ -390,8 +387,7 @@ bool GameThread::handle_events() {
             std::string command_id = decode_string_or_default(root, "id", EMPTY_STRING);
             if (game.peers.find(message.id) == game.peers.end()) {
                 yyjson_doc_free(doc);
-                on_error(game, command_id, message.id, ERROR_PEER_NOT_FOUND,
-                         true);
+                on_error(game, command_id, message.id, ERROR_PEER_NOT_FOUND, true);
                 break;
             }
             auto &peer = game.peers[message.id];
@@ -469,8 +465,7 @@ bool GameThread::handle_events() {
                 } break;
 
                 default: {
-                    on_error(game, std::string(command_id), message.id,
-                            ERROR_UNKOWN_COMMAND, true);
+                    on_error(game, std::string(command_id), message.id, ERROR_UNKOWN_COMMAND, true);
                 } break;
             }
             yyjson_doc_free(doc);
@@ -918,26 +913,23 @@ void GameThread::on_create_lobby(
     }
     peer.lobby_id = small_uuid;
     game.lobbies.emplace(small_uuid,
-                         LobbyData{
-                             .id = small_uuid,
-                             .name = decode_string_or_default(data_val, "n", ""),
-                             .host = peer.id,
-                             .password = decode_string_or_default(data_val, "_p", ""),
-                             .max_players = decode_int_or_default(data_val, "m", 0),
-                             .peer_ids = {peer.id},
-                             .peer_ordered_ids = {peer.id},
-                             .create_time = now,
-                             .game_id = peer.game_id,
-                             .sealed = decode_bool_or_default(data_val, "s", game.seal),
-                             .tags = lobby_tags,
-                             .lua = ScriptLua{.scripts_folder = game.lua.scripts_folder,
-                                            .folder_name = game.lua.folder_name,
-                                            .script_entrypoint = "main.lua",
-                                            .logs_folder = game.lua.logs_folder,
-                                            .game_thread = this,
-                                            .enabled = game.lua.enabled
-                                        }
-                         });
+                         LobbyData{.id = small_uuid,
+                                   .name = decode_string_or_default(data_val, "n", ""),
+                                   .host = peer.id,
+                                   .password = decode_string_or_default(data_val, "_p", ""),
+                                   .max_players = decode_int_or_default(data_val, "m", 0),
+                                   .peer_ids = {peer.id},
+                                   .peer_ordered_ids = {peer.id},
+                                   .create_time = now,
+                                   .game_id = peer.game_id,
+                                   .sealed = decode_bool_or_default(data_val, "s", game.seal),
+                                   .tags = lobby_tags,
+                                   .lua = ScriptLua{.scripts_folder = game.lua.scripts_folder,
+                                                    .folder_name = game.lua.folder_name,
+                                                    .script_entrypoint = "main.lua",
+                                                    .logs_folder = game.lua.logs_folder,
+                                                    .game_thread = this,
+                                                    .enabled = game.lua.enabled}});
     auto &lobby = game.lobbies[small_uuid];
     lobby.open();
     game.lobby_listing_peers.erase(peer.id);
@@ -1056,10 +1048,9 @@ bool GameThread::on_join_lobby(GameData &game, std::string command_id, PeerData 
         }
     }
     // if it's relay, send private lobby data too at connection if host
-    std::string notification_self =
-        notification_lobby_joined(AnyElement{lobby.to_dict(game.lobby_control == "relay" && 
-                                             lobby.host == peer.id)},
-                                  AnyElement{game.peers_to_array(lobby.id)}, command_id);
+    std::string notification_self = notification_lobby_joined(
+        AnyElement{lobby.to_dict(game.lobby_control == "relay" && lobby.host == peer.id)},
+        AnyElement{game.peers_to_array(lobby.id)}, command_id);
     send(game, peer.id, notification_self, uWS::OpCode::TEXT);
     // SCRIPTED CALL
     if (!reconnecting) {
@@ -1194,13 +1185,11 @@ void GameThread::on_lobby_tags(GameData &game, std::string command_id, PeerData 
     }
     boost::container::flat_map<std::string, AnyElement> new_tags;
     if (!data_val || !yyjson_is_obj(data_val)) {
-        return on_error(game, command_id, peer.id,
-                        ERROR_CANNOT_PARSE_JSON);
+        return on_error(game, command_id, peer.id, ERROR_CANNOT_PARSE_JSON);
     }
     yyjson_val *tags_val = yyjson_obj_get(data_val, "t");
     if (!tags_val || !yyjson_is_obj(tags_val)) {
-        return on_error(game, command_id, peer.id,
-                        ERROR_CANNOT_PARSE_JSON);
+        return on_error(game, command_id, peer.id, ERROR_CANNOT_PARSE_JSON);
     }
     std::string error = decode_object(tags_val, new_tags);
     if (!error.empty()) {
@@ -1279,13 +1268,11 @@ void GameThread::on_user_data(GameData &game, std::string command_id, PeerData &
     // CHANGES
     boost::container::flat_map<std::string, AnyElement> new_userdata;
     if (!data_val || !yyjson_is_obj(data_val)) {
-        return on_error(game, command_id, peer.id,
-                        ERROR_CANNOT_PARSE_JSON);
+        return on_error(game, command_id, peer.id, ERROR_CANNOT_PARSE_JSON);
     }
     yyjson_val *userdata_val = yyjson_obj_get(data_val, "ud");
     if (!userdata_val || !yyjson_is_obj(userdata_val)) {
-        return on_error(game, command_id, peer.id,
-                        ERROR_CANNOT_PARSE_JSON);
+        return on_error(game, command_id, peer.id, ERROR_CANNOT_PARSE_JSON);
     }
     std::string error = decode_object(userdata_val, new_userdata);
     if (!error.empty()) {
@@ -1569,8 +1556,7 @@ void GameThread::on_lobby_data(GameData &game, std::string command_id, PeerData 
     // CHANGES
     yyjson_val *lobbydata_val = yyjson_obj_get(data_val, "d");
     if (!lobbydata_val || !yyjson_is_obj(lobbydata_val)) {
-        return on_error(game, command_id, peer.id,
-                        ERROR_CANNOT_PARSE_JSON);
+        return on_error(game, command_id, peer.id, ERROR_CANNOT_PARSE_JSON);
     }
     boost::container::flat_map<std::string, AnyElement> new_lobbydata;
     std::string error = decode_object(lobbydata_val, new_lobbydata);
@@ -1651,8 +1637,7 @@ void GameThread::on_data_to(GameData &game, std::string command_id, PeerData &pe
     // CHANGES
     yyjson_val *peerdata_val = yyjson_obj_get(data_val, "d");
     if (!peerdata_val || !yyjson_is_obj(peerdata_val)) {
-        return on_error(game, command_id, peer.id,
-                        ERROR_CANNOT_PARSE_JSON);
+        return on_error(game, command_id, peer.id, ERROR_CANNOT_PARSE_JSON);
     }
     boost::container::flat_map<std::string, AnyElement> new_data;
     std::string error = decode_object(peerdata_val, new_data);
@@ -1724,8 +1709,7 @@ void GameThread::on_data_to_all(GameData &game, std::string command_id, PeerData
     // CHANGES
     yyjson_val *peerdata_val = yyjson_obj_get(data_val, "d");
     if (!peerdata_val || !yyjson_is_obj(peerdata_val)) {
-        return on_error(game, command_id, peer.id,
-                        ERROR_CANNOT_PARSE_JSON);
+        return on_error(game, command_id, peer.id, ERROR_CANNOT_PARSE_JSON);
     }
     boost::container::flat_map<std::string, AnyElement> new_data;
     std::string error = decode_object(peerdata_val, new_data);
@@ -1806,8 +1790,7 @@ void GameThread::on_notify_to(GameData &game, std::string command_id, PeerData &
     // CHANGES
     yyjson_val *peerdata_val = yyjson_obj_get(data_val, "d");
     if (!peerdata_val || !yyjson_is_obj(peerdata_val)) {
-        return on_error(game, command_id, peer.id,
-                        ERROR_CANNOT_PARSE_JSON);
+        return on_error(game, command_id, peer.id, ERROR_CANNOT_PARSE_JSON);
     }
     boost::container::flat_map<std::string, AnyElement> new_data;
     std::string error = decode_object(peerdata_val, new_data);
@@ -1836,8 +1819,7 @@ void GameThread::on_lobby_notify(GameData &game, std::string command_id, PeerDat
     // CHANGES
     yyjson_val *peerdata_val = yyjson_obj_get(data_val, "d");
     if (!peerdata_val || !yyjson_is_obj(peerdata_val)) {
-        return on_error(game, command_id, peer.id,
-                        ERROR_CANNOT_PARSE_JSON);
+        return on_error(game, command_id, peer.id, ERROR_CANNOT_PARSE_JSON);
     }
     boost::container::flat_map<std::string, AnyElement> new_data;
     std::string error = decode_object(peerdata_val, new_data);

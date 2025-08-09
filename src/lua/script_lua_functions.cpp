@@ -1,21 +1,19 @@
 #include "script_lua_functions.h"
 
+#include <boost/asio/connect.hpp>
+#include <boost/asio/ssl.hpp>
+#include <boost/beast/core.hpp>
+#include <boost/beast/http.hpp>
+#include <boost/beast/version.hpp>
+#include <boost/container/flat_map.hpp>
 #include <filesystem>
+#include <sstream>
 #include <variant>
 
 #include "../game/game_thread.h"
 #include "luacode.h"
 #include "lualib.h"
 #include "script_lua.h"
-
-
-#include <boost/asio/connect.hpp>
-#include <boost/asio/ssl.hpp>
-#include <boost/beast/version.hpp>
-#include <boost/beast/core.hpp>
-#include <boost/beast/http.hpp>
-#include <boost/container/flat_map.hpp>
-#include <sstream>
 
 namespace beast = boost::beast;
 namespace http = beast::http;

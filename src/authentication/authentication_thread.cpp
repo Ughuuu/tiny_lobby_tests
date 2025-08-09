@@ -1,7 +1,8 @@
 #include "authentication_thread.h"
-#include "../websocket/websocket_server.h"
-#include "../database/database.h"
+
 #include "../common/any_type.h"
+#include "../database/database.h"
+#include "../websocket/websocket_server.h"
 #include "login_client.h"
 
 AuthenticationThread::AuthenticationThread(

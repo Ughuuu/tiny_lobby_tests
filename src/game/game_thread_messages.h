@@ -32,40 +32,40 @@
 // e = IS_LOGICAL_ERROR
 // m = MESSAGE
 
-const int RESPONSE_ERROR             = 0;
-const int RESPONSE_LOBBY_HOSTED      = 1;
-const int RESPONSE_LOBBY_CREATED     = 2;
-const int RESPONSE_LOBBY_UNSEALED    = 3;
-const int RESPONSE_LOBBY_SEALED      = 4;
-const int RESPONSE_LOBBY_RESIZED     = 5;
-const int RESPONSE_LOBBY_PASSWORDED  = 6;
-const int RESPONSE_LOBBY_TITLED      = 7;
-const int RESPONSE_PEER_READY        = 8;
-const int RESPONSE_PEER_UNREADY      = 9;
-const int RESPONSE_LOBBY_LEFT        = 10;
-const int RESPONSE_PEER_LEFT         = 11;
-const int RESPONSE_LOBBY_KICKED      = 12;
-const int RESPONSE_PEER_STATE        = 13;
-const int RESPONSE_LOBBY_CALL        = 14;
-const int RESPONSE_PEER_USER_DATA    = 15;
-const int RESPONSE_LOBBY_TAGS        = 16;
-const int RESPONSE_PEER_CHAT         = 17;
-const int RESPONSE_PEER_RECONNECTED  = 18;
-const int RESPONSE_JOINED_LOBBY      = 19;
-const int RESPONSE_PEER_JOINED       = 20;
+const int RESPONSE_ERROR = 0;
+const int RESPONSE_LOBBY_HOSTED = 1;
+const int RESPONSE_LOBBY_CREATED = 2;
+const int RESPONSE_LOBBY_UNSEALED = 3;
+const int RESPONSE_LOBBY_SEALED = 4;
+const int RESPONSE_LOBBY_RESIZED = 5;
+const int RESPONSE_LOBBY_PASSWORDED = 6;
+const int RESPONSE_LOBBY_TITLED = 7;
+const int RESPONSE_PEER_READY = 8;
+const int RESPONSE_PEER_UNREADY = 9;
+const int RESPONSE_LOBBY_LEFT = 10;
+const int RESPONSE_PEER_LEFT = 11;
+const int RESPONSE_LOBBY_KICKED = 12;
+const int RESPONSE_PEER_STATE = 13;
+const int RESPONSE_LOBBY_CALL = 14;
+const int RESPONSE_PEER_USER_DATA = 15;
+const int RESPONSE_LOBBY_TAGS = 16;
+const int RESPONSE_PEER_CHAT = 17;
+const int RESPONSE_PEER_RECONNECTED = 18;
+const int RESPONSE_JOINED_LOBBY = 19;
+const int RESPONSE_PEER_JOINED = 20;
 const int RESPONSE_PEER_DISCONNECTED = 21;
-const int RESPONSE_LOBBY_LIST        = 22;
-const int RESPONSE_LOBBY_DATA        = 23;
-const int RESPONSE_PEER_NOTIFY       = 24;
-const int RESPONSE_DATA_TO           = 25;
-const int RESPONSE_DATA_TO_SENT      = 26;
-const int RESPONSE_NOTIFY_TO_SENT    = 27;
+const int RESPONSE_LOBBY_LIST = 22;
+const int RESPONSE_LOBBY_DATA = 23;
+const int RESPONSE_PEER_NOTIFY = 24;
+const int RESPONSE_DATA_TO = 25;
+const int RESPONSE_DATA_TO_SENT = 26;
+const int RESPONSE_NOTIFY_TO_SENT = 27;
 
 const int COMMAND_LOBBY_DATA = 0;
 const int COMMAND_LOBBY_DATA_TO = 1;
 const int COMMAND_LOBBY_DATA_TO_ALL = 2;
 const int COMMAND_LOBBY_NOTIFY_TO = 3;
-const int COMMAND_LOBBY_NOTIFY= 4;
+const int COMMAND_LOBBY_NOTIFY = 4;
 const int COMMAND_LOBBY_CALL = 5;
 const int COMMAND_LOBBY_QUICK_JOIN = 6;
 const int COMMAND_CREATE_LOBBY = 7;
@@ -110,11 +110,10 @@ std::string notification_lobby_host_changed(const std::string& host_id) {
 }
 std::string notification_lobby_created(const AnyElement& lobby, const AnyElement& peers,
                                        const std::string& command_id) {
-    return AnyElement{
-        boost::container::flat_map<std::string, AnyElement>{
-            {"c", AnyElement{RESPONSE_LOBBY_CREATED}},
-            {"d", AnyElement{boost::container::flat_map<std::string, AnyElement>{
-                      {"l", lobby}, {"p", peers}, {"id", AnyElement{command_id}}}}}}}
+    return AnyElement{boost::container::flat_map<std::string, AnyElement>{
+                          {"c", AnyElement{RESPONSE_LOBBY_CREATED}},
+                          {"d", AnyElement{boost::container::flat_map<std::string, AnyElement>{
+                                    {"l", lobby}, {"p", peers}, {"id", AnyElement{command_id}}}}}}}
         .to_string();
 }
 std::string notification_lobby_unsealed(const std::string& command_id) {
@@ -141,35 +140,32 @@ std::string notification_lobby_max_players(int max_players, const std::string& c
 }
 std::string notification_lobby_password_protected(bool password_protected,
                                                   const std::string& command_id) {
-    return AnyElement{boost::container::flat_map<std::string, AnyElement>{
-                          {"c", AnyElement{RESPONSE_LOBBY_PASSWORDED}},
-                          {"d", AnyElement{boost::container::flat_map<std::string, AnyElement>{
-                                    {"_p", AnyElement{password_protected}},
-                                    {"id", AnyElement{command_id}}}}}}}
+    return AnyElement{
+        boost::container::flat_map<std::string, AnyElement>{
+            {"c", AnyElement{RESPONSE_LOBBY_PASSWORDED}},
+            {"d", AnyElement{boost::container::flat_map<std::string, AnyElement>{
+                      {"_p", AnyElement{password_protected}}, {"id", AnyElement{command_id}}}}}}}
         .to_string();
 }
 std::string notification_lobby_title(std::string title, const std::string& command_id) {
-    return AnyElement{
-        boost::container::flat_map<std::string, AnyElement>{
-            {"c", AnyElement{RESPONSE_LOBBY_TITLED}},
-            {"d", AnyElement{boost::container::flat_map<std::string, AnyElement>{
-                      {"n", AnyElement{title}}, {"id", AnyElement{command_id}}}}}}}
+    return AnyElement{boost::container::flat_map<std::string, AnyElement>{
+                          {"c", AnyElement{RESPONSE_LOBBY_TITLED}},
+                          {"d", AnyElement{boost::container::flat_map<std::string, AnyElement>{
+                                    {"n", AnyElement{title}}, {"id", AnyElement{command_id}}}}}}}
         .to_string();
 }
 std::string notification_peer_ready(const std::string& peer_id, const std::string& command_id) {
-    return AnyElement{
-        boost::container::flat_map<std::string, AnyElement>{
-            {"c", AnyElement{RESPONSE_PEER_READY}},
-            {"d", AnyElement{boost::container::flat_map<std::string, AnyElement>{
-                      {"p", AnyElement{peer_id}}, {"id", AnyElement{command_id}}}}}}}
+    return AnyElement{boost::container::flat_map<std::string, AnyElement>{
+                          {"c", AnyElement{RESPONSE_PEER_READY}},
+                          {"d", AnyElement{boost::container::flat_map<std::string, AnyElement>{
+                                    {"p", AnyElement{peer_id}}, {"id", AnyElement{command_id}}}}}}}
         .to_string();
 }
 std::string notification_peer_unready(const std::string& peer_id, const std::string& command_id) {
-    return AnyElement{
-        boost::container::flat_map<std::string, AnyElement>{
-            {"c", AnyElement{RESPONSE_PEER_UNREADY}},
-            {"d", AnyElement{boost::container::flat_map<std::string, AnyElement>{
-                      {"p", AnyElement{peer_id}}, {"id", AnyElement{command_id}}}}}}}
+    return AnyElement{boost::container::flat_map<std::string, AnyElement>{
+                          {"c", AnyElement{RESPONSE_PEER_UNREADY}},
+                          {"d", AnyElement{boost::container::flat_map<std::string, AnyElement>{
+                                    {"p", AnyElement{peer_id}}, {"id", AnyElement{command_id}}}}}}}
         .to_string();
 }
 
@@ -181,16 +177,15 @@ std::string notification_lobby_left(const std::string& command_id) {
         .to_string();
 }
 std::string notification_peer_left(const std::string& peer_id, const std::string& command_id) {
-    return AnyElement{
-        boost::container::flat_map<std::string, AnyElement>{
-            {"c", AnyElement{RESPONSE_PEER_LEFT}},
-            {"d", AnyElement{boost::container::flat_map<std::string, AnyElement>{
-                      {"p", AnyElement{peer_id}}, {"id", AnyElement{command_id}}}}}}}
+    return AnyElement{boost::container::flat_map<std::string, AnyElement>{
+                          {"c", AnyElement{RESPONSE_PEER_LEFT}},
+                          {"d", AnyElement{boost::container::flat_map<std::string, AnyElement>{
+                                    {"p", AnyElement{peer_id}}, {"id", AnyElement{command_id}}}}}}}
         .to_string();
 }
 std::string notification_peer_kicked(const std::string& peer_id, const std::string& command_id) {
     return AnyElement{boost::container::flat_map<std::string, AnyElement>{
-                          {"c", AnyElement{RESPONSE_PEER_LEFT}}, // kept same as original logic
+                          {"c", AnyElement{RESPONSE_PEER_LEFT}},  // kept same as original logic
                           {"d", AnyElement{boost::container::flat_map<std::string, AnyElement>{
                                     {"p", AnyElement{peer_id}},
                                     {"k", AnyElement{true}},
@@ -199,7 +194,8 @@ std::string notification_peer_kicked(const std::string& peer_id, const std::stri
 }
 
 std::string notification_lobby_kicked() {
-    return AnyElement{boost::container::flat_map<std::string, AnyElement>{{"c", AnyElement{RESPONSE_LOBBY_KICKED}}}}
+    return AnyElement{boost::container::flat_map<std::string, AnyElement>{
+                          {"c", AnyElement{RESPONSE_LOBBY_KICKED}}}}
         .to_string();
 }
 
@@ -221,12 +217,12 @@ std::string notification_lobby_call(const AnyElement& result, const std::string&
 
 std::string notification_user_data(const AnyElement& user_data, const std::string& peer_id,
                                    const std::string& command_id) {
-    return AnyElement{boost::container::flat_map<std::string, AnyElement>{
-                          {"c", AnyElement{RESPONSE_PEER_USER_DATA}},
-                          {"d", AnyElement{boost::container::flat_map<std::string, AnyElement>{
-                                    {"ud", user_data},
-                                    {"p", AnyElement{peer_id}},
-                                    {"id", AnyElement{command_id}}}}}}}
+    return AnyElement{
+        boost::container::flat_map<std::string, AnyElement>{
+            {"c", AnyElement{RESPONSE_PEER_USER_DATA}},
+            {"d",
+             AnyElement{boost::container::flat_map<std::string, AnyElement>{
+                 {"ud", user_data}, {"p", AnyElement{peer_id}}, {"id", AnyElement{command_id}}}}}}}
         .to_string();
 }
 
@@ -261,11 +257,10 @@ std::string notification_peer_reconnected(const std::string& peer_id) {
 
 std::string notification_lobby_joined(const AnyElement& lobby, const AnyElement& peers,
                                       const std::string& command_id) {
-    return AnyElement{
-        boost::container::flat_map<std::string, AnyElement>{
-            {"c", AnyElement{RESPONSE_JOINED_LOBBY}},
-            {"d", AnyElement{boost::container::flat_map<std::string, AnyElement>{
-                      {"l", lobby}, {"p", peers}, {"id", AnyElement{command_id}}}}}}}
+    return AnyElement{boost::container::flat_map<std::string, AnyElement>{
+                          {"c", AnyElement{RESPONSE_JOINED_LOBBY}},
+                          {"d", AnyElement{boost::container::flat_map<std::string, AnyElement>{
+                                    {"l", lobby}, {"p", peers}, {"id", AnyElement{command_id}}}}}}}
         .to_string();
 }
 
@@ -295,32 +290,31 @@ std::string notification_lobby_list(const AnyElement& lobbies, const std::string
 
 std::string notification_lobby_public_data(const AnyElement& lobby_data,
                                            const std::string& command_id) {
-    return AnyElement{boost::container::flat_map<std::string, AnyElement>{
-                          {"c", AnyElement{RESPONSE_LOBBY_DATA}},
-                          {"d", AnyElement{boost::container::flat_map<std::string, AnyElement>{
-                                    {"d", lobby_data},
-                                    {"_p", AnyElement{false}},
-                                    {"id", AnyElement{command_id}}}}}}}
+    return AnyElement{
+        boost::container::flat_map<std::string, AnyElement>{
+            {"c", AnyElement{RESPONSE_LOBBY_DATA}},
+            {"d",
+             AnyElement{boost::container::flat_map<std::string, AnyElement>{
+                 {"d", lobby_data}, {"_p", AnyElement{false}}, {"id", AnyElement{command_id}}}}}}}
         .to_string();
 }
 
 std::string notification_lobby_private_data(const AnyElement& lobby_data,
                                             const std::string& command_id) {
-    return AnyElement{boost::container::flat_map<std::string, AnyElement>{
-                          {"c", AnyElement{RESPONSE_LOBBY_DATA}},
-                          {"d", AnyElement{boost::container::flat_map<std::string, AnyElement>{
-                                    {"d", lobby_data},
-                                    {"_p", AnyElement{true}},
-                                    {"id", AnyElement{command_id}}}}}}}
+    return AnyElement{
+        boost::container::flat_map<std::string, AnyElement>{
+            {"c", AnyElement{RESPONSE_LOBBY_DATA}},
+            {"d",
+             AnyElement{boost::container::flat_map<std::string, AnyElement>{
+                 {"d", lobby_data}, {"_p", AnyElement{true}}, {"id", AnyElement{command_id}}}}}}}
         .to_string();
 }
 
 std::string notification_peer_notify(const AnyElement& peer_data, const std::string& from_peer) {
-    return AnyElement{
-        boost::container::flat_map<std::string, AnyElement>{
-            {"c", AnyElement{RESPONSE_PEER_NOTIFY}},
-            {"d", AnyElement{boost::container::flat_map<std::string, AnyElement>{
-                      {"d", peer_data}, {"p", AnyElement{from_peer}}}}}}}
+    return AnyElement{boost::container::flat_map<std::string, AnyElement>{
+                          {"c", AnyElement{RESPONSE_PEER_NOTIFY}},
+                          {"d", AnyElement{boost::container::flat_map<std::string, AnyElement>{
+                                    {"d", peer_data}, {"p", AnyElement{from_peer}}}}}}}
         .to_string();
 }
 

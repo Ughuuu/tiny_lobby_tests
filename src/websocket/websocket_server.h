@@ -8,8 +8,8 @@
 #include <boost/uuid/uuid_io.hpp>
 
 #include "../authentication/authentication_thread.h"
-#include "../database/database.h"
 #include "../common/server_logger.h"
+#include "../database/database.h"
 #include "per_socket_data.h"
 
 #define ERROR_SERVER_TOO_MANY_USERS "ERROR_SERVER_TOO_MANY_USERS"
@@ -48,7 +48,6 @@ struct WebSocketReceivedMessage {
     std::string name;
     std::string platform_id;
 };
-
 
 struct ReconnectionTokens {
     std::string peer_id;

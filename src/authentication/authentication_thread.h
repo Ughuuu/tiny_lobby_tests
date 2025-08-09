@@ -1,8 +1,10 @@
 #pragma once
 #include <readerwriterqueue.h>
 #include <uwebsockets/App.h>
+
 #include <memory>
 #include <string>
+
 #include "../common/server_logger.h"
 #include "../database/database.h"
 #include "../websocket/per_socket_data.h"

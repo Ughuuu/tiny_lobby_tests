@@ -5,9 +5,9 @@
 #include <string>
 #include <unordered_set>
 
+#include "../lua/script_lua.h"
 #include "lobby_data.h"
 #include "peer_data.h"
-#include "../lua/script_lua.h"
 
 struct TimerData {
     std::string id;

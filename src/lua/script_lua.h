@@ -4,10 +4,10 @@
 #include <string.h>
 #include <time.h>
 
-#include "INIReader.h"
 #include "../common/any_type.h"
-#include "lua.h"
 #include "../common/server_logger.h"
+#include "INIReader.h"
+#include "lua.h"
 
 class GameThread;
 
