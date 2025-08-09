@@ -384,7 +384,7 @@ bool GameThread::handle_events() {
             // get command
             int command = decode_int_or_default(root, "c", -1);
             yyjson_val *data_val = yyjson_obj_get(root, "d");
-            std::string command_id = decode_string_or_default(root, "id", EMPTY_STRING);
+            std::string command_id = decode_string_or_default(data_val, "id", EMPTY_STRING);
             if (game.peers.find(message.id) == game.peers.end()) {
                 yyjson_doc_free(doc);
                 on_error(game, command_id, message.id, ERROR_PEER_NOT_FOUND, true);
@@ -396,76 +396,76 @@ bool GameThread::handle_events() {
             switch (command) {
                 // relay
                 case COMMAND_LOBBY_DATA: {
-                    on_lobby_data(game, std::string(command_id), peer, data_val);
+                    on_lobby_data(game, command_id, peer, data_val);
                 } break;
                 case COMMAND_LOBBY_DATA_TO: {
-                    on_data_to(game, std::string(command_id), peer, data_val);
+                    on_data_to(game, command_id, peer, data_val);
                 } break;
                 case COMMAND_LOBBY_DATA_TO_ALL: {
-                    on_data_to_all(game, std::string(command_id), peer, data_val);
+                    on_data_to_all(game, command_id, peer, data_val);
                 } break;
                 case COMMAND_LOBBY_NOTIFY_TO: {
-                    on_notify_to(game, std::string(command_id), peer, data_val);
+                    on_notify_to(game, command_id, peer, data_val);
                 } break;
                 case COMMAND_LOBBY_NOTIFY: {
-                    on_lobby_notify(game, std::string(command_id), peer, data_val);
+                    on_lobby_notify(game, command_id, peer, data_val);
                 } break;
 
                 // scripted
                 case COMMAND_LOBBY_CALL: {
-                    on_lobby_call(game, std::string(command_id), peer, data_val);
+                    on_lobby_call(game, command_id, peer, data_val);
                 } break;
                 case COMMAND_LOBBY_QUICK_JOIN: {
-                    on_quick_join(game, std::string(command_id), peer, data_val);
+                    on_quick_join(game, command_id, peer, data_val);
                 } break;
                 case COMMAND_CREATE_LOBBY: {
-                    on_create_lobby(game, std::string(command_id), peer, data_val);
+                    on_create_lobby(game, command_id, peer, data_val);
                 } break;
                 case COMMAND_JOIN_LOBBY: {
-                    on_join_lobby(game, std::string(command_id), peer, data_val);
+                    on_join_lobby(game, command_id, peer, data_val);
                 } break;
                 case COMMAND_LEAVE_LOBBY: {
-                    on_leave_lobby(game, std::string(command_id), peer, data_val);
+                    on_leave_lobby(game, command_id, peer, data_val);
                 } break;
                 case COMMAND_LIST_LOBBY: {
-                    on_list_lobby(game, std::string(command_id), peer, data_val);
+                    on_list_lobby(game, command_id, peer, data_val);
                 } break;
                 case COMMAND_CHAT_LOBBY: {
-                    on_chat_lobby(game, std::string(command_id), peer, data_val);
+                    on_chat_lobby(game, command_id, peer, data_val);
                 } break;
                 case COMMAND_LOBBY_TAGS: {
-                    on_lobby_tags(game, std::string(command_id), peer, data_val);
+                    on_lobby_tags(game, command_id, peer, data_val);
                 } break;
                 case COMMAND_KICK_PEER: {
-                    on_kick_peer(game, std::string(command_id), peer, data_val);
+                    on_kick_peer(game, command_id, peer, data_val);
                 } break;
                 case COMMAND_USER_DATA: {
-                    on_user_data(game, std::string(command_id), peer, data_val);
+                    on_user_data(game, command_id, peer, data_val);
                 } break;
                 case COMMAND_LOBBY_READY: {
-                    on_lobby_ready(game, std::string(command_id), peer, data_val);
+                    on_lobby_ready(game, command_id, peer, data_val);
                 } break;
                 case COMMAND_LOBBY_UNREADY: {
-                    on_lobby_unready(game, std::string(command_id), peer, data_val);
+                    on_lobby_unready(game, command_id, peer, data_val);
                 } break;
                 case COMMAND_LOBBY_SEAL: {
-                    on_seal_lobby(game, std::string(command_id), peer, data_val);
+                    on_seal_lobby(game, command_id, peer, data_val);
                 } break;
                 case COMMAND_LOBBY_UNSEAL: {
-                    on_unseal_lobby(game, std::string(command_id), peer, data_val);
+                    on_unseal_lobby(game, command_id, peer, data_val);
                 } break;
                 case COMMAND_LOBBY_MAX_PLAYERS: {
-                    on_lobby_max_players(game, std::string(command_id), peer, data_val);
+                    on_lobby_max_players(game, command_id, peer, data_val);
                 } break;
                 case COMMAND_LOBBY_TITLE: {
-                    on_lobby_title(game, std::string(command_id), peer, data_val);
+                    on_lobby_title(game, command_id, peer, data_val);
                 } break;
                 case COMMAND_LOBBY_PASSWORD: {
-                    on_lobby_password(game, std::string(command_id), peer, data_val);
+                    on_lobby_password(game, command_id, peer, data_val);
                 } break;
 
                 default: {
-                    on_error(game, std::string(command_id), message.id, ERROR_UNKOWN_COMMAND, true);
+                    on_error(game, command_id, message.id, ERROR_UNKOWN_COMMAND, true);
                 } break;
             }
             yyjson_doc_free(doc);
