@@ -117,7 +117,7 @@ void GameThread::unload_game(std::string game_id) {
     }
     auto &game = games[game_id];
     for (auto &peer : game.peers) {
-        on_error(game, "on_disconnect", peer.second.id, "Game is being unloaded.", true, false);
+        on_error(game, "on_disconnect", peer.second.id, ERROR_GAME_IS_UNLOADED, true, false);
     }
     game.close();
 }
@@ -356,7 +356,7 @@ bool GameThread::handle_events() {
     messages_received++;
     if (games.find(message.game_id) == games.end()) {
         auto fake_game = GameData{.send_rate = 0};
-        on_error(fake_game, EMPTY_STRING, message.id, ERROR_GAME_NOT_FOUND + message.game_id, true);
+        on_error(fake_game, EMPTY_STRING, message.id, ERROR_GAME_NOT_FOUND, true);
         return true;
     }
     auto &game = games[message.game_id];
@@ -373,7 +373,7 @@ bool GameThread::handle_events() {
             yyjson_doc *doc = yyjson_read(message.message.c_str(), message.message.size(), 0);
             if (!doc) {
                 on_error(game, EMPTY_STRING, message.id,
-                         ERROR_CANNOT_PARSE_JSON + " Initial decode", true);
+                         ERROR_CANNOT_PARSE_JSON, true);
                 break;
             }
 
@@ -381,86 +381,97 @@ bool GameThread::handle_events() {
             if (!root || !yyjson_is_obj(root)) {
                 yyjson_doc_free(doc);
                 on_error(game, EMPTY_STRING, message.id,
-                         ERROR_CANNOT_PARSE_JSON + " Root is not object", true);
+                         ERROR_CANNOT_PARSE_JSON, true);
                 break;
             }
             // get command
-            yyjson_val *command_val = yyjson_obj_get(root, "c");
-            if (!command_val || !yyjson_is_str(command_val)) {
-                yyjson_doc_free(doc);
-                on_error(game, EMPTY_STRING, message.id,
-                         ERROR_CANNOT_PARSE_JSON + " Command missing or not string", true);
-                break;
-            }
-
-            std::string command = yyjson_get_str(command_val);
+            int command = decode_int_or_default(root, "c", -1);
             yyjson_val *data_val = yyjson_obj_get(root, "d");
-            std::string command_id;
-            if (data_val && yyjson_is_obj(data_val)) {
-                yyjson_val *id_val = yyjson_obj_get(data_val, "id");
-                if (id_val && yyjson_is_str(id_val)) {
-                    command_id = yyjson_get_str(id_val);
-                }
-            }
+            std::string command_id = decode_string_or_default(root, "id", EMPTY_STRING);
             if (game.peers.find(message.id) == game.peers.end()) {
                 yyjson_doc_free(doc);
-                on_error(game, command_id, message.id, ERROR_PEER_NOT_FOUND + " when reading input",
+                on_error(game, command_id, message.id, ERROR_PEER_NOT_FOUND,
                          true);
                 break;
             }
             auto &peer = game.peers[message.id];
             // set last message time
             peer.last_message_time = now;
-            // relay
-            if (command == "lobby_data") {
-                on_lobby_data(game, std::string(command_id), peer, data_val);
-            } else if (command == "data_to") {
-                on_data_to(game, std::string(command_id), peer, data_val);
-            } else if (command == "data_to_all") {
-                on_data_to_all(game, std::string(command_id), peer, data_val);
-            } else if (command == "notify_to") {
-                on_notify_to(game, std::string(command_id), peer, data_val);
-            } else if (command == "lobby_notify") {
-                on_lobby_notify(game, std::string(command_id), peer, data_val);
-            }
-            // scripted
-            else if (command == "lobby_call") {
-                on_lobby_call(game, std::string(command_id), peer, data_val);
-            } else if (command == "quick_join") {
-                on_quick_join(game, std::string(command_id), peer, data_val);
-            } else if (command == "create_lobby") {
-                on_create_lobby(game, std::string(command_id), peer, data_val);
-            } else if (command == "join_lobby") {
-                on_join_lobby(game, std::string(command_id), peer, data_val);
-            } else if (command == "leave_lobby") {
-                on_leave_lobby(game, std::string(command_id), peer, data_val);
-            } else if (command == "list_lobby") {
-                on_list_lobby(game, std::string(command_id), peer, data_val);
-            } else if (command == "chat_lobby") {
-                on_chat_lobby(game, std::string(command_id), peer, data_val);
-            } else if (command == "lobby_tags") {
-                on_lobby_tags(game, std::string(command_id), peer, data_val);
-            } else if (command == "kick_peer") {
-                on_kick_peer(game, std::string(command_id), peer, data_val);
-            } else if (command == "user_data") {
-                on_user_data(game, std::string(command_id), peer, data_val);
-            } else if (command == "lobby_ready") {
-                on_lobby_ready(game, std::string(command_id), peer, data_val);
-            } else if (command == "lobby_unready") {
-                on_lobby_unready(game, std::string(command_id), peer, data_val);
-            } else if (command == "seal_lobby") {
-                on_seal_lobby(game, std::string(command_id), peer, data_val);
-            } else if (command == "unseal_lobby") {
-                on_unseal_lobby(game, std::string(command_id), peer, data_val);
-            } else if (command == "lobby_max_players") {
-                on_lobby_max_players(game, std::string(command_id), peer, data_val);
-            } else if (command == "lobby_title") {
-                on_lobby_title(game, std::string(command_id), peer, data_val);
-            } else if (command == "lobby_password") {
-                on_lobby_password(game, std::string(command_id), peer, data_val);
-            } else {
-                on_error(game, std::string(command_id), message.id,
-                         ERROR_UNKOWN_COMMAND + " " + std::string(command), true);
+            switch (command) {
+                // relay
+                case COMMAND_LOBBY_DATA: {
+                    on_lobby_data(game, std::string(command_id), peer, data_val);
+                } break;
+                case COMMAND_LOBBY_DATA_TO: {
+                    on_data_to(game, std::string(command_id), peer, data_val);
+                } break;
+                case COMMAND_LOBBY_DATA_TO_ALL: {
+                    on_data_to_all(game, std::string(command_id), peer, data_val);
+                } break;
+                case COMMAND_LOBBY_NOTIFY_TO: {
+                    on_notify_to(game, std::string(command_id), peer, data_val);
+                } break;
+                case COMMAND_LOBBY_NOTIFY: {
+                    on_lobby_notify(game, std::string(command_id), peer, data_val);
+                } break;
+
+                // scripted
+                case COMMAND_LOBBY_CALL: {
+                    on_lobby_call(game, std::string(command_id), peer, data_val);
+                } break;
+                case COMMAND_LOBBY_QUICK_JOIN: {
+                    on_quick_join(game, std::string(command_id), peer, data_val);
+                } break;
+                case COMMAND_CREATE_LOBBY: {
+                    on_create_lobby(game, std::string(command_id), peer, data_val);
+                } break;
+                case COMMAND_JOIN_LOBBY: {
+                    on_join_lobby(game, std::string(command_id), peer, data_val);
+                } break;
+                case COMMAND_LEAVE_LOBBY: {
+                    on_leave_lobby(game, std::string(command_id), peer, data_val);
+                } break;
+                case COMMAND_LIST_LOBBY: {
+                    on_list_lobby(game, std::string(command_id), peer, data_val);
+                } break;
+                case COMMAND_CHAT_LOBBY: {
+                    on_chat_lobby(game, std::string(command_id), peer, data_val);
+                } break;
+                case COMMAND_LOBBY_TAGS: {
+                    on_lobby_tags(game, std::string(command_id), peer, data_val);
+                } break;
+                case COMMAND_KICK_PEER: {
+                    on_kick_peer(game, std::string(command_id), peer, data_val);
+                } break;
+                case COMMAND_USER_DATA: {
+                    on_user_data(game, std::string(command_id), peer, data_val);
+                } break;
+                case COMMAND_LOBBY_READY: {
+                    on_lobby_ready(game, std::string(command_id), peer, data_val);
+                } break;
+                case COMMAND_LOBBY_UNREADY: {
+                    on_lobby_unready(game, std::string(command_id), peer, data_val);
+                } break;
+                case COMMAND_LOBBY_SEAL: {
+                    on_seal_lobby(game, std::string(command_id), peer, data_val);
+                } break;
+                case COMMAND_LOBBY_UNSEAL: {
+                    on_unseal_lobby(game, std::string(command_id), peer, data_val);
+                } break;
+                case COMMAND_LOBBY_MAX_PLAYERS: {
+                    on_lobby_max_players(game, std::string(command_id), peer, data_val);
+                } break;
+                case COMMAND_LOBBY_TITLE: {
+                    on_lobby_title(game, std::string(command_id), peer, data_val);
+                } break;
+                case COMMAND_LOBBY_PASSWORD: {
+                    on_lobby_password(game, std::string(command_id), peer, data_val);
+                } break;
+
+                default: {
+                    on_error(game, std::string(command_id), message.id,
+                            ERROR_UNKOWN_COMMAND, true);
+                } break;
             }
             yyjson_doc_free(doc);
             break;
@@ -740,7 +751,7 @@ void GameThread::on_connect(GameData &game, std::string &peer_id, std::string &g
     }
     auto &peer = game.peers[peer_id];
     if (platform != "anon") {
-        peer.user_data["name"] = AnyElement{name};
+        peer.user_data["n"] = AnyElement{name};
     }
     std::string notification = notification_peer_state(AnyElement{peer.to_dict(true, true)});
     send(game, peer.id, notification, uWS::OpCode::TEXT);
@@ -814,12 +825,15 @@ void GameThread::on_lobby_call(GameData &game, std::string command_id, PeerData 
     if (peer.lobby_id == "") {
         return on_error(game, command_id, peer.id, ERROR_PEER_NOT_IN_A_LOBBY);
     }
-    auto func_name = decode_string_or_default(data_val, "function", "");
+    if (game.lobby_control == "relay") {
+        return on_error(game, command_id, peer.id, ERROR_GAME_NOT_SCRIPTED);
+    }
+    auto func_name = decode_string_or_default(data_val, "f", "");
     if (func_name == "") {
         return on_error(game, command_id, peer.id, ERROR_INVALID_FUNCTION_MSG);
     }
     AnyElement args{boost::container::vector<AnyElement>()};
-    yyjson_val *inputs_val = yyjson_obj_get(data_val, "inputs");
+    yyjson_val *inputs_val = yyjson_obj_get(data_val, "i");
     if (inputs_val && yyjson_is_arr(inputs_val)) {
         decode_array(inputs_val, args);
     }
@@ -864,9 +878,9 @@ void GameThread::on_quick_join(GameData &game, std::string command_id, PeerData 
         }
     }
     boost::container::flat_map<std::string, AnyElement> lobby_tags;
-    std::string decode_error = decode_object(yyjson_obj_get(data_val, "tags"), lobby_tags);
+    std::string decode_error = decode_object(yyjson_obj_get(data_val, "t"), lobby_tags);
     if (decode_error != "") {
-        return on_error(game, command_id, peer.id, "Invalid tags " + decode_error);
+        return on_error(game, command_id, peer.id, ERROR_INVALID_TAGS);
     }
     // TODO optimization keep lobbies open
     for (auto &lobby_obj : game.lobbies) {
@@ -888,7 +902,7 @@ void GameThread::on_create_lobby(
     logger.debug_log("[GameThread] on_create_lobby ", command_id, " ", peer.id);
     // PRECONDITIONS
     if (peer.lobby_id != "") {
-        return on_error(game, command_id, peer.id, ERROR_PEER_IS_IN_A_LOBBY + " " + peer.lobby_id);
+        return on_error(game, command_id, peer.id, ERROR_PEER_IS_IN_A_LOBBY);
     }
     // CHANGES before scripted call, reverted if scripted call fails
     auto uuid = to_string(gen());
@@ -897,24 +911,24 @@ void GameThread::on_create_lobby(
     if (previous_tags != nullptr) {
         lobby_tags = *previous_tags;
     } else {
-        std::string decode_error = decode_object(yyjson_obj_get(data_val, "tags"), lobby_tags);
+        std::string decode_error = decode_object(yyjson_obj_get(data_val, "t"), lobby_tags);
         if (decode_error != "") {
-            return on_error(game, command_id, peer.id, "Invalid tags " + decode_error);
+            return on_error(game, command_id, peer.id, ERROR_INVALID_TAGS);
         }
     }
     peer.lobby_id = small_uuid;
     game.lobbies.emplace(small_uuid,
                          LobbyData{
                              .id = small_uuid,
-                             .name = decode_string_or_default(data_val, "name", ""),
+                             .name = decode_string_or_default(data_val, "n", ""),
                              .host = peer.id,
-                             .password = decode_string_or_default(data_val, "password", ""),
+                             .password = decode_string_or_default(data_val, "_p", ""),
                              .max_players = decode_int_or_default(data_val, "m", 0),
                              .peer_ids = {peer.id},
                              .peer_ordered_ids = {peer.id},
                              .create_time = now,
                              .game_id = peer.game_id,
-                             .sealed = decode_bool_or_default(data_val, "sealed", game.seal),
+                             .sealed = decode_bool_or_default(data_val, "s", game.seal),
                              .tags = lobby_tags,
                              .lua = ScriptLua{.scripts_folder = game.lua.scripts_folder,
                                             .folder_name = game.lua.folder_name,
@@ -969,14 +983,14 @@ bool GameThread::on_join_lobby(GameData &game, std::string command_id, PeerData 
     bool reconnecting = false;
     std::string lobby_id = lobby_id_override;
     if (lobby_id_override.empty()) {
-        lobby_id = decode_string_or_default(data_val, "lobby_id", "");
+        lobby_id = decode_string_or_default(data_val, "l", "");
     }
     if (peer.disconnected && peer.lobby_id != "") {
         reconnecting = true;
         lobby_id = peer.lobby_id;
     }
     if (lobby_id == "" || game.lobbies.find(lobby_id) == game.lobbies.end()) {
-        on_error(game, command_id, peer.id, "Invalid lobby id");
+        on_error(game, command_id, peer.id, ERROR_LOBBY_NOT_FOUND);
         return false;
     }
     auto &lobby = game.lobbies[lobby_id];
@@ -985,12 +999,12 @@ bool GameThread::on_join_lobby(GameData &game, std::string command_id, PeerData 
             on_error(game, command_id, peer.id, ERROR_PEER_IS_IN_A_LOBBY);
             return false;
         }
-        if (lobby.password != decode_string_or_default(data_val, "password", "")) {
-            on_error(game, command_id, peer.id, "Invalid password");
+        if (lobby.password != decode_string_or_default(data_val, "_p", "")) {
+            on_error(game, command_id, peer.id, ERROR_LOBBY_WRONG_PASSWORD);
             return false;
         }
         if (lobby.max_players != 0 && lobby.peer_ids.size() >= lobby.max_players) {
-            on_error(game, command_id, peer.id, "Lobby is full");
+            on_error(game, command_id, peer.id, ERROR_LOBBY_FULL);
             return false;
         }
     }
@@ -1129,18 +1143,18 @@ void GameThread::on_chat_lobby(GameData &game, std::string command_id, PeerData 
         return on_error(game, command_id, peer.id, ERROR_PEER_NOT_IN_A_LOBBY);
     }
     auto &lobby = game.lobbies[peer.lobby_id];
-    std::string message = decode_string_or_default(data_val, "chat", "");
+    std::string message = decode_string_or_default(data_val, "c", "");
     message = strip_BBCode(message);
     if (message == "" || message.size() > 256) {
         return on_error(game, command_id, peer.id, "Invalid chat message");
     }
-    yyjson_val *metadat_object = yyjson_obj_get(data_val, "metadata");
+    yyjson_val *metadat_object = yyjson_obj_get(data_val, "m");
     boost::container::flat_map<std::string, AnyElement> chat_metadata;
 
     std::string error_when_decoding = decode_object(metadat_object, chat_metadata);
     if (error_when_decoding != "") {
         // ignore error, just send it but don't return error
-        on_error(game, command_id, peer.id, "Invalid chat metadata: " + error_when_decoding);
+        on_error(game, command_id, peer.id, ERROR_CANNOT_PARSE_JSON);
     }
     // SCRIPTED CALL
     if (game.enabled_callbacks.find("_can_peer_chat") != game.enabled_callbacks.end()) {
@@ -1181,12 +1195,12 @@ void GameThread::on_lobby_tags(GameData &game, std::string command_id, PeerData 
     boost::container::flat_map<std::string, AnyElement> new_tags;
     if (!data_val || !yyjson_is_obj(data_val)) {
         return on_error(game, command_id, peer.id,
-                        ERROR_CANNOT_PARSE_JSON + " Data is missing or not an object");
+                        ERROR_CANNOT_PARSE_JSON);
     }
-    yyjson_val *tags_val = yyjson_obj_get(data_val, "tags");
+    yyjson_val *tags_val = yyjson_obj_get(data_val, "t");
     if (!tags_val || !yyjson_is_obj(tags_val)) {
         return on_error(game, command_id, peer.id,
-                        ERROR_CANNOT_PARSE_JSON + " Lobby tags missing or not object");
+                        ERROR_CANNOT_PARSE_JSON);
     }
     std::string error = decode_object(tags_val, new_tags);
     if (!error.empty()) {
@@ -1237,7 +1251,7 @@ void GameThread::on_kick_peer(GameData &game, std::string command_id, PeerData &
     if (lobby.host != peer.id) {
         return on_error(game, command_id, peer.id, ERROR_PEER_NOT_HOST);
     }
-    std::string kicked_peer_id = decode_string_or_default(data_val, "peer_id", "");
+    std::string kicked_peer_id = decode_string_or_default(data_val, "p", "");
     if (kicked_peer_id == "" || lobby.peer_ids.find(kicked_peer_id) == lobby.peer_ids.end()) {
         return on_error(game, command_id, peer.id, ERROR_PEER_NOT_IN_A_LOBBY);
     }
@@ -1266,12 +1280,12 @@ void GameThread::on_user_data(GameData &game, std::string command_id, PeerData &
     boost::container::flat_map<std::string, AnyElement> new_userdata;
     if (!data_val || !yyjson_is_obj(data_val)) {
         return on_error(game, command_id, peer.id,
-                        ERROR_CANNOT_PARSE_JSON + " Data is missing or not an object");
+                        ERROR_CANNOT_PARSE_JSON);
     }
-    yyjson_val *userdata_val = yyjson_obj_get(data_val, "user_data");
+    yyjson_val *userdata_val = yyjson_obj_get(data_val, "ud");
     if (!userdata_val || !yyjson_is_obj(userdata_val)) {
         return on_error(game, command_id, peer.id,
-                        ERROR_CANNOT_PARSE_JSON + " Lobby tags missing or not object");
+                        ERROR_CANNOT_PARSE_JSON);
     }
     std::string error = decode_object(userdata_val, new_userdata);
     if (!error.empty()) {
@@ -1484,7 +1498,7 @@ void GameThread::on_lobby_title(GameData &game, std::string command_id, PeerData
         return on_error(game, command_id, peer.id, ERROR_PEER_NOT_IN_A_LOBBY);
     }
     auto &lobby = game.lobbies[peer.lobby_id];
-    auto title = decode_string_or_default(data_val, "name", "");
+    auto title = decode_string_or_default(data_val, "n", "");
     // SCRIPTED CALL
     if (game.enabled_callbacks.find("_can_host_set_title") != game.enabled_callbacks.end()) {
         bool has_error = false;
@@ -1520,7 +1534,7 @@ void GameThread::on_lobby_password(GameData &game, std::string command_id, PeerD
         return on_error(game, command_id, peer.id, ERROR_PEER_NOT_IN_A_LOBBY);
     }
     auto &lobby = game.lobbies[peer.lobby_id];
-    auto password = decode_string_or_default(data_val, "password", "");
+    auto password = decode_string_or_default(data_val, "_p", "");
     // CHANGES
     lobby.password = password;
     // NOTIFICATION
@@ -1553,17 +1567,17 @@ void GameThread::on_lobby_data(GameData &game, std::string command_id, PeerData 
         return on_error(game, command_id, peer.id, ERROR_GAME_NOT_RELAY);
     }
     // CHANGES
-    yyjson_val *lobbydata_val = yyjson_obj_get(data_val, "lobby_data");
+    yyjson_val *lobbydata_val = yyjson_obj_get(data_val, "d");
     if (!lobbydata_val || !yyjson_is_obj(lobbydata_val)) {
         return on_error(game, command_id, peer.id,
-                        ERROR_CANNOT_PARSE_JSON + " Lobby data missing or not object");
+                        ERROR_CANNOT_PARSE_JSON);
     }
     boost::container::flat_map<std::string, AnyElement> new_lobbydata;
     std::string error = decode_object(lobbydata_val, new_lobbydata);
     if (!error.empty()) {
         return on_error(game, command_id, peer.id, error);
     }
-    bool is_private = decode_bool_or_default(data_val, "is_private", false);
+    bool is_private = decode_bool_or_default(data_val, "_p", false);
     for (const auto &lobbydata_pair : new_lobbydata) {
         if (std::holds_alternative<std::monostate>(lobbydata_pair.second.value)) {
             if (is_private) {
@@ -1629,23 +1643,23 @@ void GameThread::on_data_to(GameData &game, std::string command_id, PeerData &pe
     if (game.lobby_control != "relay") {
         return on_error(game, command_id, peer.id, ERROR_GAME_NOT_RELAY);
     }
-    std::string target_peer_id = decode_string_or_default(data_val, "target_peer", "");
+    std::string target_peer_id = decode_string_or_default(data_val, "tp", "");
     if (target_peer_id == "" || lobby.peer_ids.find(target_peer_id) == lobby.peer_ids.end()) {
         return on_error(game, command_id, peer.id, ERROR_PEER_NOT_FOUND);
     }
     auto &target_peer = game.peers[target_peer_id];
     // CHANGES
-    yyjson_val *peerdata_val = yyjson_obj_get(data_val, "peer_data");
+    yyjson_val *peerdata_val = yyjson_obj_get(data_val, "d");
     if (!peerdata_val || !yyjson_is_obj(peerdata_val)) {
         return on_error(game, command_id, peer.id,
-                        ERROR_CANNOT_PARSE_JSON + " Peer data missing or not object");
+                        ERROR_CANNOT_PARSE_JSON);
     }
     boost::container::flat_map<std::string, AnyElement> new_data;
     std::string error = decode_object(peerdata_val, new_data);
     if (!error.empty()) {
         return on_error(game, command_id, peer.id, error);
     }
-    bool is_private = decode_bool_or_default(data_val, "is_private", false);
+    bool is_private = decode_bool_or_default(data_val, "_p", false);
     for (const auto &data_pair : new_data) {
         if (std::holds_alternative<std::monostate>(data_pair.second.value)) {
             if (is_private) {
@@ -1708,17 +1722,17 @@ void GameThread::on_data_to_all(GameData &game, std::string command_id, PeerData
         return on_error(game, command_id, peer.id, ERROR_GAME_NOT_RELAY);
     }
     // CHANGES
-    yyjson_val *peerdata_val = yyjson_obj_get(data_val, "peer_data");
+    yyjson_val *peerdata_val = yyjson_obj_get(data_val, "d");
     if (!peerdata_val || !yyjson_is_obj(peerdata_val)) {
         return on_error(game, command_id, peer.id,
-                        ERROR_CANNOT_PARSE_JSON + " Peer data missing or not object");
+                        ERROR_CANNOT_PARSE_JSON);
     }
     boost::container::flat_map<std::string, AnyElement> new_data;
     std::string error = decode_object(peerdata_val, new_data);
     if (!error.empty()) {
         return on_error(game, command_id, peer.id, error);
     }
-    bool is_private = decode_bool_or_default(data_val, "is_private", false);
+    bool is_private = decode_bool_or_default(data_val, "_p", false);
     for (auto &peer_id : lobby.peer_ids) {
         auto &target_peer = game.peers[peer_id];
 
@@ -1784,16 +1798,16 @@ void GameThread::on_notify_to(GameData &game, std::string command_id, PeerData &
     if (game.lobby_control != "relay") {
         return on_error(game, command_id, peer.id, ERROR_GAME_NOT_RELAY);
     }
-    std::string target_peer_id = decode_string_or_default(data_val, "target_peer", "");
+    std::string target_peer_id = decode_string_or_default(data_val, "tp", "");
     if (target_peer_id == "" || lobby.peer_ids.find(target_peer_id) == lobby.peer_ids.end()) {
         return on_error(game, command_id, peer.id, ERROR_PEER_NOT_FOUND);
     }
     auto &target_peer = game.peers[target_peer_id];
     // CHANGES
-    yyjson_val *peerdata_val = yyjson_obj_get(data_val, "peer_data");
+    yyjson_val *peerdata_val = yyjson_obj_get(data_val, "d");
     if (!peerdata_val || !yyjson_is_obj(peerdata_val)) {
         return on_error(game, command_id, peer.id,
-                        ERROR_CANNOT_PARSE_JSON + " Peer data missing or not object");
+                        ERROR_CANNOT_PARSE_JSON);
     }
     boost::container::flat_map<std::string, AnyElement> new_data;
     std::string error = decode_object(peerdata_val, new_data);
@@ -1820,10 +1834,10 @@ void GameThread::on_lobby_notify(GameData &game, std::string command_id, PeerDat
         return on_error(game, command_id, peer.id, ERROR_GAME_NOT_RELAY);
     }
     // CHANGES
-    yyjson_val *peerdata_val = yyjson_obj_get(data_val, "peer_data");
+    yyjson_val *peerdata_val = yyjson_obj_get(data_val, "d");
     if (!peerdata_val || !yyjson_is_obj(peerdata_val)) {
         return on_error(game, command_id, peer.id,
-                        ERROR_CANNOT_PARSE_JSON + " Peer data missing or not object");
+                        ERROR_CANNOT_PARSE_JSON);
     }
     boost::container::flat_map<std::string, AnyElement> new_data;
     std::string error = decode_object(peerdata_val, new_data);

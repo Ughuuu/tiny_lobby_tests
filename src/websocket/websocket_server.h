@@ -12,6 +12,17 @@
 #include "../common/server_logger.h"
 #include "per_socket_data.h"
 
+std::string ERROR_SERVER_TOO_MANY_USERS = "ERROR_SERVER_TOO_MANY_USERS";
+std::string ERROR_SERVER_FAILED_TO_OPEN_WEBSOCKET = "ERROR_SERVER_FAILED_TO_OPEN_WEBSOCKET";
+std::string ERROR_SERVER_QUEUE_FULL = "ERROR_SERVER_QUEUE_FULL";
+std::string ERROR_SERVER_RATE_LIMIT = "ERROR_SERVER_RATE_LIMIT";
+std::string ERROR_SERVER_RECONNECT_EXPIRED = "ERROR_SERVER_RECONNECT_EXPIRED";
+std::string ERROR_SERVER_RECONNECT_PEER_ID_NOT_FOUND = "ERROR_SERVER_RECONNECT_PEER_ID_NOT_FOUND";
+std::string ERROR_SERVER_WRONG_GAMEID = "ERROR_SERVER_WRONG_GAMEID";
+std::string ERROR_SERVER_RECONNECT_CLOSE = "ERROR_SERVER_RECONNECT_CLOSE";
+std::string ERROR_SERVER_FAILED_TO_RECONNECT = "ERROR_SERVER_FAILED_TO_RECONNECT";
+std::string ERROR_SERVER_SHUTTING_DOWN = "ERROR_SERVER_SHUTTING_DOWN";
+
 static inline int64_t get_time_now() {
     auto now = std::chrono::system_clock::now().time_since_epoch();
     return std::chrono::duration_cast<std::chrono::milliseconds>(now).count();

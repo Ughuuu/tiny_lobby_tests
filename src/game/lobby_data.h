@@ -39,17 +39,17 @@ struct LobbyData {
     boost::container::flat_map<std::string, AnyElement> to_dict(bool include_private = false) {
         boost::container::flat_map<std::string, AnyElement> lobby_dict;
         lobby_dict["id"] = AnyElement{id};
-        lobby_dict["name"] = AnyElement{name};
-        lobby_dict["host"] = AnyElement{host};
-        lobby_dict["sealed"] = AnyElement{sealed};
+        lobby_dict["n"] = AnyElement{name};
+        lobby_dict["h"] = AnyElement{host};
+        lobby_dict["s"] = AnyElement{sealed};
         lobby_dict["m"] = AnyElement{max_players};
-        lobby_dict["players"] = AnyElement{int(peer_ids.size())};
-        lobby_dict["created_at"] = AnyElement{create_time};
-        lobby_dict["has_password"] = AnyElement{bool(password != "")};
-        lobby_dict["tags"] = AnyElement{tags};
-        lobby_dict["public_data"] = AnyElement{public_data};
+        lobby_dict["p"] = AnyElement{int(peer_ids.size())};
+        lobby_dict["c"] = AnyElement{create_time};
+        lobby_dict["_p"] = AnyElement{bool(password != "")};
+        lobby_dict["t"] = AnyElement{tags};
+        lobby_dict["p"] = AnyElement{public_data};
         if (include_private) {
-            lobby_dict["private_data"] = AnyElement{private_data};
+            lobby_dict["_p"] = AnyElement{private_data};
         }
         return lobby_dict;
     }

@@ -39,19 +39,19 @@ struct PeerData {
                                                                 bool include_reconnection = false) {
         boost::container::flat_map<std::string, AnyElement> peer_dict;
         peer_dict["id"] = AnyElement{id};
-        peer_dict["order_id"] = AnyElement{order_id};
+        peer_dict["oi"] = AnyElement{order_id};
         if (include_reconnection) {
-            peer_dict["reconnection_token"] = AnyElement{reconnection_token};
+            peer_dict["rt"] = AnyElement{reconnection_token};
         }
-        peer_dict["lobby_id"] = AnyElement{lobby_id};
-        peer_dict["public_data"] = AnyElement{public_data};
-        peer_dict["platform"] = AnyElement{platform};
+        peer_dict["l"] = AnyElement{lobby_id};
+        peer_dict["d"] = AnyElement{public_data};
+        peer_dict["p"] = AnyElement{platform};
         if (include_private) {
-            peer_dict["private_data"] = AnyElement{private_data};
+            peer_dict["_d"] = AnyElement{private_data};
         }
-        peer_dict["user_data"] = AnyElement{user_data};
-        peer_dict["is_disconnected"] = AnyElement{disconnected};
-        peer_dict["ready"] = AnyElement{ready};
+        peer_dict["ud"] = AnyElement{user_data};
+        peer_dict["dc"] = AnyElement{disconnected};
+        peer_dict["r"] = AnyElement{ready};
         return peer_dict;
     }
 };

@@ -24,7 +24,7 @@ void WebSocketServer::on_upgrade(uWS::HttpResponse<false> *res, uWS::HttpRequest
                                  struct us_socket_context_t *context) {
     if (connected_users > max_users) {
         logger.error_log("[WebSocketServer] error: too many users");
-        res->writeStatus("400 Bad Request")->write("Too many users.");
+        res->writeStatus("400 Bad Request")->write(ERROR_SERVER_TOO_MANY_USERS);
         res->end();
         return;
     }
@@ -40,7 +40,7 @@ void WebSocketServer::on_upgrade(uWS::HttpResponse<false> *res, uWS::HttpRequest
 
     if (protocols_split.size() < 2 || protocols_split[0] != "appsinacup") {
         logger.error_log("[WebSocketServer] error: ", protocol);
-        res->writeStatus("400 Bad Request")->write("Failed to open WebSocket connection.");
+        res->writeStatus("400 Bad Request")->write(ERROR_SERVER_FAILED_TO_OPEN_WEBSOCKET);
         res->end();
         return;
     }
@@ -64,7 +64,7 @@ void WebSocketServer::on_upgrade(uWS::HttpResponse<false> *res, uWS::HttpRequest
         .websocket_extensions = std::string(req->getHeader("sec-websocket-extensions"))};
     if (!authentication_queue.try_enqueue(auth_message)) {
         logger.error_log("[WebSocketServer] error: cannot authenticate");
-        res->writeStatus("400 Bad Request")->write("Out of memory.");
+        res->writeStatus("400 Bad Request")->write(ERROR_SERVER_QUEUE_FULL);
         res->end();
         return;
     } else {
@@ -87,7 +87,7 @@ void WebSocketServer::on_open(uWS::WebSocket<false, true, PerSocketData> *ws) {
             reconnections.erase(data->game_id + data->reconnection_token);
             logger.error_log("[WebSocketServer] Reconnect expired: ", data->uid, " ", data->id, " ",
                              data->game_id);
-            ws->end(1002, "Reconnect expired");
+            ws->end(1002, ERROR_SERVER_RECONNECT_EXPIRED);
             return;
         }
         auto &old_id = old_reconnection.peer_id;
@@ -95,7 +95,7 @@ void WebSocketServer::on_open(uWS::WebSocket<false, true, PerSocketData> *ws) {
             reconnections.erase(data->game_id + data->reconnection_token);
             logger.error_log("[WebSocketServer] Reconnect Peer ID not found: ", data->uid, " ",
                              data->id, " ", data->game_id);
-            ws->end(1002, "Reconnect Peer ID not found");
+            ws->end(1002, ERROR_SERVER_RECONNECT_PEER_ID_NOT_FOUND);
             return;
         }
         auto &old_connection_data = connection_data[old_id];
@@ -103,13 +103,13 @@ void WebSocketServer::on_open(uWS::WebSocket<false, true, PerSocketData> *ws) {
         if (old_connection_data.game_id != data->game_id) {
             logger.error_log("[WebSocketServer] Reconnect Game ID Mismatch: ", data->uid, " ",
                              data->id, " ", data->game_id, " ", old_connection_data.game_id);
-            ws->end(1002, "Reconnect Game ID Mismatch");
+            ws->end(1002, ERROR_SERVER_WRONG_GAMEID);
             return;
         }
         logger.debug_log("[WebSocketServer] Reconnect Peer ID found, closing old instance: ",
                          data->uid, " ", data->id, " ", data->game_id, " ", old_id);
         // old reconnection id exists, delete id
-        send(old_id, std::string("Reconnect Close"), uWS::OpCode::CLOSE);
+        send(old_id, std::string(ERROR_SERVER_RECONNECT_CLOSE), uWS::OpCode::CLOSE);
         data->id = old_id;
         reconnections.erase(data->game_id + data->reconnection_token);
     }
@@ -145,7 +145,7 @@ void WebSocketServer::on_open(uWS::WebSocket<false, true, PerSocketData> *ws) {
                                      .platform_id = data->platform_id})) {
         logger.error_log("[WebSocketServer] on_open error out of memory: ", data->uid, " ",
                          data->id, " ", data->game_id);
-        send(data->id, "Out of memory", uWS::OpCode::CLOSE);
+        send(data->id, ERROR_SERVER_QUEUE_FULL, uWS::OpCode::CLOSE);
     }
 }
 void WebSocketServer::on_message(uWS::WebSocket<false, true, PerSocketData> *ws,
@@ -161,7 +161,7 @@ void WebSocketServer::on_message(uWS::WebSocket<false, true, PerSocketData> *ws,
     if (data->message_count > max_messages_per_second) {
         logger.error_log("[WebSocketServer] on_message Rate limit exceeded: ", data->uid, " ",
                          data->id, " ", data->game_id, " ", message, " ", opCode);
-        send(data->id, "Rate limit exceeded", uWS::OpCode::CLOSE);
+        send(data->id, ERROR_SERVER_RATE_LIMIT, uWS::OpCode::CLOSE);
         return;
     }
     logger.debug_log("[WebSocketServer] on_message: ", data->uid, " ", data->id, " ", data->game_id,
@@ -174,7 +174,7 @@ void WebSocketServer::on_message(uWS::WebSocket<false, true, PerSocketData> *ws,
                                      .reconnection_token = data->reconnection_token})) {
         logger.error_log("[WebSocketServer] on_message error out of memory: ", data->uid, " ",
                          data->id, " ", data->game_id, " ", message, " ", opCode);
-        send(data->id, "Too many queued messages", uWS::OpCode::CLOSE);
+        send(data->id, ERROR_SERVER_QUEUE_FULL, uWS::OpCode::CLOSE);
     }
 }
 void WebSocketServer::on_close(uWS::WebSocket<false, true, PerSocketData> *ws,
@@ -238,7 +238,7 @@ void WebSocketServer::send_all(const std::string &message, uWS::OpCode opCode) {
 
 void WebSocketServer::clear_users(boost::container::flat_set<std::string> users_to_clean) {
     for (auto &user_id : users_to_clean) {
-        send(user_id, std::string("Failed to reconnect"), uWS::OpCode::CLOSE);
+        send(user_id, ERROR_SERVER_FAILED_TO_RECONNECT, uWS::OpCode::CLOSE);
         // user didn't reconnect, delete user
         if (connection_data.find(user_id) == connection_data.end()) {
             continue;
@@ -272,7 +272,7 @@ WebSocketServer::~WebSocketServer() {
     }
     for (auto &connection : connection_data) {
         if (connection.second.ws != nullptr) {
-            connection.second.ws->end(1000, "Server shutting down");
+            connection.second.ws->end(1000, ERROR_SERVER_SHUTTING_DOWN);
         }
     }
     connection_data.clear();
