@@ -46,7 +46,7 @@ void GameThread::load_games() {
     auto sections = config_reader.Sections();
     std::unordered_set<std::string> games_to_open;
     for (const auto &section : sections) {
-        std::string folder_name = config_reader.GetString(section, "folder", "");
+        std::string folder_name = config_reader.GetString(section, "folder", section);
         int tickrate = config_reader.GetInteger(section, "tickrate", 0);
         if (tickrate < 16) {
             tickrate = 0;
@@ -674,7 +674,6 @@ void GameThread::remove_peer_from_lobby(GameData &game, LobbyData &lobby, std::s
     game.lobbies_updated.insert(lobby.id);
     if ((is_host && (lobby.disband_on_leave || game.disband_on_leave)) || lobby.peer_ids.empty()) {
         game.lobbies.erase(lobby.id);
-        lobby.close();
     }
 }
 
@@ -923,15 +922,8 @@ void GameThread::on_create_lobby(
                                    .create_time = now,
                                    .game_id = peer.game_id,
                                    .sealed = decode_bool_or_default(data_val, "s", game.seal),
-                                   .tags = lobby_tags,
-                                   .lua = ScriptLua{.scripts_folder = game.lua.scripts_folder,
-                                                    .folder_name = game.lua.folder_name,
-                                                    .script_entrypoint = "main.lua",
-                                                    .logs_folder = game.lua.logs_folder,
-                                                    .game_thread = this,
-                                                    .enabled = game.lua.enabled}});
+                                   .tags = lobby_tags});
     auto &lobby = game.lobbies[small_uuid];
-    lobby.open();
     game.lobby_listing_peers.erase(peer.id);
     // SCRIPTED CALL
     if (game.enabled_callbacks.find("_can_create_lobby") != game.enabled_callbacks.end()) {
@@ -942,7 +934,6 @@ void GameThread::on_create_lobby(
         if (has_error && std::holds_alternative<std::string>(func_result.value)) {
             // revert the changes
             peer.leave_lobby();
-            lobby.close();
             game.lobbies.erase(small_uuid);
             return on_error(game, command_id, peer.id, std::get<std::string>(func_result.value),
                             false, has_error);
@@ -1896,14 +1887,8 @@ AnyElement GameThread::scripted_function_call(std::string peer_id, std::string l
                                               bool &has_error) {
     if (game.lua.enabled) {
         AnyElement result;
-        if (lobby_id != "" && game.lobbies.find(lobby_id) != game.lobbies.end()) {
-            // lobby function call
-            auto &lobby = game.lobbies[lobby_id];
-            result = lobby.lua.func_call(funcname, args, peer_id, lobby_id, game.id, has_error);
-        } else {
-            // game function call
-            result = game.lua.func_call(funcname, args, peer_id, lobby_id, game.id, has_error);
-        }
+        // game function call
+        result = game.lua.func_call(funcname, args, peer_id, lobby_id, game.id, has_error);
         // if dictionary with error, put error
         auto result_dict =
             std::get_if<boost::container::flat_map<std::string, AnyElement>>(&result.value);
