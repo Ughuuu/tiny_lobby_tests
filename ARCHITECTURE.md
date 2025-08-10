@@ -40,7 +40,9 @@ Tiny Lobby provides a rich set of features, sent as messages that can be batched
 
 ### Lobby Management
 
-Any peer can:
+- Write backend game logic in Lua that runs directly on the lobby server.
+
+Peers can:
 
 - Create a new lobby.
 - Join a lobby and receive its state.
@@ -53,7 +55,7 @@ Any peer can:
 - Receive notification when a peer is kicked.
 - Call lobby scripted functions.
 
-Only the host of a lobby can:
+The host of a lobby can:
 
 - Change lobby sealed (locked/open) state.
 - Change max players.
