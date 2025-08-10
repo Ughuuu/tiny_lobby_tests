@@ -9,6 +9,8 @@ Multiplayer C++ Lobby Server that starts a websocket server with scripting in Lu
 
 - [addon_tiny_lobby_client](https://github.com/appsinacup/addon_tiny_lobby_client): Godot Tiny Lobby Client
 
+<img src="logo.png" height="128"/>
+
 ## Usage
 
 Run locally by downloading latest [GitHub Release](https://github.com/appsinacup/tiny_lobby/releases) and running it in terminal:

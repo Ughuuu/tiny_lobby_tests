@@ -8,7 +8,6 @@
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <efsw/efsw.hpp>
-#include <mutex>
 
 #include "../common/any_type.h"
 #include "../common/server_logger.h"
@@ -48,7 +47,6 @@ class GameThread {
     GamesListener games_listener;
     efsw::FileWatcher file_watcher;
     moodycamel::ReaderWriterQueue<std::string> file_watcher_queue;
-    std::mutex mutex;
     moodycamel::BlockingReaderWriterQueue<DatabaseReceivedMessage> &database_queue;
     bool db_enabled;
     DatabaseThread database_thread;

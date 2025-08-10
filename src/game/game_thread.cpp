@@ -52,8 +52,7 @@ void GameThread::load_games() {
             }
             std::string section = folder_name;
             std::string lobby_control = "relay";
-            INIReader config_reader(
-                BasePath::instance().file(scripts_folder + "/" + folder_name + "/config.ini"));
+            INIReader config_reader(scripts_folder + "/" + folder_name + "/config.ini");
             int tickrate = config_reader.GetInteger("game", "tickrate", 0);
             if (tickrate < 16) {
                 tickrate = 0;
@@ -148,26 +147,51 @@ void GameThread::run() {
     int64_t last_listing = now;
     int64_t last_disconnect = now;
     int64_t last_timers = now;
+    int64_t last_time = now;
     int64_t last_stats = now;
     int64_t disconnect_interval = max_reconnection_time / 10;
     int64_t timer_interval = 500;
     int64_t stats_interval = 10000;
-    int min_process_size = 100;
-    int64_t last_time = 0;
+    int max_process_size = 50;
     while (!stop) {
-        // Process min_process_size messages
+        // Process max_process_size messages at once
         int messages_processed = 0;
-        while (receive_queue.size_approx() > 0 && messages_processed < min_process_size) {
+        while (messages_processed < max_process_size) {
             messages_processed++;
             if (!handle_events()) {
                 break;
             }
         }
-        if (last_time == now) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(check_time / 2));
-            continue;
-        }
         last_time = now;
+        handle_tick();
+        handle_send();
+        // if time has not changed, sleep for a bit
+        if (last_time == now) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(5));
+            //continue;
+        }
+        // handle disconnects
+        if (now - last_disconnect > disconnect_interval) {
+            last_disconnect = now;
+            handle_disconnects();
+            handle_afk();
+        }
+        // handle listing
+        if (now - last_listing > listing_interval) {
+            last_listing = now;
+            handle_lobby_list();
+        }
+        // handle timers
+        if (now - last_timers > timer_interval) {
+            last_timers = now;
+            handle_timers();
+        }
+        // handle file watchers
+        std::string folder_reloaded;
+        if (file_watcher_queue.try_dequeue(folder_reloaded)) {
+            reload_game(folder_reloaded);
+        }
+        // handle stats
         if (last_stats + stats_interval < now && logger.verbose) {
             last_stats = now;
             // open stats file and append to it. use date format YYYY-MM-DD for filename
@@ -224,39 +248,18 @@ void GameThread::run() {
             messages_received = 0;
             messages_sent = 0;
         }
-        handle_tick();
-        handle_send();
-        if (now - last_disconnect > disconnect_interval) {
-            last_disconnect = now;
-            handle_disconnects();
-            handle_afk();
-        }
-        if (now - last_listing > listing_interval) {
-            last_listing = now;
-            handle_lobby_list();
-        }
-        if (now - last_timers > timer_interval) {
-            last_timers = now;
-            handle_timers();
-        }
-        std::string folder_reloaded;
-        if (file_watcher_queue.try_dequeue(folder_reloaded)) {
-            reload_game(folder_reloaded);
-        }
-        // handle tick if/when needed
     }
 }
 
 void GameThread::time_run() {
     using clock = std::chrono::system_clock;
     using ms = std::chrono::milliseconds;
-    int64_t check_time = 5;
     while (!stop) {
         auto now_local = clock::now();
         auto now_ms = std::chrono::time_point_cast<ms>(now_local);
         auto since_epoch = now_ms.time_since_epoch();
         int64_t next_tick_ms =
-            since_epoch.count() + (check_time - (since_epoch.count() % check_time));
+            since_epoch.count() + (check_time / 2 - (since_epoch.count() % check_time / 2));
         auto wake_time = clock::time_point(ms(next_tick_ms));
 
         std::this_thread::sleep_until(wake_time);
@@ -361,7 +364,7 @@ void GameThread::handle_timers() {
 
 bool GameThread::handle_events() {
     WebSocketReceivedMessage message;
-    if (!receive_queue.wait_dequeue_timed(message, check_time * 500)) {
+    if (!receive_queue.try_dequeue(message)) {
         return false;
     }
     messages_received++;
@@ -820,7 +823,7 @@ void GameThread::on_error(GameData &game, std::string command_id, std::string pe
         logger.error_log("[GameThread] on_error ", command_id, " ", peer_id, " ", message);
     }
     if (logical_error) {
-        logger.debug_log("[GameThread] on_logical_error ", command_id, " ", peer_id, " ", message);
+        logger.error_log("[GameThread] on_logical_error ", command_id, " ", peer_id, " ", message);
     }
     if (close) {
         send(game, peer_id, message, uWS::OpCode::CLOSE);
