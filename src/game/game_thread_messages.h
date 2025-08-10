@@ -239,7 +239,7 @@ std::string notification_chat(
     return AnyElement{boost::container::flat_map<std::string, AnyElement>{
                           {"c", AnyElement{RESPONSE_PEER_CHAT}},
                           {"d", AnyElement{boost::container::flat_map<std::string, AnyElement>{
-                                    {"f", AnyElement{from_peer}},
+                                    {"fp", AnyElement{from_peer}},
                                     {"c", AnyElement{chat_data}},
                                     {"m", AnyElement{chat_metadata}},
                                     {"id", AnyElement{command_id}}}}}}}
