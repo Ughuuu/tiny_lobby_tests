@@ -3,11 +3,8 @@
 	<h1 align="center">Tiny Lobby Server</h1> 
 </p>
 
-|[Website](https://appsinacup.com)|[Discord](https://discord.gg/56dMud8HYn)|[Starter Project](https://github.com/appsinacup/tiny_lobby_starter)|[Tiny Lobby Godot](https://github.com/appsinacup/addon_tiny_lobby_client)
-|-|-|-|-|
-
-|[Documentation](https://github.com/appsinacup/documentation_lobby)|[Build Locally](./BUILD_LOCALLY.md)|[Architecture](./ARCHITECTURE.md)
-|-|-|-|
+|[Website](https://appsinacup.com)|[Discord](https://discord.gg/56dMud8HYn)|[Starter Project](https://github.com/appsinacup/tiny_lobby_starter)|[Tiny Lobby Godot](https://github.com/appsinacup/addon_tiny_lobby_client)|[Documentation](https://github.com/appsinacup/documentation_lobby)|[Build](./BUILD_LOCALLY.md)|[Architecture](./ARCHITECTURE.md)
+|-|-|-|-|-|-|-|
 
 Tiny Lobby is a lightweight multiplayer lobby system for WebSocket-based games, allowing peers to create, join, and manage lobbies, exchange data, and communicate in real time. It also supports backend scripting in Lua, enabling custom game logic directly on the server.
 
