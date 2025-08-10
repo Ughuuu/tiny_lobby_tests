@@ -53,62 +53,6 @@ std::string getUserAppDataPath(const std::string &appName = "LobbyServer") {
 
 std::string get_jwt_path() { return getUserAppDataPath("LobbyServer") + "session.jwt"; }
 
-std::vector<std::string> get_game_data_without_game_id(const std::string &game_id) {
-    std::vector<std::string> lines;
-    std::ifstream games_file_check(BasePath::instance().file("games.ini"));
-    if (!games_file_check.is_open()) {
-        return lines;
-    }
-    std::string line;
-    bool in_game_section = false;
-    while (std::getline(games_file_check, line)) {
-        if (line == "[" + game_id + "]") {
-            in_game_section = true;
-        } else if (in_game_section && line.starts_with("[")) {
-            in_game_section = false;
-        }
-        if (!in_game_section) {
-            lines.push_back(line);
-        }
-    }
-    return lines;
-}
-
-std::string extract_data_from_new_game(const std::string &resp, const std::string &game_id) {
-    yyjson_doc *doc = yyjson_read(resp.c_str(), resp.size(), 0);
-    if (!doc) {
-        return "Missing or invalid JSON data.";
-    }
-
-    yyjson_val *root = yyjson_doc_get_root(doc);
-    std::string lobby_control = decode_string_or_default(root, "lobby_control", "lua");
-    int send_rate = decode_int_or_default(root, "sendrate", 0);
-    bool seal = decode_int_or_default(root, "seal", false);
-    int tick_rate = decode_int_or_default(root, "tickrate", 0);
-
-    yyjson_doc_free(doc);
-    std::vector<std::string> lines = get_game_data_without_game_id(game_id);
-    std::ofstream games_file(BasePath::instance().file("games.ini"), std::ios::out);
-    if (!games_file.is_open()) {
-        return "Failed to open games.ini.";
-    }
-    lines.push_back("[" + game_id + "]");
-    lines.push_back("lobby_control=" + lobby_control);
-    if (send_rate > 0) {
-        lines.push_back("sendrate=" + std::to_string(send_rate));
-    }
-    if (seal > 0) {
-        lines.push_back("seal=" + std::to_string(seal));
-    }
-    if (tick_rate > 0) {
-        lines.push_back("tickrate=" + std::to_string(tick_rate));
-    }
-    for (const auto &l : lines) {
-        games_file << l << std::endl;
-    }
-    return "";
-}
-
 int main(int argc, char *argv[]) {
     bool verbose = false;
     // Parse --path argument and set singleton
@@ -223,69 +167,6 @@ int main(int argc, char *argv[]) {
         config_reader.GetInteger("games", "max_reconnection_time", 6 * 60 * 1000));
     app.get("/", [](auto *res, auto *req) { res->writeStatus("200 OK")->end("OK"); });
     app.get("/health", [](auto *res, auto *req) { res->writeStatus("200 OK")->end("OK"); });
-    app.post("/system/shutdown", [&stop](auto *res, auto *req) {
-        res->writeStatus("200 OK")->end("OK");
-        return;
-        // No-op for now
-        stop = true;
-        // TODO do it correctly
-        exit(0);
-    });
-    app.post("/system/notify", [&webserver](auto *res, auto *req) {
-        res->writeStatus("200 OK")->end("OK");
-        // No-op for now
-        return;
-        webserver.send_all("notify", uWS::OpCode::TEXT);
-        res->writeStatus("200 OK")->end("OK");
-    });
-    app.post("/game/:game_id", [&webserver, &GameThread](auto *res, auto *req) {
-        res->writeStatus("200 OK")->end("OK");
-        // No-op for now
-        return;
-        std::string game_id{req->getParameter(0)};
-        if (game_id.empty()) {
-            res->writeStatus("400 Bad Request")->end("Game ID is required");
-            return;
-        }
-        auto body = std::make_shared<std::string>();
-        auto isAborted = std::make_shared<bool>(false);
-        res->onData([res, isAborted, body, &GameThread, game_id](std::string_view chunk,
-                                                                 bool isFin) mutable {
-            body->append(chunk);
-            if (isFin && !*isAborted) {
-                std::string msg = extract_data_from_new_game(*body, game_id);
-                if (msg.size() > 0) {
-                    res->writeStatus("200 OK")->end(msg);
-                    return;
-                }
-                GameThread.load_games();
-                res->writeStatus("200 OK")->end("Game created");
-            }
-        });
-        res->onAborted([isAborted]() { *isAborted = true; });
-    });
-    app.del("/game/:game_id", [&webserver, &GameThread](auto *res, auto *req) {
-        res->writeStatus("200 OK")->end("OK");
-        // No-op for now
-        return;
-        std::string game_id{req->getParameter(0)};
-        if (game_id.empty()) {
-            res->writeStatus("400 Bad Request")->end("Game ID is required");
-            return;
-        }
-        GameThread.unload_game(game_id);
-        std::vector<std::string> lines = get_game_data_without_game_id(game_id);
-        // write lines back to the file
-        std::ofstream games_file("games.ini", std::ios::out);
-        if (!games_file.is_open()) {
-            res->writeStatus("500 Internal Server Error")->end("Failed to open games.ini.");
-            return;
-        }
-        for (const auto &l : lines) {
-            games_file << l << std::endl;
-        }
-        res->writeStatus("200 OK")->end("Game unloaded");
-    });
     app.get("/game/:game_id/leaderboard/:leaderboard_id", [&db, db_enabled](auto *res, auto *req) {
         if (!db_enabled) {
             res->writeStatus("503 Service Unavailable")->end("Database is disabled");

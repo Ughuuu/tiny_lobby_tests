@@ -15,7 +15,6 @@ RUN apt-get update && apt-get install -y \
 COPY ./build/tiny_lobby /app/tiny_lobby
 COPY ./scripts /app/scripts
 COPY ./config.ini /app/config.ini
-COPY ./games.ini /app/games.ini
 
 RUN chmod +x /app/tiny_lobby
 RUN mkdir /app/logs

@@ -27,12 +27,12 @@ bool Database::ensure_connection() {
 void Database::connect_to_db() {
     try {
         INIReader config_reader(BasePath::instance().file("config.ini"));
-        std::string database = config_reader.Get("database", "database", "");
+        std::string database = config_reader.Get("database", "database", "tiny_lobby");
         if (database.empty()) {
             std::cerr << "Database name not found in config.ini" << std::endl;
             exit(1);
         }
-        std::string user = config_reader.Get("database", "user", "");
+        std::string user = config_reader.Get("database", "username", "postgres");
         if (user.empty()) {
             std::cerr << "Database user not found in config.ini" << std::endl;
             exit(1);
@@ -42,12 +42,12 @@ void Database::connect_to_db() {
             std::cerr << "Database password not found in config.ini" << std::endl;
             exit(1);
         }
-        std::string host = config_reader.Get("database", "host", "");
+        std::string host = config_reader.Get("database", "host", "localhost");
         if (host.empty()) {
             std::cerr << "Database host not found in config.ini" << std::endl;
             exit(1);
         }
-        std::string port = config_reader.Get("database", "port", "");
+        std::string port = config_reader.Get("database", "port", "5432");
         if (port.empty()) {
             std::cerr << "Database port not found in config.ini" << std::endl;
             exit(1);

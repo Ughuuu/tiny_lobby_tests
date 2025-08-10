@@ -83,6 +83,7 @@ const int COMMAND_LOBBY_UNSEAL = 18;
 const int COMMAND_LOBBY_MAX_PLAYERS = 19;
 const int COMMAND_LOBBY_TITLE = 20;
 const int COMMAND_LOBBY_PASSWORD = 21;
+const int COMMAND_STOP_LISTING = 22;
 
 // host_id = h
 // max_players = m
@@ -285,6 +286,14 @@ std::string notification_lobby_list(const AnyElement& lobbies, const std::string
                           {"c", AnyElement{RESPONSE_LOBBY_LIST}},
                           {"d", AnyElement{boost::container::flat_map<std::string, AnyElement>{
                                     {"l", lobbies}, {"id", AnyElement{command_id}}}}}}}
+        .to_string();
+}
+
+std::string notification_lobby_stop_listing(const std::string& command_id) {
+    return AnyElement{boost::container::flat_map<std::string, AnyElement>{
+                          {"c", AnyElement{RESPONSE_LOBBY_LIST}},
+                          {"d", AnyElement{boost::container::flat_map<std::string, AnyElement>{
+                                    {"l", AnyElement{}}, {"id", AnyElement{command_id}}}}}}}
         .to_string();
 }
 

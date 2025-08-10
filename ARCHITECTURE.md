@@ -777,7 +777,9 @@ Receives back one of:
 ```json
 {
     "c": 10,
-    "d": {}
+    "d": {
+        "l": []
+    }
 }
 ```
 
@@ -960,6 +962,23 @@ Receives back one of:
     "c": 21,
     "d": {
         "_p": "password" // lobby password
+    }
+}
+```
+
+#### COMMAND_STOP_LIST_LOBBY
+
+Stop receveiving list lobbies responses.
+
+Receives back one of:
+- RESPONSE_ERROR
+- RESPONSE_LOBBY_LIST
+
+```json
+{
+    "c": 22,
+    "d": {
+        "l": []
     }
 }
 ```

@@ -38,55 +38,67 @@ GameThread::GameThread(
 
 void GameThread::load_games() {
     logger.debug_log("[GameThread] on_load_games");
-    if (!std::filesystem::exists(BasePath::instance().file("games.ini"))) {
-        logger.error_log("[GameThread] Cannot open games.ini file");
+    if (!std::filesystem::exists(scripts_folder)) {
+        logger.error_log("[GameThread] Scripts folder does not exist: ", scripts_folder);
         return;
     }
-    INIReader config_reader(BasePath::instance().file("games.ini"));
-    auto sections = config_reader.Sections();
     std::unordered_set<std::string> games_to_open;
-    for (const auto &section : sections) {
-        std::string folder_name = config_reader.GetString(section, "folder", section);
-        int tickrate = config_reader.GetInteger(section, "tickrate", 0);
-        if (tickrate < 16) {
-            tickrate = 0;
+    // go through all folders inside scripts_folder
+    for (const auto &entry : std::filesystem::directory_iterator(scripts_folder)) {
+        if (entry.is_directory()) {
+            std::string folder_name = entry.path().filename().string();
+            if (folder_name.empty()) {
+                continue;
+            }
+            std::string section = folder_name;
+            std::string lobby_control = "relay";
+            INIReader config_reader(
+                BasePath::instance().file(scripts_folder + "/" + folder_name + "/config.ini"));
+            int tickrate = config_reader.GetInteger("game", "tickrate", 0);
+            if (tickrate < 16) {
+                tickrate = 0;
+            }
+            int sendrate = config_reader.GetInteger("game", "sendrate", 0);
+            int max_afk_time = config_reader.GetInteger("game", "max_afk_time", 0);
+            bool seal = config_reader.GetBoolean("game", "seal", false);
+            // if there is a main.lua file in the fulder, set lobby_control to lua
+            if (std::filesystem::exists(scripts_folder + "/" + folder_name + "/main.lua")) {
+                lobby_control = "lua";
+            }
+            if (tickrate > 0) {
+                check_time = std::min(check_time, tickrate);
+            }
+            if (sendrate > 0) {
+                check_time = std::min(check_time, sendrate);
+            }
+            // Only add if new game
+            if (games.find(section) != games.end()) {
+                continue;
+            }
+            if (folder_name.empty()) {
+                logger.debug_log("[GameThread] on_load_game relay");
+            } else {
+                logger.debug_log("[GameThread] on_load_game ", folder_name);
+            }
+            std::cout << "Loading game from " << folder_name << " with id " << section
+                      << " and control " << lobby_control << std::endl;
+            games_to_open.insert(section);
+            games.emplace(section, GameData{.id = section,
+                                            .lobby_control = lobby_control,
+                                            .tick_rate = tickrate,
+                                            .send_rate = sendrate,
+                                            .max_afk_time = max_afk_time,
+                                            .seal = seal,
+                                            .disband_on_leave = config_reader.GetBoolean(
+                                                section, "disband_on_leave", false),
+                                            .folder_name = folder_name,
+                                            .lua = ScriptLua{.scripts_folder = scripts_folder,
+                                                             .folder_name = folder_name,
+                                                             .script_entrypoint = "main.lua",
+                                                             .logs_folder = logs_folder,
+                                                             .game_thread = this,
+                                                             .enabled = lobby_control == "lua"}});
         }
-        int sendrate = config_reader.GetInteger(section, "sendrate", 0);
-        int max_afk_time = config_reader.GetInteger(section, "max_afk_time", 0);
-        bool seal = config_reader.GetBoolean(section, "seal", false);
-        std::string lobby_control = config_reader.Get(section, "lobby_control", "lua");
-        if (tickrate > 0) {
-            check_time = std::min(check_time, tickrate);
-        }
-        if (sendrate > 0) {
-            check_time = std::min(check_time, sendrate);
-        }
-        // Only add if new game
-        if (games.find(section) != games.end()) {
-            continue;
-        }
-        if (folder_name.empty()) {
-            logger.debug_log("[GameThread] on_load_game relay");
-        } else {
-            logger.debug_log("[GameThread] on_load_game ", folder_name);
-        }
-        std::cout << "Loading game from " << folder_name << " with id " << section << std::endl;
-        games_to_open.insert(section);
-        games.emplace(section, GameData{.id = section,
-                                        .lobby_control = lobby_control,
-                                        .tick_rate = tickrate,
-                                        .send_rate = sendrate,
-                                        .max_afk_time = max_afk_time,
-                                        .seal = seal,
-                                        .disband_on_leave = config_reader.GetBoolean(
-                                            section, "disband_on_leave", false),
-                                        .folder_name = folder_name,
-                                        .lua = ScriptLua{.scripts_folder = scripts_folder,
-                                                         .folder_name = folder_name,
-                                                         .script_entrypoint = "main.lua",
-                                                         .logs_folder = logs_folder,
-                                                         .game_thread = this,
-                                                         .enabled = lobby_control == "lua"}});
     }
     for (auto &game : games) {
         if (!games_to_open.contains(game.first)) {
@@ -354,9 +366,11 @@ bool GameThread::handle_events() {
     }
     messages_received++;
     if (games.find(message.game_id) == games.end()) {
-        auto fake_game = GameData{.send_rate = 0};
-        on_error(fake_game, EMPTY_STRING, message.id, ERROR_GAME_NOT_FOUND, true);
-        return true;
+        // game not found, add relay game.
+        games.emplace(message.game_id, GameData{.id = message.game_id, .lobby_control = "relay"});
+        // auto fake_game = GameData{.send_rate = 0};
+        // on_error(fake_game, EMPTY_STRING, message.id, ERROR_GAME_NOT_FOUND, true);
+        // return true;
     }
     auto &game = games[message.game_id];
     switch (message.event) {
@@ -429,6 +443,9 @@ bool GameThread::handle_events() {
                 } break;
                 case COMMAND_LIST_LOBBY: {
                     on_list_lobby(game, command_id, peer, data_val);
+                } break;
+                case COMMAND_STOP_LISTING: {
+                    on_stop_list_lobby(game, command_id, peer, data_val);
                 } break;
                 case COMMAND_CHAT_LOBBY: {
                     on_chat_lobby(game, command_id, peer, data_val);
@@ -924,7 +941,6 @@ void GameThread::on_create_lobby(
                                    .sealed = decode_bool_or_default(data_val, "s", game.seal),
                                    .tags = lobby_tags});
     auto &lobby = game.lobbies[small_uuid];
-    game.lobby_listing_peers.erase(peer.id);
     // SCRIPTED CALL
     if (game.enabled_callbacks.find("_can_create_lobby") != game.enabled_callbacks.end()) {
         bool has_error = false;
@@ -1003,7 +1019,6 @@ bool GameThread::on_join_lobby(GameData &game, std::string command_id, PeerData 
         }
     }
     // CHANGES
-    game.lobby_listing_peers.erase(peer.id);
     if (reconnecting) {
         peer.ready = false;
     } else {
@@ -1109,6 +1124,21 @@ void GameThread::on_list_lobby(GameData &game, std::string command_id, PeerData 
     }
 
     std::string notification = notification_lobby_list(AnyElement{lobbies}, command_id);
+    send(game, peer.id, notification, uWS::OpCode::TEXT);
+}
+
+void GameThread::on_stop_list_lobby(GameData &game, std::string command_id, PeerData &peer,
+                                    yyjson_val *data_val) {
+    logger.debug_log("[GameThread] on_stop_list_lobby ", command_id, " ", peer.id);
+    if (game.lobby_listing_peers.find(peer.id) == game.lobby_listing_peers.end()) {
+        std::string notification =
+            notification_lobby_list(AnyElement{boost::container::vector<AnyElement>{}}, command_id);
+        return send(game, peer.id, notification, uWS::OpCode::TEXT);
+    }
+
+    game.lobby_listing_peers.erase(peer.id);
+
+    std::string notification = notification_lobby_stop_listing(command_id);
     send(game, peer.id, notification, uWS::OpCode::TEXT);
 }
 

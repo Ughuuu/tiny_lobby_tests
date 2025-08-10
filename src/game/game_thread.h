@@ -101,6 +101,8 @@ class GameThread {
                         yyjson_val *data_val);
     void on_list_lobby(GameData &game, std::string command_id, PeerData &peer,
                        yyjson_val *data_val);
+    void on_stop_list_lobby(GameData &game, std::string command_id, PeerData &peer,
+                            yyjson_val *data_val);
     void on_chat_lobby(GameData &game, std::string command_id, PeerData &peer,
                        yyjson_val *data_val);
     void on_lobby_tags(GameData &game, std::string command_id, PeerData &peer,
