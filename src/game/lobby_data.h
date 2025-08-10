@@ -45,7 +45,7 @@ struct LobbyData {
         lobby_dict["c"] = AnyElement{create_time};
         lobby_dict["_p"] = AnyElement{bool(password != "")};
         lobby_dict["t"] = AnyElement{tags};
-        lobby_dict["p"] = AnyElement{public_data};
+        lobby_dict["d"] = AnyElement{public_data};
         if (include_private) {
             lobby_dict["_p"] = AnyElement{private_data};
         }

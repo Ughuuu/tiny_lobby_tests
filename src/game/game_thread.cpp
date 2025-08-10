@@ -918,6 +918,10 @@ void GameThread::on_create_lobby(
     // CHANGES before scripted call, reverted if scripted call fails
     auto uuid = to_string(gen());
     auto small_uuid = uuid.substr(0, 8);
+    auto max_players = decode_int_or_default(data_val, "m", 0);
+    if (max_players < 1) {
+        return on_error(game, command_id, peer.id, ERROR_LOBBY_FULL);
+    }
     boost::container::flat_map<std::string, AnyElement> lobby_tags;
     if (previous_tags != nullptr) {
         lobby_tags = *previous_tags;
@@ -933,7 +937,7 @@ void GameThread::on_create_lobby(
                                    .name = decode_string_or_default(data_val, "n", ""),
                                    .host = peer.id,
                                    .password = decode_string_or_default(data_val, "_p", ""),
-                                   .max_players = decode_int_or_default(data_val, "m", 0),
+                                   .max_players = max_players,
                                    .peer_ids = {peer.id},
                                    .peer_ordered_ids = {peer.id},
                                    .create_time = now,
@@ -1413,7 +1417,7 @@ void GameThread::on_seal_lobby(GameData &game, std::string command_id, PeerData 
         return on_error(game, command_id, peer.id, ERROR_PEER_NOT_HOST);
     }
     if (lobby.sealed) {
-        return on_error(game, command_id, peer.id, ERROR_LOBBY_SEALED);
+        return set_lobby_sealed(game, lobby, peer.id, command_id, true);
     }
     // SCRIPTED CALL
     if (game.enabled_callbacks.find("_can_host_seal") != game.enabled_callbacks.end()) {
@@ -1442,7 +1446,7 @@ void GameThread::on_unseal_lobby(GameData &game, std::string command_id, PeerDat
         return on_error(game, command_id, peer.id, ERROR_PEER_NOT_HOST);
     }
     if (!lobby.sealed) {
-        return on_error(game, command_id, peer.id, ERROR_LOBBY_NOT_SEALED);
+        return set_lobby_sealed(game, lobby, peer.id, command_id, false);
     }
     // SCRIPTED CALL
     if (game.enabled_callbacks.find("_can_host_seal") != game.enabled_callbacks.end()) {
@@ -1467,9 +1471,9 @@ void GameThread::on_lobby_max_players(GameData &game, std::string command_id, Pe
         return on_error(game, command_id, peer.id, ERROR_PEER_NOT_IN_A_LOBBY);
     }
     auto &lobby = game.lobbies[peer.lobby_id];
-    auto max_players = decode_int_or_default(data_val, "max_players", 0);
+    auto max_players = decode_int_or_default(data_val, "m", 0);
     if (max_players < lobby.peer_ids.size()) {
-        return on_error(game, command_id, peer.id, "Invalid max players");
+        return on_error(game, command_id, peer.id, ERROR_LOBBY_FULL);
     }
     // SCRIPTED CALL
     if (game.enabled_callbacks.find("_can_host_resize") != game.enabled_callbacks.end()) {
@@ -1866,25 +1870,28 @@ void GameThread::on_lobby_notify(GameData &game, std::string command_id, PeerDat
 
 void GameThread::set_lobby_sealed(GameData &game, LobbyData &lobby, std::string peer_id,
                                   std::string command_id, bool sealed) {
+    bool updated = lobby.sealed != sealed;
     // CHANGES
     lobby.sealed = sealed;
     // NOTIFICATION
-    std::string notification_others = notification_lobby_unsealed(EMPTY_STRING);
-    if (sealed) {
-        notification_others = notification_lobby_sealed(EMPTY_STRING);
-    }
-    for (auto lobby_peer_id : lobby.peer_ids) {
-        if (lobby_peer_id == peer_id) {
-            continue;
+    if (updated) {
+        std::string notification_others = notification_lobby_unsealed(EMPTY_STRING);
+        if (sealed) {
+            notification_others = notification_lobby_sealed(EMPTY_STRING);
         }
-        send(game, lobby_peer_id, notification_others, uWS::OpCode::TEXT);
+        for (auto lobby_peer_id : lobby.peer_ids) {
+            if (lobby_peer_id == peer_id) {
+                continue;
+            }
+            send(game, lobby_peer_id, notification_others, uWS::OpCode::TEXT);
+        }
+        game.lobbies_updated.insert(lobby.id);
     }
     std::string notification_self = notification_lobby_unsealed(command_id);
     if (sealed) {
         notification_self = notification_lobby_sealed(command_id);
     }
     send(game, peer_id, notification_self, uWS::OpCode::TEXT);
-    game.lobbies_updated.insert(lobby.id);
 }
 
 void GameThread::reload_game(std::string folder_name) {
