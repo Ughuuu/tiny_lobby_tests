@@ -10,3 +10,7 @@ scripts/world/*
 public.key
 src/public_key.h
 connection.sh
+
+# Temporary development tools
+luau*
+*.zip
