@@ -5,7 +5,9 @@
   "scripts": {
     "test": "node index.js && python plot.py",
     "unit": "mocha test.js",
-    "test-validator": "g++ -std=c++17 -I.. test_input_validator.cpp -o test_input_validator && ./test_input_validator && rm -f test_input_validator"
+    "test-validator": "g++ -std=c++17 -I.. test_input_validator.cpp -o test_input_validator && ./test_input_validator && rm -f test_input_validator",
+    "test-config": "g++ -std=c++17 -I.. test_config_validator.cpp -o test_config_validator && ./test_config_validator && rm -f test_config_validator",
+    "test-all": "npm run test-validator && npm run test-config"
   },
   "author": "",
   "license": "ISC",
