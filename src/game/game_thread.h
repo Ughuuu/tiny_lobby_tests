@@ -153,4 +153,8 @@ class GameThread {
                moodycamel::BlockingReaderWriterQueue<DatabaseReceivedMessage> &database_queue,
                uWS::Loop *loop, WebSocketServer *webserver, std::atomic<bool> &stop,
                int listing_interval, int max_recconection_time);
+
+   private:
+    void handle_command(GameData &game, int command, const std::string &command_id, PeerData &peer,
+                        yyjson_val *data_val);
 };

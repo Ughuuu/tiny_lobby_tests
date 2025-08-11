@@ -8,6 +8,7 @@
 
 #include "../common/any_type.h"
 #include "../common/base_path.h"
+#include "../common/input_validator.h"
 #include "../lua/script_lua.h"
 #include "INIReader.h"
 #include "game_thread_messages.h"
@@ -168,7 +169,7 @@ void GameThread::run() {
         // if time has not changed, sleep for a bit
         if (last_time == now) {
             std::this_thread::sleep_for(std::chrono::milliseconds(5));
-            //continue;
+            // continue;
         }
         // handle disconnects
         if (now - last_disconnect > disconnect_interval) {
@@ -410,84 +411,7 @@ bool GameThread::handle_events() {
             auto &peer = game.peers[message.id];
             // set last message time
             peer.last_message_time = now;
-            switch (command) {
-                // relay
-                case COMMAND_LOBBY_DATA: {
-                    on_lobby_data(game, command_id, peer, data_val);
-                } break;
-                case COMMAND_LOBBY_DATA_TO: {
-                    on_data_to(game, command_id, peer, data_val);
-                } break;
-                case COMMAND_LOBBY_DATA_TO_ALL: {
-                    on_data_to_all(game, command_id, peer, data_val);
-                } break;
-                case COMMAND_LOBBY_NOTIFY_TO: {
-                    on_notify_to(game, command_id, peer, data_val);
-                } break;
-                case COMMAND_LOBBY_NOTIFY: {
-                    on_lobby_notify(game, command_id, peer, data_val);
-                } break;
-
-                // scripted
-                case COMMAND_LOBBY_CALL: {
-                    on_lobby_call(game, command_id, peer, data_val);
-                } break;
-                case COMMAND_LOBBY_QUICK_JOIN: {
-                    on_quick_join(game, command_id, peer, data_val);
-                } break;
-                case COMMAND_CREATE_LOBBY: {
-                    on_create_lobby(game, command_id, peer, data_val);
-                } break;
-                case COMMAND_JOIN_LOBBY: {
-                    on_join_lobby(game, command_id, peer, data_val);
-                } break;
-                case COMMAND_LEAVE_LOBBY: {
-                    on_leave_lobby(game, command_id, peer, data_val);
-                } break;
-                case COMMAND_LIST_LOBBY: {
-                    on_list_lobby(game, command_id, peer, data_val);
-                } break;
-                case COMMAND_STOP_LISTING: {
-                    on_stop_list_lobby(game, command_id, peer, data_val);
-                } break;
-                case COMMAND_CHAT_LOBBY: {
-                    on_chat_lobby(game, command_id, peer, data_val);
-                } break;
-                case COMMAND_LOBBY_TAGS: {
-                    on_lobby_tags(game, command_id, peer, data_val);
-                } break;
-                case COMMAND_KICK_PEER: {
-                    on_kick_peer(game, command_id, peer, data_val);
-                } break;
-                case COMMAND_USER_DATA: {
-                    on_user_data(game, command_id, peer, data_val);
-                } break;
-                case COMMAND_LOBBY_READY: {
-                    on_lobby_ready(game, command_id, peer, data_val);
-                } break;
-                case COMMAND_LOBBY_UNREADY: {
-                    on_lobby_unready(game, command_id, peer, data_val);
-                } break;
-                case COMMAND_LOBBY_SEAL: {
-                    on_seal_lobby(game, command_id, peer, data_val);
-                } break;
-                case COMMAND_LOBBY_UNSEAL: {
-                    on_unseal_lobby(game, command_id, peer, data_val);
-                } break;
-                case COMMAND_LOBBY_MAX_PLAYERS: {
-                    on_lobby_max_players(game, command_id, peer, data_val);
-                } break;
-                case COMMAND_LOBBY_TITLE: {
-                    on_lobby_title(game, command_id, peer, data_val);
-                } break;
-                case COMMAND_LOBBY_PASSWORD: {
-                    on_lobby_password(game, command_id, peer, data_val);
-                } break;
-
-                default: {
-                    on_error(game, command_id, message.id, ERROR_UNKOWN_COMMAND, true);
-                } break;
-            }
+            handle_command(game, command, command_id, peer, data_val);
             yyjson_doc_free(doc);
             break;
     }
@@ -922,8 +846,18 @@ void GameThread::on_create_lobby(
     auto uuid = to_string(gen());
     auto small_uuid = uuid.substr(0, 8);
     auto max_players = decode_int_or_default(data_val, "m", 0);
-    if (max_players < 1) {
-        return on_error(game, command_id, peer.id, ERROR_LOBBY_FULL);
+    if (!InputValidator::is_valid_max_players(max_players)) {
+        return on_error(game, command_id, peer.id, ERROR_INVALID_ARGUMENTS);
+    }
+
+    std::string lobby_name = decode_string_or_default(data_val, "n", "");
+    if (!lobby_name.empty() && !InputValidator::is_valid_lobby_name(lobby_name)) {
+        return on_error(game, command_id, peer.id, ERROR_INVALID_ARGUMENTS);
+    }
+
+    std::string password = decode_string_or_default(data_val, "_p", "");
+    if (!InputValidator::is_valid_password(password)) {
+        return on_error(game, command_id, peer.id, ERROR_INVALID_ARGUMENTS);
     }
     boost::container::flat_map<std::string, AnyElement> lobby_tags;
     if (previous_tags != nullptr) {
@@ -937,9 +871,9 @@ void GameThread::on_create_lobby(
     peer.lobby_id = small_uuid;
     game.lobbies.emplace(small_uuid,
                          LobbyData{.id = small_uuid,
-                                   .name = decode_string_or_default(data_val, "n", ""),
+                                   .name = InputValidator::sanitize_string(lobby_name),
                                    .host = peer.id,
-                                   .password = decode_string_or_default(data_val, "_p", ""),
+                                   .password = password,
                                    .max_players = max_players,
                                    .peer_ids = {peer.id},
                                    .peer_ordered_ids = {peer.id},
@@ -2083,5 +2017,93 @@ void GameThread::notify_all(GameData &game, std::string &lobby_id, const AnyElem
     auto &lobby = game.lobbies[lobby_id];
     for (const auto &lobby_peer_id : lobby.peer_ids) {
         send(game, lobby_peer_id, notification_message, uWS::OpCode::TEXT);
+    }
+}
+
+void GameThread::handle_command(GameData &game, int command, const std::string &command_id,
+                                PeerData &peer, yyjson_val *data_val) {
+    // Validate command is within expected range
+    if (!InputValidator::is_valid_command_id(command)) {
+        on_error(game, command_id, peer.id, ERROR_UNKOWN_COMMAND, true);
+        return;
+    }
+
+    switch (command) {
+        // relay commands
+        case COMMAND_LOBBY_DATA:
+            on_lobby_data(game, command_id, peer, data_val);
+            break;
+        case COMMAND_LOBBY_DATA_TO:
+            on_data_to(game, command_id, peer, data_val);
+            break;
+        case COMMAND_LOBBY_DATA_TO_ALL:
+            on_data_to_all(game, command_id, peer, data_val);
+            break;
+        case COMMAND_LOBBY_NOTIFY_TO:
+            on_notify_to(game, command_id, peer, data_val);
+            break;
+        case COMMAND_LOBBY_NOTIFY:
+            on_lobby_notify(game, command_id, peer, data_val);
+            break;
+
+        // scripted commands
+        case COMMAND_LOBBY_CALL:
+            on_lobby_call(game, command_id, peer, data_val);
+            break;
+        case COMMAND_LOBBY_QUICK_JOIN:
+            on_quick_join(game, command_id, peer, data_val);
+            break;
+        case COMMAND_CREATE_LOBBY:
+            on_create_lobby(game, command_id, peer, data_val);
+            break;
+        case COMMAND_JOIN_LOBBY:
+            on_join_lobby(game, command_id, peer, data_val);
+            break;
+        case COMMAND_LEAVE_LOBBY:
+            on_leave_lobby(game, command_id, peer, data_val);
+            break;
+        case COMMAND_LIST_LOBBY:
+            on_list_lobby(game, command_id, peer, data_val);
+            break;
+        case COMMAND_STOP_LISTING:
+            on_stop_list_lobby(game, command_id, peer, data_val);
+            break;
+        case COMMAND_CHAT_LOBBY:
+            on_chat_lobby(game, command_id, peer, data_val);
+            break;
+        case COMMAND_LOBBY_TAGS:
+            on_lobby_tags(game, command_id, peer, data_val);
+            break;
+        case COMMAND_KICK_PEER:
+            on_kick_peer(game, command_id, peer, data_val);
+            break;
+        case COMMAND_USER_DATA:
+            on_user_data(game, command_id, peer, data_val);
+            break;
+        case COMMAND_LOBBY_READY:
+            on_lobby_ready(game, command_id, peer, data_val);
+            break;
+        case COMMAND_LOBBY_UNREADY:
+            on_lobby_unready(game, command_id, peer, data_val);
+            break;
+        case COMMAND_LOBBY_SEAL:
+            on_seal_lobby(game, command_id, peer, data_val);
+            break;
+        case COMMAND_LOBBY_UNSEAL:
+            on_unseal_lobby(game, command_id, peer, data_val);
+            break;
+        case COMMAND_LOBBY_MAX_PLAYERS:
+            on_lobby_max_players(game, command_id, peer, data_val);
+            break;
+        case COMMAND_LOBBY_TITLE:
+            on_lobby_title(game, command_id, peer, data_val);
+            break;
+        case COMMAND_LOBBY_PASSWORD:
+            on_lobby_password(game, command_id, peer, data_val);
+            break;
+
+        default:
+            on_error(game, command_id, peer.id, ERROR_UNKOWN_COMMAND, true);
+            break;
     }
 }

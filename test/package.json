@@ -4,7 +4,8 @@
   "main": "index.js",
   "scripts": {
     "test": "node index.js && python plot.py",
-    "unit": "mocha test.js"
+    "unit": "mocha test.js",
+    "test-validator": "g++ -std=c++17 -I.. test_input_validator.cpp -o test_input_validator && ./test_input_validator && rm -f test_input_validator"
   },
   "author": "",
   "license": "ISC",
