@@ -168,7 +168,7 @@ void GameThread::run() {
         // if time has not changed, sleep for a bit
         if (last_time == now) {
             std::this_thread::sleep_for(std::chrono::milliseconds(5));
-            //continue;
+            // continue;
         }
         // handle disconnects
         if (now - last_disconnect > disconnect_interval) {
